@@ -52,6 +52,8 @@
   .decode-chip.zero { opacity: 0.36; }
   .decode-chip .c-emoji { font-size: 1.45rem; line-height: 1.1; display: inline-block; }
   .decode-chip.frac .c-emoji { transform: rotate(180deg); }
+  .decode-chip .c-cube { font-size: 1rem; line-height: 1.1; min-height: 1.2em; letter-spacing: 1px; }
+  .decode-chip .c-cube.bare { color: #4a5260; font-size: 0.8rem; }
   .decode-chip .c-digit { font-size: 1.1rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
   .decode-chip .c-meta { font-size: 0.64rem; color: var(--muted); letter-spacing: 0.2px; }
   .decode-chip.frac .c-meta { color: #b898e8; }
@@ -79,6 +81,8 @@
   .bead.active { box-shadow: 0 0 12px var(--bead-glow), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); filter: brightness(1.1); }
   .rod.frac .bead.active { box-shadow: 0 0 12px rgba(155,111,212,0.55), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
   .rod-value { margin-top: 9px; font-size: 1.15rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; width: 28px; text-align: center; background: #1d2128; border-radius: 6px; padding: 1px 0; }
+  .rod-cube { margin-top: 4px; font-size: 0.98rem; line-height: 1.1; text-align: center; min-height: 1.2em; letter-spacing: 1px; }
+  .rod-cube.bare { color: #4a5260; font-size: 0.8rem; }
   .rod-peg { margin-top: 5px; font-size: 1.15rem; line-height: 1; text-align: center; display: inline-block; }
   .rod.frac .rod-peg { transform: rotate(180deg); }
   .rod-letter { margin-top: 2px; font-size: 0.74rem; font-weight: 700; color: var(--muted); text-align: center; }
@@ -116,13 +120,69 @@
   .peg-chip .emoji { font-size: 1.2rem; line-height: 1; }
   .peg-chip .pword { font-size: 0.84rem; color: #b8c0cc; }
   .peg-chip .ppl { margin-left: auto; font-size: 0.62rem; color: #6a7482; text-align: right; }
+
+  /* Drill mode */
+  .drill-decks { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .drill-decks button { padding: 6px 10px; font-size: 0.8rem; }
+  .drill-decks button.active { background: var(--accent-2); border-color: var(--accent-2); color: #1a1d23; }
+  .drill-stage { display: none; background: #1d2128; border: 1px solid var(--border); border-radius: 10px; padding: 18px; text-align: center; }
+  .drill-stage.on { display: block; }
+  .drill-floor { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .drill-prompt { font-size: 2.6rem; line-height: 1.3; margin: 12px 0 4px; min-height: 1.4em; }
+  .drill-prompt.small { font-size: 1.15rem; color: #d8dde5; }
+  .drill-prompt .rot90 { display: inline-block; transform: rotate(90deg); }
+  .drill-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; }
+  .drill-answer-row { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .drill-answer-row input { width: 220px; text-align: center; font-size: 1.15rem; }
+  .drill-feedback { min-height: 2.2em; margin-top: 12px; font-size: 0.95rem; }
+  .drill-feedback .ok { color: #51cf66; font-weight: 600; }
+  .drill-feedback .bad { color: #ff6b6b; font-weight: 600; }
+  .drill-feedback .slow { color: #f0a050; font-weight: 600; }
+  .drill-feedback .detail { color: #b8c0cc; }
+  .drill-stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 14px; font-size: 0.82rem; color: var(--muted); }
+  .drill-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .drill-best { font-size: 0.72rem; color: #6a7482; margin-top: 6px; }
+
+  /* L3 Deep Pack */
+  .locus-list { display: flex; flex-direction: column; gap: 10px; }
+  .locus { display: flex; gap: 12px; align-items: stretch; padding: 10px 12px; background: #1d2128; border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap; }
+  .locus-tag { font-size: 0.64rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; }
+  .locus-body { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 6px; }
+  .pack-scene { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .pack-unit { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 9px 6px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; min-width: 62px; }
+  .pack-unit .u-emoji { font-size: 1.3rem; line-height: 1.15; letter-spacing: 1px; white-space: nowrap; }
+  .pack-unit .u-emoji .rot90 { display: inline-block; transform: rotate(90deg); }
+  .pack-unit .u-digits { font-size: 0.98rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .pack-unit .u-name { font-size: 0.6rem; color: var(--muted); text-align: center; line-height: 1.15; }
+  .pack-unit.action { border-color: rgba(232,132,44,0.45); }
+  .pack-unit.action .u-digits { color: #f0b050; }
+  .pack-arrow { color: #5a6270; font-size: 1.1rem; }
+  .pack-story { font-size: 0.8rem; color: #b8c0cc; }
+  .pack-story em { color: var(--accent); font-style: normal; font-weight: 600; }
+  .seal-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 12px; border: 1px dashed rgba(212,61,61,0.55); border-radius: 10px; min-width: 74px; }
+  .seal-chip .s-emoji { font-size: 1.25rem; letter-spacing: 1px; }
+  .seal-chip .s-label { font-size: 0.58rem; color: #d98a8a; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+  .seal-chip.below-scope { opacity: 0.5; }
+  .pack-empty { color: var(--muted); font-style: italic; font-size: 0.9rem; }
+  .pack-digits-line { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
+  .pack-digits-line code { background: #1d2128; padding: 2px 6px; border-radius: 4px; color: var(--accent); letter-spacing: 2px; }
+
+  /* Cube digit faces reference */
+  .cube-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 7px; }
+  .cube-chip { display: flex; align-items: center; gap: 9px; padding: 7px 10px; background: #1d2128; border: 1px solid var(--border); border-radius: 8px; }
+  .cube-chip .digit { font-weight: 700; color: var(--accent); width: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+  .cube-chip .faces { font-size: 1.2rem; line-height: 1; letter-spacing: 2px; min-width: 44px; }
+  .cube-chip .faces.bare { color: #4a5260; font-size: 0.85rem; }
+  .cube-chip .cname { font-size: 0.8rem; color: #b8c0cc; }
+  .cube-chip .swatch { margin-left: auto; display: flex; gap: 3px; }
+  .cube-chip .swatch i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
 
 <div class="app">
   <h1>Place-Value Peg Soroban</h1>
-  <p class="subtitle">Every column is a food. Upright = integer place, <span style="color:#b898e8">flipped = decimal place</span>. The food stays put; the decimal point is the mirror.</p>
+  <p class="subtitle">Every column is a food (horizontal axis: <em>which place</em>). Upright = integer place, <span style="color:#b898e8">flipped = decimal place</span>. Cube faces name the digit (vertical axis: <em>which value</em>) — 🌹 rose is the sky bead.</p>
 
   <div class="readout">
     <div class="num-box">
@@ -151,8 +211,55 @@
     </div>
     <div class="presets" id="presets"></div>
     <p class="help" style="margin-top:14px;">
-      Click any bead to move it. Each column has <strong>1 sky bead</strong> (worth <code>5</code>) and <strong>4 earth beads</strong> (worth <code>1</code> each). Integer places sit <strong>left</strong> of the green point with <strong>upright</strong> pegs (Apple = ones, Banana = tens…). Decimal places sit <span class="fr">right</span> of the point with <span class="fr">flipped</span> pegs reusing the same foods (flipped Apple = tenths, flipped Banana = hundredths…).
+      Click any bead to move it. Each column has <strong>1 sky bead</strong> (worth <code>5</code>) and <strong>4 earth beads</strong> (worth <code>1</code> each). Integer places sit <strong>left</strong> of the green point with <strong>upright</strong> pegs (Apple = ones, Banana = tens…). Decimal places sit <span class="fr">right</span> of the point with <span class="fr">flipped</span> pegs reusing the same foods (flipped Apple = tenths, flipped Banana = hundredths…). Under each column the <strong>cube faces</strong> show the digit as one percept: earth beads = 🚕🍊👽🌊, sky bead = 🌹, so <code>8</code> is 🌹👽 (rose + alien).
     </p>
+  </div>
+
+  <div class="panel">
+    <h2>Drill mode — timed against the METER pass-floors</h2>
+    <p class="help" style="margin-bottom:12px;">Pick a deck; items keep coming until you stop. Typed decks check exactly (case-insensitive, <code>0x</code> optional); recall decks reveal for self-grading — the timer measures until you hit <strong>Reveal</strong>. A rep passes its floor only if it's <em>correct and under time</em>. Session stats persist per deck (localStorage). Drill order per the tier discipline: atomics (pegs, faces, actions) → cells → scenes → seals.</p>
+    <div class="drill-decks" id="drillDecks"></div>
+    <div class="drill-stage" id="drillStage">
+      <div class="drill-floor" id="drillFloor"></div>
+      <div class="drill-prompt" id="drillPrompt"></div>
+      <div class="drill-sub" id="drillSub"></div>
+      <div class="drill-answer-row" id="drillTypeRow">
+        <input type="text" id="drillInput" autocomplete="off" placeholder="answer + Enter">
+      </div>
+      <div class="drill-answer-row" id="drillRevealRow" style="display:none;">
+        <button id="drillRevealBtn" class="primary">Reveal (Space)</button>
+        <button id="drillGotIt" style="display:none;">✓ Got it (G)</button>
+        <button id="drillMissed" style="display:none;">✗ Missed (M)</button>
+      </div>
+      <div class="drill-feedback" id="drillFeedback"></div>
+      <div class="drill-stats" id="drillStats"></div>
+      <div class="drill-best" id="drillBest"></div>
+      <div style="margin-top:12px;"><button id="drillStop">Stop session</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>L3 Deep Pack — scenes for the current number</h2>
+    <p class="help" style="margin-bottom:12px;">The <strong>number-codec-ladder</strong>'s archival codec (candidate): the digit string is chunked into <code>[cell][action][cell]</code> scenes of 5 digits — a cell is a peg-matrix percept (audio peg = tens, visual peg = units), the action digit comes from the cube faces (<code>0</code> = static contact, <code>1–4</code> = drive-through / splatter / abduct / drench, <code>5</code> = thorn-wrap, <code>6–9</code> = the same four <strong>flaming</strong> 🔥). Two scenes + a <strong>checksum seal</strong> (digit-sum mod 9, remainder 0 written as 9) = one locus = 10 digits. Partial tails use shorter grammar (4 = cell·action·face, 3 = cell·action, 2 = cell, 1 = face). Seals are in scope at <strong>≥8 digits</strong> — below that they render dimmed, practice only. <strong>Hex mode</strong> packs the integer part as <strong>bytes</strong> from the 16×16 matrix (2 byte-cells per scene, contact binder, 4 bytes + seal per locus); the hex seal is the nibble-sum mod 15, 0 written as <code>F</code> (registered convention — the seal's base-general form, mod b−1 with weighted tier mod 17).</p>
+    <div class="input-row" style="margin-bottom:10px;">
+      <label>Radix:</label>
+      <button id="radixDec" class="primary">Decimal</button>
+      <button id="radixHex">Hex (bytes)</button>
+    </div>
+    <div class="pack-digits-line" id="packDigitsLine"></div>
+    <div class="locus-list" id="packLoci"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Cube digit faces (vertical axis)</h2>
+    <p class="help" style="margin-bottom:12px;">Each digit has exactly <strong>one</strong> form, mirroring the bead grammar: <code>0</code> = bare column, <code>1–4</code> = earth face, <code>5</code> = 🌹 Rose alone (the <strong>sky bead</strong>), <code>6–9</code> = Rose + earth face. Every image wears its face color. 😇 Angel (white, die-face 6) is <strong>retired from digit duty</strong> — reserved-icon inventory. Orientation carries no digit information. Spec: wiki §Cube Digit Faces (soroban-learning-method).</p>
+    <div class="cube-grid" id="cubeGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>16×16 hex extension pegs (A–F, frozen 2026-07-02)</h2>
+    <p class="help" style="margin-bottom:12px;">Audio <code>A–F</code> = <strong>NATO phonetic</strong> (rhyme can't extend to letters — B/C/D/E all rhyme "-ee"); visual <code>A–F</code> = <strong>letterform objects</strong> (same logic as donut=0, wand=1). Mnemonic: <strong>"Radio says the tens, shape shows the units."</strong> Guards: Alpha wolf is <em>gray + howling</em> vs Foxtrot fox <em>orange + dancing</em>; the Moon <em>glows</em> (the croissant is baked); the Flag is the generic red one. The radix lives in the mode, never in the image — cell <code>47</code> is decimal 47 or 0x47 depending on the consumer.</p>
+    <div class="peg-grid" id="hexPegGrid"></div>
   </div>
 
   <div class="panel">
@@ -193,6 +300,226 @@ const ALPHABET_PEGS = {
   X: { emoji: '🍛', word: 'Xacuti curry' },
   Y: { emoji: '🥣', word: 'Yogurt' },
   Z: { emoji: '🥒', word: 'Zucchini' },
+};
+
+//==========================================================================
+// Cube digit faces — vertical axis (wiki: soroban-learning-method §Cube Digit Faces)
+// Grammar A: 0 = bare column, 1-4 = earth face, 5 = rose alone (sky bead),
+// 6-9 = rose + earth face. Angel (die-face 6) is retired from digit duty.
+//==========================================================================
+const CUBE_FACES = {
+  1: { emoji: '🚕', word: 'Taxi',      color: '#e8c832' },
+  2: { emoji: '🍊', word: 'Tangerine', color: '#e8842c' },
+  3: { emoji: '👽', word: 'Alien',     color: '#3fa34d' },
+  4: { emoji: '🌊', word: 'Wave',      color: '#3b7dd8' },
+  5: { emoji: '🌹', word: 'Rose',      color: '#d43d3d' }, // sky bead
+  6: { emoji: '😇', word: 'Angel',     color: '#e6e6e6' }, // retired — reserved icon
+};
+
+function cubeFacesForDigit(d) {
+  if (d === 0) return [];
+  if (d <= 5) return [CUBE_FACES[d]];
+  return [CUBE_FACES[5], CUBE_FACES[d - 5]]; // 6-9 = rose + earth face
+}
+function cubeEmojis(d) { return cubeFacesForDigit(d).map(f => f.emoji).join(''); }
+function cubeName(d) {
+  const f = cubeFacesForDigit(d);
+  return f.length ? f.map(x => x.word).join(' + ') : 'bare column';
+}
+
+//==========================================================================
+// L3 Deep Pack — number-codec-ladder §L3 (candidate)
+// Scene = [cell][action][cell] = 5 digits. Cell = peg-audio-visual-matrix
+// percept (audio peg = tens, visual peg = units). Two scenes + a checksum
+// seal (digit-sum mod 9, remainder 0 written as 9) = one locus = 10 digits.
+//==========================================================================
+const AUDIO_PEGS = [ // tens digit 0-9 (rhyme peg) + hex A-F (NATO phonetic — frozen 2026-07-02)
+  { word: 'Hero',   emoji: '🦸' }, { word: 'Sun',    emoji: '☀️' },
+  { word: 'Shoe',   emoji: '👟' }, { word: 'Tree',   emoji: '🌳' },
+  { word: 'Door',   emoji: '🚪' }, { word: 'Hive',   emoji: '🐝' },
+  { word: 'Sticks', emoji: '🪵' }, { word: 'Heaven', emoji: '☁️' },
+  { word: 'Gate',   emoji: '⛩️' }, { word: 'Vine',   emoji: '🌿' },
+  { word: 'Alpha',   emoji: '🐺', hex: true, note: 'gray wolf, howling' },
+  { word: 'Bravo',   emoji: '👏', hex: true, note: 'thunderous applause' },
+  { word: 'Charlie', emoji: '🎩', hex: true, note: 'generic silent-film tramp (bowler + cane)' },
+  { word: 'Delta',   emoji: '🔺', hex: true, note: 'river delta from above' },
+  { word: 'Echo',    emoji: '🦇', hex: true, note: 'bat (echolocation)' },
+  { word: 'Foxtrot', emoji: '🦊', hex: true, note: 'fox, dancing' },
+];
+const VISUAL_PEGS = [ // units digit 0-9 (shape peg) + hex A-F (letterforms — frozen 2026-07-02)
+  { word: 'Donut',          emoji: '🍩' }, { word: 'Magic Wand',    emoji: '🪄' },
+  { word: 'Swan',           emoji: '🦢' }, { word: 'Sideways Heart', emoji: '❤️', rot: true },
+  { word: 'Sail',           emoji: '⛵' }, { word: 'Hook',          emoji: '🪝' },
+  { word: 'Cartoon Bomb',   emoji: '💣' }, { word: 'Axe',           emoji: '🪓' },
+  { word: 'Hourglass',      emoji: '⌛' }, { word: 'Balloon',       emoji: '🎈' },
+  { word: 'Tent',      emoji: '⛺', hex: true, note: 'A-frame' },
+  { word: 'Butterfly', emoji: '🦋', hex: true, note: 'wings folded = stacked loops' },
+  { word: 'Moon',      emoji: '🌙', hex: true, note: 'crescent — glows (croissant is baked)' },
+  { word: 'Bow',       emoji: '🏹', hex: true, note: 'string = the straight stroke' },
+  { word: 'Trident',   emoji: '🔱', hex: true, note: 'E rotated' },
+  { word: 'Flag',      emoji: '🚩', hex: true, note: 'the generic red flag' },
+];
+const ACTION_BASES = ['static contact', 'drive-through', 'splatter', 'abduct', 'drench', 'thorn-wrap'];
+
+function matrixCell(nn) {
+  const tens = Math.floor(nn / 10), units = nn % 10;
+  return { nn, tens, units, audio: AUDIO_PEGS[tens], visual: VISUAL_PEGS[units],
+    name: AUDIO_PEGS[tens].word + '-' + VISUAL_PEGS[units].word };
+}
+function packAction(d) {
+  if (d <= 5) return { d, name: ACTION_BASES[d], flaming: false,
+    emoji: d === 0 ? '🤝' : CUBE_FACES[d].emoji };
+  return { d, name: 'flaming ' + ACTION_BASES[d - 5], flaming: true,
+    emoji: '🔥' + CUBE_FACES[d - 5].emoji }; // 6-9 = flame = the action slot's +5 overlay
+}
+// Chunk a digit string into deep-pack scenes, 5 digits per full scene.
+// Partial tail grammar: 4 = [cell][action][face], 3 = [cell][action], 2 = [cell], 1 = [face].
+function deepPackScenes(digitStr) {
+  const scenes = [];
+  for (let i = 0; i < digitStr.length; i += 5) {
+    const chunk = digitStr.slice(i, i + 5);
+    const parts = [];
+    if (chunk.length >= 2) parts.push({ type: 'cell', cell: matrixCell(+chunk.slice(0, 2)) });
+    else parts.push({ type: 'face', digit: +chunk[0] });
+    if (chunk.length >= 3) parts.push({ type: 'action', action: packAction(+chunk[2]) });
+    if (chunk.length === 4) parts.push({ type: 'face', digit: +chunk[3] });
+    if (chunk.length === 5) parts.push({ type: 'cell', cell: matrixCell(+chunk.slice(3, 5)) });
+    scenes.push({ digits: chunk, parts, partial: chunk.length < 5 });
+  }
+  return scenes;
+}
+function sealDigit(digitStr) {
+  const s = digitStr.split('').reduce((a, c) => a + (+c), 0) % 9;
+  return s === 0 ? 9 : s; // remainder 0 is written as 9 so the seal always has a face percept
+}
+// Group scenes into loci (2 scenes each), each with its seal over its own digits.
+function deepPackLoci(digitStr) {
+  const scenes = deepPackScenes(digitStr);
+  const loci = [];
+  for (let i = 0; i < scenes.length; i += 2) {
+    const pair = scenes.slice(i, i + 2);
+    const digits = pair.map(s => s.digits).join('');
+    loci.push({ scenes: pair, digits, seal: sealDigit(digits) });
+  }
+  return loci;
+}
+//--------------------------------------------------------------------------
+// Hex mode (16×16 = 256 byte cells; radix carried by mode, never by the image)
+// Scene = [byte-cell][contact binder][byte-cell] = 2 bytes; 2 scenes + seal = locus.
+// Hex seal: nibble-sum mod 15 (casting out fifteens, base−1 analogue), 0 → F.
+// Registered convention — number-codec-ladder §The Checksum Seal, base-general form.
+//--------------------------------------------------------------------------
+const HEX_SYMS = '0123456789ABCDEF';
+function hexCell(hi, lo) {
+  return { hi, lo, audio: AUDIO_PEGS[hi], visual: VISUAL_PEGS[lo],
+    name: AUDIO_PEGS[hi].word + '-' + VISUAL_PEGS[lo].word,
+    hexStr: HEX_SYMS[hi] + HEX_SYMS[lo] };
+}
+function padHex(hexStr) { return hexStr.length % 2 ? '0' + hexStr : hexStr; }
+function deepPackScenesHex(hexStr) {
+  const s = padHex(hexStr.toUpperCase());
+  const bytes = [];
+  for (let i = 0; i < s.length; i += 2) bytes.push(hexCell(HEX_SYMS.indexOf(s[i]), HEX_SYMS.indexOf(s[i + 1])));
+  const scenes = [];
+  for (let i = 0; i < bytes.length; i += 2) {
+    const pair = bytes.slice(i, i + 2);
+    const parts = pair.length === 2
+      ? [{ type: 'hexcell', cell: pair[0] }, { type: 'action', action: packAction(0), binder: true }, { type: 'hexcell', cell: pair[1] }]
+      : [{ type: 'hexcell', cell: pair[0] }];
+    scenes.push({ digits: pair.map(b => b.hexStr).join(''), parts, partial: pair.length < 2 });
+  }
+  return scenes;
+}
+function sealHex(hexStr) {
+  const v = [...hexStr.toUpperCase()].reduce((a, c) => a + HEX_SYMS.indexOf(c), 0) % 15;
+  return v === 0 ? 15 : v; // remainder 0 written as F so the seal always has a percept
+}
+function deepPackLociHex(hexStr) {
+  const s = padHex(hexStr.toUpperCase());
+  const scenes = deepPackScenesHex(s);
+  const loci = [];
+  for (let i = 0; i < scenes.length; i += 2) {
+    const pair = scenes.slice(i, i + 2);
+    const digits = pair.map(x => x.digits).join('');
+    loci.push({ scenes: pair, digits, seal: sealHex(digits), radix: 16 });
+  }
+  return loci;
+}
+function sealPerceptHex(v) { return v <= 9 ? cubeEmojis(v) : VISUAL_PEGS[v].emoji; } // A-F seals use the letterform pegs
+
+const ACTION_PARTICIPLES = ['rests against', 'is driven through', 'is splattered', 'is abducted', 'is drenched', 'is thorn-wrapped'];
+function actionParticiple(d) {
+  return d <= 5 ? ACTION_PARTICIPLES[d] : ACTION_PARTICIPLES[d - 5].replace('is ', 'is flaming-');
+}
+function sceneStory(scene) {
+  const p = scene.parts;
+  const label = x => x.type === 'cell' ? `the ${x.cell.name} (${String(x.cell.nn).padStart(2, '0')})`
+    : x.type === 'hexcell' ? `the ${x.cell.name} (0x${x.cell.hexStr})`
+    : `${cubeName(x.digit)} (${x.digit})`;
+  if (p.length === 3 && p[1].type === 'action') {
+    if (p[1].binder) return `${label(p[0])} rests against (·) ${label(p[2])}`;
+    const d = p[1].action.d;
+    return `${label(p[0])} ${actionParticiple(d)} (${d})${d === 0 ? '' : ' into'} ${label(p[2])}`;
+  }
+  if (p.length === 2) return `${label(p[0])} ${actionParticiple(p[1].action.d)} (${p[1].action.d})`;
+  return label(p[0]);
+}
+
+//==========================================================================
+// Drill mode — one deck per METER pass-floor (number-codec-ladder §METER)
+// mode 'type': prompt → typed answer, checked exactly (case-insensitive).
+// mode 'reveal': prompt → recall → reveal → self-grade (Anki-style).
+//==========================================================================
+function rnd(n) { return Math.floor(Math.random() * n); }
+function randDigits(n) { let s = ''; for (let i = 0; i < n; i++) s += rnd(10); return s; }
+function stripStoryDigits(story) { return story.replace(/\s*\((?:0x)?[0-9A-F·]+\)/g, ''); }
+function normalizeAnswer(s) { return String(s).trim().toUpperCase().replace(/^0X/, ''); }
+
+const DRILL_DECKS = {
+  faceToDigit: { label: 'Face → digit', floorMs: 1000, mode: 'type',
+    gen() { const d = rnd(10); return { prompt: d === 0 ? '·' : cubeEmojis(d), sub: 'cube percept → type the digit', answers: [String(d)], reveal: `${d} = ${cubeName(d)}` }; } },
+  digitToFace: { label: 'Digit → face', floorMs: 1000, mode: 'reveal',
+    gen() { const d = rnd(10); return { prompt: String(d), sub: 'see the cube percept before revealing', answers: [], reveal: `${d === 0 ? '·' : cubeEmojis(d)} — ${cubeName(d)}` }; } },
+  audioPeg: { label: 'Audio peg → index', floorMs: 1000, mode: 'type',
+    gen() { const i = rnd(16); const p = AUDIO_PEGS[i];
+      return { prompt: p.emoji, sub: 'audio peg (tens) → type 0-9 or A-F', answers: [HEX_SYMS[i], String(i)], reveal: `${HEX_SYMS[i]} = ${p.word}` }; } },
+  visualPeg: { label: 'Visual peg → index', floorMs: 1000, mode: 'type',
+    gen() { const i = rnd(16); const p = VISUAL_PEGS[i];
+      return { prompt: p.emoji, sub: 'visual peg (units) → type 0-9 or A-F', answers: [HEX_SYMS[i], String(i)], reveal: `${HEX_SYMS[i]} = ${p.word}` }; } },
+  cellToNumber: { label: 'Cell → number', floorMs: 1500, mode: 'type',
+    gen() { const nn = rnd(100); const c = matrixCell(nn); const s = String(nn).padStart(2, '0');
+      const v = c.visual.rot ? `<span class="rot90">${c.visual.emoji}</span>` : c.visual.emoji;
+      return { prompt: c.audio.emoji + v, sub: 'cell percept (audio × visual) → type the two digits', answers: [s, String(nn)], reveal: `${s} = ${c.name}` }; } },
+  numberToCell: { label: 'Number → cell', floorMs: 1500, mode: 'reveal',
+    gen() { const nn = rnd(100); const c = matrixCell(nn);
+      return { prompt: String(nn).padStart(2, '0'), sub: 'see the cell percept before revealing', answers: [], reveal: `${c.audio.emoji}${c.visual.emoji} — ${c.name}` }; } },
+  hexByte: { label: 'Hex byte → 0xNN', floorMs: 1500, mode: 'type',
+    gen() { const hi = rnd(16), lo = rnd(16); const c = hexCell(hi, lo);
+      return { prompt: c.audio.emoji + c.visual.emoji, sub: 'byte cell → type two hex symbols', answers: [c.hexStr], reveal: `0x${c.hexStr} = ${c.name}` }; } },
+  actionToDigit: { label: 'Action → digit', floorMs: 1000, mode: 'type',
+    gen() { const d = rnd(10); const a = packAction(d);
+      return { prompt: a.emoji, sub: 'action percept → type the digit (flame = +5, rose stays an actor!)', answers: [String(d)], reveal: `${d} = ${a.name}` }; } },
+  storyToDigits: { label: 'Scene → 5 digits', floorMs: 3000, mode: 'type',
+    gen() { const s = randDigits(5); const scene = deepPackScenes(s)[0];
+      return { prompt: stripStoryDigits(sceneStory(scene)), sub: 'decode the scene → type the 5 digits', answers: [s], reveal: `${s} — ${sceneStory(scene)}`, small: true }; } },
+  digitsToScene: { label: '5 digits → scene', floorMs: 8000, mode: 'reveal',
+    gen() { const s = randDigits(5); const scene = deepPackScenes(s)[0];
+      return { prompt: s, sub: 'compose the scene before revealing', answers: [], reveal: sceneStory(scene), small: true }; } },
+  sealDec: { label: 'Seal (decimal)', floorMs: 15000, mode: 'type',
+    gen() { const s = randDigits(10);
+      return { prompt: s, sub: 'digit-sum mod 9, 0 written as 9 → type the seal', answers: [String(sealDigit(s))], reveal: `seal ${sealDigit(s)} = ${cubeEmojis(sealDigit(s))}`, small: true }; } },
+  sealHexDeck: { label: 'Seal (hex)', floorMs: 20000, mode: 'type',
+    gen() { let s = ''; for (let i = 0; i < 8; i++) s += HEX_SYMS[rnd(16)];
+      const v = sealHex(s);
+      return { prompt: '0x' + s, sub: 'nibble-sum mod 15, 0 written as F → type the seal (0-9/A-F)', answers: [HEX_SYMS[v], String(v)], reveal: `seal ${HEX_SYMS[v]} = ${sealPerceptHex(v)}`, small: true }; } },
+  erasure: { label: 'Erasure repair', floorMs: 20000, mode: 'type',
+    gen() {
+      const s = randDigits(10); const seal = sealDigit(s); const idx = rnd(10);
+      const missing = +s[idx];
+      const shown = s.slice(0, idx) + '▢' + s.slice(idx + 1);
+      const answers = (missing === 0 || missing === 9) ? ['0', '9'] : [String(missing)];
+      return { prompt: `${shown}   (seal ${seal})`, sub: 'missing digit ≡ seal − sum of the rest (mod 9) → type it',
+        answers, reveal: `▢ = ${missing}${(missing === 0 || missing === 9) ? ' (0 and 9 are both seal-consistent — mod-9 cannot tell them apart)' : ''}`, small: true }; } },
 };
 
 const INT_COLS = 11;  // A=ones … K=10^10
@@ -264,7 +591,11 @@ function decodeChips(intRods, fracRods, pegs) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { columnLetter, parseDecimal, rodValue, intRodsFromVal, fracRodsFromStr,
-    intValOf, fracStrOf, displayString, decodeChips, ALPHABET_PEGS, INT_COLS, FRAC_COLS };
+    intValOf, fracStrOf, displayString, decodeChips, ALPHABET_PEGS, INT_COLS, FRAC_COLS,
+    CUBE_FACES, cubeFacesForDigit, cubeEmojis, cubeName,
+    AUDIO_PEGS, VISUAL_PEGS, matrixCell, packAction, deepPackScenes, sealDigit, deepPackLoci, sceneStory,
+    HEX_SYMS, hexCell, padHex, deepPackScenesHex, sealHex, deepPackLociHex, sealPerceptHex,
+    DRILL_DECKS, stripStoryDigits, normalizeAnswer };
 }
 
 //==========================================================================
@@ -308,6 +639,7 @@ function makeRod(kind, idx) {
       ${earthHTML}
     </div>
     <div class="rod-value" id="rod-${kind}-value-${idx}">0</div>
+    <div class="rod-cube bare" id="rod-${kind}-cube-${idx}">·</div>
     <div class="rod-peg">${peg.emoji}</div>
     <div class="rod-letter">${L}</div>
     <div class="rod-word">${peg.word}</div>
@@ -330,10 +662,16 @@ function updateSoroban() {
         bEl.style.top = (isActive ? 104 + b * 24 : 246 + b * 24) + 'px';
         bEl.className = `bead earth${isActive ? ' active' : ''}`;
       }
-      document.getElementById(`rod-${kind}-value-${i}`).textContent = rodValue(rod);
+      const d = rodValue(rod);
+      document.getElementById(`rod-${kind}-value-${i}`).textContent = d;
+      const cubeEl = document.getElementById(`rod-${kind}-cube-${i}`);
+      cubeEl.textContent = d === 0 ? '·' : cubeEmojis(d);
+      cubeEl.className = 'rod-cube' + (d === 0 ? ' bare' : '');
+      cubeEl.title = cubeName(d);
     }
   });
   renderReadout();
+  renderDeepPack();
 }
 
 function renderReadout() {
@@ -348,8 +686,10 @@ function renderReadout() {
   if (!chips.length) { decodeEl.innerHTML = '<span class="decode-empty">zero — set a number or click beads</span>'; return; }
   const chipHTML = chips.map(c => {
     if (c.side === 'point') return '<span class="decode-point">•</span>';
+    const cube = c.digit === 0 ? '·' : cubeEmojis(c.digit);
     return `<div class="decode-chip ${c.side}${c.digit === 0 ? ' zero' : ''}">
         <span class="c-emoji">${c.peg.emoji}</span>
+        <span class="c-cube${c.digit === 0 ? ' bare' : ''}" title="${cubeName(c.digit)}">${cube}</span>
         <span class="c-digit">${c.digit}</span>
         <span class="c-meta">${c.letter} · ${c.peg.word}</span>
       </div>`;
@@ -358,9 +698,210 @@ function renderReadout() {
     if (c.side === 'point') return '<span class="decode-point" style="font-size:1rem">•</span>';
     const cls = c.side === 'frac' ? 'fr' : '';
     const tag = c.side === 'frac' ? 'flip-' + c.peg.word : c.peg.word;
-    return `<strong class="${cls}">${tag} ${c.digit}</strong>`;
+    const cube = c.digit === 0 ? '' : '+' + cubeFacesForDigit(c.digit).map(f => f.word).join('+');
+    return `<strong class="${cls}">${tag}${cube} ${c.digit}</strong>`;
   }).join(' ');
   decodeEl.innerHTML = chipHTML + `<div class="decode-story">Read it as: ${story}</div>`;
+}
+
+//==========================================================================
+// L3 Deep Pack rendering
+//==========================================================================
+function vpEmoji(vp) { return vp.rot ? `<span class="rot90">${vp.emoji}</span>` : vp.emoji; }
+
+function packUnitHTML(part) {
+  if (part.type === 'cell' || part.type === 'hexcell') {
+    const c = part.cell;
+    const digits = part.type === 'hexcell' ? '0x' + c.hexStr : String(c.nn).padStart(2, '0');
+    return `<div class="pack-unit" title="${c.name}">
+        <span class="u-emoji">${c.audio.emoji}${vpEmoji(c.visual)}</span>
+        <span class="u-digits">${digits}</span>
+        <span class="u-name">${c.name}</span>
+      </div>`;
+  }
+  if (part.type === 'action') {
+    const a = part.action;
+    return `<div class="pack-unit action" title="${part.binder ? 'binder — carries no information in hex mode' : a.name}"${part.binder ? ' style="opacity:0.55"' : ''}>
+        <span class="u-emoji">${a.emoji}</span>
+        <span class="u-digits">${part.binder ? '·' : a.d}</span>
+        <span class="u-name">${a.name}</span>
+      </div>`;
+  }
+  return `<div class="pack-unit" title="${cubeName(part.digit)}">
+      <span class="u-emoji">${cubeEmojis(part.digit) || '·'}</span>
+      <span class="u-digits">${part.digit}</span>
+      <span class="u-name">${cubeName(part.digit)}</span>
+    </div>`;
+}
+
+let packRadix = 10;
+
+function renderDeepPack() {
+  const iv = intValOf(state.int), fs = fracStrOf(state.frac);
+  const lineEl = document.getElementById('packDigitsLine');
+  const lociEl = document.getElementById('packLoci');
+  const hex = packRadix === 16;
+  const digitStr = hex
+    ? (iv === 0 ? '' : iv.toString(16).toUpperCase())
+    : ((iv === 0 && !fs) ? '' : String(iv) + fs);
+  if (!digitStr) {
+    lineEl.innerHTML = '';
+    lociEl.innerHTML = '<div class="pack-empty">zero — set a number to see its deep-pack scenes</div>';
+    return;
+  }
+  const shown = hex ? padHex(digitStr) : digitStr;
+  const inScope = shown.length >= 8;
+  lineEl.innerHTML = hex
+    ? `Hex string: <code>0x${shown}</code> · ${shown.length / 2} byte${shown.length > 2 ? 's' : ''}` +
+      (fs ? ` <span style="color:#8a929e">(fraction ignored in hex mode)</span>` : '')
+    : `Digit string: <code>${shown}</code> · ${shown.length} digit${shown.length > 1 ? 's' : ''}` +
+      (fs ? ` <span style="color:#8a929e">(integer + fraction digits; the point rides the flipped pegs, not the pack)</span>` : '');
+  const loci = hex ? deepPackLociHex(digitStr) : deepPackLoci(digitStr);
+  lociEl.innerHTML = loci.map((locus, li) => {
+    const scenesHTML = locus.scenes.map(scene => {
+      const units = scene.parts.map(packUnitHTML).join('<span class="pack-arrow">›</span>');
+      const digitsLabel = hex ? '0x' + scene.digits : scene.digits;
+      return `<div class="pack-scene">${units}</div>
+        <div class="pack-story">${scene.partial ? '<em>partial</em> — ' : ''}${sceneStory(scene)} — <em>${digitsLabel}</em></div>`;
+    }).join('');
+    const sealEmoji = hex ? sealPerceptHex(locus.seal) : cubeEmojis(locus.seal);
+    const sealLabel = hex ? HEX_SYMS[locus.seal] : locus.seal;
+    const sealTitle = hex
+      ? `nibble-sum of 0x${locus.digits} mod 15 (0 written as F) = ${HEX_SYMS[locus.seal]}`
+      : `digit-sum of ${locus.digits} mod 9 (0 written as 9) = ${locus.seal}`;
+    return `<div class="locus">
+        <div class="locus-tag">locus ${li + 1}</div>
+        <div class="locus-body">${scenesHTML}</div>
+        <div class="seal-chip${inScope ? '' : ' below-scope'}" title="${sealTitle}">
+          <span class="s-emoji">${sealEmoji}</span>
+          <span class="s-label">seal ${sealLabel}${inScope ? '' : '<br>below scope'}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setRadix(r) {
+  packRadix = r;
+  document.getElementById('radixDec').className = r === 10 ? 'primary' : '';
+  document.getElementById('radixHex').className = r === 16 ? 'primary' : '';
+  renderDeepPack();
+}
+
+//==========================================================================
+// Drill mode — state machine + per-deck stats (localStorage)
+//==========================================================================
+const drill = { deck: null, item: null, t0: 0, elapsed: 0, revealed: false,
+  n: 0, correct: 0, sumMs: 0, floorPass: 0 };
+const DRILL_LS = 'npv-drill-stats';
+
+function drillLoadStats() { try { return JSON.parse(localStorage.getItem(DRILL_LS)) || {}; } catch (e) { return {}; } }
+function drillSaveSession() {
+  if (!drill.deck || drill.n === 0) return;
+  const all = drillLoadStats();
+  const rec = { t: new Date().toISOString().slice(0, 16), n: drill.n,
+    acc: Math.round(100 * drill.correct / drill.n),
+    meanMs: Math.round(drill.sumMs / drill.n),
+    floorPct: Math.round(100 * drill.floorPass / drill.n) };
+  const d = all[drill.deck] || { sessions: [] };
+  d.sessions = (d.sessions || []).slice(-19).concat([rec]);
+  if (!d.best || rec.floorPct > d.best.floorPct || (rec.floorPct === d.best.floorPct && rec.meanMs < d.best.meanMs)) d.best = rec;
+  all[drill.deck] = d;
+  try { localStorage.setItem(DRILL_LS, JSON.stringify(all)); } catch (e) {}
+}
+
+function startDrill(deckId) {
+  if (drill.deck) drillSaveSession();
+  Object.assign(drill, { deck: deckId, n: 0, correct: 0, sumMs: 0, floorPass: 0 });
+  document.querySelectorAll('#drillDecks button').forEach(b => b.className = b.dataset.deck === deckId ? 'active' : '');
+  document.getElementById('drillStage').className = 'drill-stage on';
+  const best = (drillLoadStats()[deckId] || {}).best;
+  document.getElementById('drillBest').textContent = best
+    ? `best session: ${best.floorPct}% under floor · mean ${best.meanMs}ms · ${best.t}` : 'no previous sessions';
+  drillNext();
+}
+
+function drillNext() {
+  const deck = DRILL_DECKS[drill.deck];
+  drill.item = deck.gen();
+  drill.revealed = false;
+  document.getElementById('drillFloor').textContent = `${deck.label} — floor ${deck.floorMs / 1000}s`;
+  const promptEl = document.getElementById('drillPrompt');
+  promptEl.innerHTML = drill.item.prompt;
+  promptEl.className = 'drill-prompt' + (drill.item.small ? ' small' : '');
+  document.getElementById('drillSub').textContent = drill.item.sub || '';
+  document.getElementById('drillFeedback').innerHTML = '';
+  const typed = deck.mode === 'type';
+  document.getElementById('drillTypeRow').style.display = typed ? 'flex' : 'none';
+  document.getElementById('drillRevealRow').style.display = typed ? 'none' : 'flex';
+  if (typed) { const inp = document.getElementById('drillInput'); inp.value = ''; inp.focus(); }
+  else { document.getElementById('drillRevealBtn').style.display = ''; document.getElementById('drillGotIt').style.display = 'none'; document.getElementById('drillMissed').style.display = 'none'; }
+  drill.t0 = performance.now();
+}
+
+function drillRecord(correct, elapsed) {
+  const deck = DRILL_DECKS[drill.deck];
+  drill.n++; if (correct) drill.correct++;
+  drill.sumMs += elapsed;
+  const underFloor = correct && elapsed <= deck.floorMs;
+  if (underFloor) drill.floorPass++;
+  const cls = correct ? (underFloor ? 'ok' : 'slow') : 'bad';
+  const verdict = correct ? (underFloor ? '✓ pass' : '✓ correct, over floor') : '✗ miss';
+  document.getElementById('drillFeedback').innerHTML =
+    `<span class="${cls}">${verdict}</span> · ${(elapsed / 1000).toFixed(2)}s <span class="detail">— ${drill.item.reveal}</span>`;
+  document.getElementById('drillStats').innerHTML =
+    `<span>reps <b>${drill.n}</b></span><span>accuracy <b>${Math.round(100 * drill.correct / drill.n)}%</b></span>` +
+    `<span>mean <b>${Math.round(drill.sumMs / drill.n)}ms</b></span><span>under floor <b>${Math.round(100 * drill.floorPass / drill.n)}%</b></span>`;
+  setTimeout(drillNext, correct && (drill.item.small ? false : true) && elapsed <= deck.floorMs ? 650 : 1400);
+}
+
+function drillSubmitTyped() {
+  if (!drill.deck || DRILL_DECKS[drill.deck].mode !== 'type') return;
+  const elapsed = performance.now() - drill.t0;
+  const given = normalizeAnswer(document.getElementById('drillInput').value);
+  if (!given) return;
+  const ok = drill.item.answers.some(a => normalizeAnswer(a) === given);
+  drillRecord(ok, elapsed);
+}
+
+function drillReveal() {
+  if (!drill.deck || DRILL_DECKS[drill.deck].mode !== 'reveal' || drill.revealed) return;
+  drill.elapsed = performance.now() - drill.t0;
+  drill.revealed = true;
+  document.getElementById('drillFeedback').innerHTML = `<span class="detail">${drill.item.reveal}</span>`;
+  document.getElementById('drillRevealBtn').style.display = 'none';
+  document.getElementById('drillGotIt').style.display = '';
+  document.getElementById('drillMissed').style.display = '';
+}
+
+function drillGrade(ok) {
+  if (!drill.revealed) return;
+  drillRecord(ok, drill.elapsed);
+}
+
+function stopDrill() {
+  drillSaveSession();
+  drill.deck = null;
+  document.getElementById('drillStage').className = 'drill-stage';
+  document.querySelectorAll('#drillDecks button').forEach(b => b.className = '');
+}
+
+function buildDrillDecks() {
+  const el = document.getElementById('drillDecks');
+  el.innerHTML = Object.keys(DRILL_DECKS).map(id =>
+    `<button data-deck="${id}">${DRILL_DECKS[id].label}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => startDrill(b.dataset.deck)));
+  document.getElementById('drillInput').addEventListener('keypress', e => { if (e.key === 'Enter') drillSubmitTyped(); });
+  document.getElementById('drillRevealBtn').addEventListener('click', drillReveal);
+  document.getElementById('drillGotIt').addEventListener('click', () => drillGrade(true));
+  document.getElementById('drillMissed').addEventListener('click', () => drillGrade(false));
+  document.getElementById('drillStop').addEventListener('click', stopDrill);
+  document.addEventListener('keydown', e => {
+    if (!drill.deck || DRILL_DECKS[drill.deck].mode !== 'reveal') return;
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space' && !drill.revealed) { e.preventDefault(); drillReveal(); }
+    else if (drill.revealed && (e.key === 'g' || e.key === 'G')) drillGrade(true);
+    else if (drill.revealed && (e.key === 'm' || e.key === 'M')) drillGrade(false);
+  });
 }
 
 //==========================================================================
@@ -398,8 +939,45 @@ function buildPegGrid() {
   }).join('');
 }
 
+function buildCubeGrid() {
+  const el = document.getElementById('cubeGrid');
+  let html = '';
+  for (let d = 0; d <= 9; d++) {
+    const faces = cubeFacesForDigit(d);
+    const emojis = faces.length ? cubeEmojis(d) : 'bare';
+    const swatches = faces.map(f => `<i style="background:${f.color}"></i>`).join('');
+    html += `<div class="cube-chip">
+        <span class="digit">${d}</span>
+        <span class="faces${faces.length ? '' : ' bare'}">${emojis}</span>
+        <span class="cname">${cubeName(d)}</span>
+        <span class="swatch">${swatches}</span>
+      </div>`;
+  }
+  html += `<div class="cube-chip" style="opacity:0.45">
+      <span class="digit">—</span>
+      <span class="faces">😇</span>
+      <span class="cname">Angel — retired, reserved icon</span>
+      <span class="swatch"><i style="background:${CUBE_FACES[6].color}"></i></span>
+    </div>`;
+  el.innerHTML = html;
+}
+
+function buildHexPegGrid() {
+  const el = document.getElementById('hexPegGrid');
+  let html = '';
+  for (let i = 10; i <= 15; i++) {
+    const p = AUDIO_PEGS[i];
+    html += `<div class="peg-chip" title="${p.note}"><span class="letter">${HEX_SYMS[i]}</span><span class="emoji">${p.emoji}</span><span class="pword">${p.word}</span><span class="ppl">audio · NATO</span></div>`;
+  }
+  for (let i = 10; i <= 15; i++) {
+    const p = VISUAL_PEGS[i];
+    html += `<div class="peg-chip" title="${p.note}"><span class="letter">${HEX_SYMS[i]}</span><span class="emoji">${p.emoji}</span><span class="pword">${p.word}</span><span class="ppl">visual · letterform</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
 function buildPresets() {
-  const presets = ['7', '42', '15.98', '3.14', '0.5', '1000.25', '90909', '8.0625'];
+  const presets = ['7', '42', '15.98', '3.14', '0.5', '1000.25', '90909', '8.0625', '4217583906', '3735928559'];
   const el = document.getElementById('presets');
   el.innerHTML = presets.map(p => `<button data-v="${p}">${p}</button>`).join('');
   el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => setValue(b.dataset.v)));
@@ -418,10 +996,15 @@ document.getElementById('randBtn').addEventListener('click', () => {
   setValue(iv + (fs ? '.' + fs : ''));
 });
 document.getElementById('numInput').addEventListener('keypress', e => { if (e.key === 'Enter') setValue(e.target.value); });
+document.getElementById('radixDec').addEventListener('click', () => setRadix(10));
+document.getElementById('radixHex').addEventListener('click', () => setRadix(16));
 
 initSoroban();
+buildCubeGrid();
+buildHexPegGrid();
 buildPegGrid();
 buildPresets();
+buildDrillDecks();
 updateSoroban();
 </script>
 
