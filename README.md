@@ -36,6 +36,16 @@ the heaven bead is already set/clear) is **rejected and flagged**, with the
 correct complement suggested — you compose it yourself, e.g. `+3` on a 4 is
 `U` then `D` (`+5 −2`). Every move is undoable.
 
+### Guided practice (leveled drills)
+
+The **Guided practice** panel is a ladder of bead-arithmetic levels — read & set →
+direct → small friend (±) → big friend / carry-borrow (±) → multi-digit. Each level
+generates problems you solve **on the beads** with the keyboard; solve enough **in a
+row** and the next level unlocks (progress is saved per browser). Because the bead
+engine rejects illegal moves, landing on the right answer is proof you used the right
+complement — so a level only has to check the final value. `Hint` shows the move,
+`Show answer` reveals it and resets the streak.
+
 ## Develop
 
 ```sh
