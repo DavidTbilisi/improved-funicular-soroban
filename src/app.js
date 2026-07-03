@@ -79,6 +79,7 @@ $('clearBtn').addEventListener('click', () => dispatch(new SetValueCommand(store
 $('incBtn').addEventListener('click', () => dispatch(new StepIntCommand(store, +1)));
 $('decBtn').addEventListener('click', () => dispatch(new StepIntCommand(store, -1)));
 $('numInput').addEventListener('keypress', e => { if (e.key === 'Enter') dispatch(new SetValueCommand(store, e.target.value)); });
+$('numInput').addEventListener('keydown', e => { if (e.key === 'Escape') e.target.blur(); }); // leave input mode, resume bead keys
 $('randBtn').addEventListener('click', () => {
   const intDigits = Math.floor(Math.random() * 7);              // 0..6 integer digits
   const fracDigits = Math.floor(Math.random() * (FRAC_COLS + 1)); // 0..4 fraction digits
@@ -176,6 +177,16 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (session.activeDeckId) return; // a drill is running — don't hijack keys
   if (e.altKey || e.ctrlKey || e.metaKey) return; // leave browser/OS shortcuts alone
+  // Input mode: typing a digit (or ".") jumps into the value field; Enter there
+  // converts it onto the soroban. The number row types numbers, the home row
+  // moves beads.
+  if (/^[0-9]$/.test(e.key) || e.key === '.') {
+    e.preventDefault();
+    const inp = $('numInput');
+    inp.value = e.key === '.' ? '0.' : e.key;
+    inp.focus();
+    return;
+  }
   if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
   if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
   if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; return; }

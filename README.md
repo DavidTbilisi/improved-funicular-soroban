@@ -26,6 +26,7 @@ adds, left hand subtracts:
 add  J K L ;  = push 1..4 earth beads   U = set heaven (5)    I = carry (+10)
 sub  F D S A  = pull 1..4 earth beads   R = clear heaven (5)  E = borrow (-10)
 Q    = reset to 0
+0-9  = input mode: type a number, Enter places it on the soroban (Esc cancels)
 ```
 
 The subtract keys are the finger-mirror of the add keys (`F` mirrors `J`, etc).
