@@ -16,17 +16,18 @@ built from native ES modules, which browsers refuse to import over `file://`.
 
 ### Keyboard arithmetic
 
-Focus an integer column with `←` / `→`. Then the home row drives soroban moves —
+Focus an integer column with `←` / `→`. Each key is a **literal bead move** —
 right hand adds, left hand subtracts:
 
 ```
-add  J K L ;  = +1 +2 +3 +4     U = +5     I = +10 (carry)
-sub  A S D F  = -1 -2 -3 -4     Q = -5     W = -10 (borrow)
+add  J K L ;  = push 1..4 earth beads   U = set heaven (5)    I = carry (+10)
+sub  A S D F  = pull 1..4 earth beads   Q = clear heaven (5)  W = borrow (-10)
 ```
 
-The trainer applies the move and names the rule — *direct*, *small friend*
-(`+5 −friend`), or *big friend* (`+10 −friend`). Compose bigger digits from the
-primitives (e.g. `+7` = `U` then `K`). Every move is undoable.
+A move that can't be made on the current rod (not enough free/active beads, or
+the heaven bead is already set/clear) is **rejected and flagged**, with the
+correct complement suggested — you compose it yourself, e.g. `+3` on a 4 is
+`U` then `S` (`+5 −2`). Every move is undoable.
 
 ## Develop
 

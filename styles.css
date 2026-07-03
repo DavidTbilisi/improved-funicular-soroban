@@ -92,6 +92,7 @@ h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color
 .coach .rule.small { color: var(--accent); }
 .coach .rule.big { color: #b898e8; }
 .coach .move { font-variant-numeric: tabular-nums; color: var(--text); }
+.coach .warn { color: #ff6b6b; font-weight: 700; }
 kbd { display: inline-block; padding: 1px 6px; background: #1d2128; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; font-family: inherit; font-size: 0.82em; color: var(--text); }
 
 /* In-soroban decimal point column */

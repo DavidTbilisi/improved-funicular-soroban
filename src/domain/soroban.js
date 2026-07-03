@@ -13,6 +13,23 @@
 // term is the carry/borrow applied to the next column.
 // ============================================================================
 
+// --- Literal single bead-move legality -------------------------------------
+// A rod shows c as: heaven bead (5) if c ≥ 5, plus (c % 5) earth beads (0..4).
+//
+// Earth move: push up / pull down `n` (1..4) earth beads on this rod.
+//   add legal iff there are n free earth beads; sub legal iff n are active.
+export function earthMoveLegal(c, n, sign) {
+  const lower = c % 5;
+  return sign > 0 ? lower + n <= 4 : lower >= n;
+}
+
+// Heaven move: set (+5) or clear (−5) the single heaven bead.
+//   add legal iff the heaven bead is currently up (c < 5);
+//   sub legal iff it is currently down (c ≥ 5).
+export function heavenMoveLegal(c, sign) {
+  return sign > 0 ? c < 5 : c >= 5;
+}
+
 // Add digit d (1..9) onto current rod digit c (0..9).
 export function classifyAdd(c, d) {
   const lowerFree = 4 - (c % 5);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyAdd, classifySub } from '../src/domain/soroban.js';
+import { classifyAdd, classifySub, earthMoveLegal, heavenMoveLegal } from '../src/domain/soroban.js';
 
 // Sum the signed terms of a move string ("+5 -2", "+10 -4", "-5 +2") to its net.
 function netOf(move) {
@@ -33,6 +33,33 @@ test('invariant: every add move nets to +d, every sub move nets to −d', () => 
       assert.equal(netOf(classifyAdd(c, d).move), d, `add c=${c} d=${d}`);
       assert.equal(netOf(classifySub(c, d).move), -d, `sub c=${c} d=${d}`);
     }
+  }
+});
+
+test('earthMoveLegal: enough free beads to add, enough active to subtract', () => {
+  assert.equal(earthMoveLegal(1, 3, +1), true);   // 1 -> 4, three free
+  assert.equal(earthMoveLegal(2, 3, +1), false);  // 2 -> would need 5 earth beads
+  assert.equal(earthMoveLegal(4, 1, +1), false);  // lower beads full
+  assert.equal(earthMoveLegal(6, 2, +1), true);   // 6 = 5+1, one earth active, room for 2 more
+  assert.equal(earthMoveLegal(8, 3, -1), true);   // 8 = 5+3, three active
+  assert.equal(earthMoveLegal(7, 3, -1), false);  // 7 = 5+2, only two active
+});
+
+test('heavenMoveLegal: set only when up, clear only when down', () => {
+  assert.equal(heavenMoveLegal(4, +1), true);   // heaven free
+  assert.equal(heavenMoveLegal(5, +1), false);  // already set
+  assert.equal(heavenMoveLegal(7, -1), true);   // active, can clear
+  assert.equal(heavenMoveLegal(3, -1), false);  // not set
+});
+
+test('legal literal earth/heaven moves never carry (stay within the digit)', () => {
+  for (let c = 0; c <= 9; c++) {
+    for (let n = 1; n <= 4; n++) {
+      if (earthMoveLegal(c, n, +1)) assert.ok(c + n <= 9);
+      if (earthMoveLegal(c, n, -1)) assert.ok(c - n >= 0);
+    }
+    if (heavenMoveLegal(c, +1)) assert.ok(c + 5 <= 9);
+    if (heavenMoveLegal(c, -1)) assert.ok(c - 5 >= 0);
   }
 });
 

@@ -5,7 +5,7 @@
 // this file supplies the concrete instances (Dependency Injection by hand).
 // ============================================================================
 import { FRAC_COLS, INT_COLS, INT_PLACES } from './domain/config.js';
-import { classifyAdd, classifySub } from './domain/soroban.js';
+import { classifyAdd, classifySub, earthMoveLegal, heavenMoveLegal } from './domain/soroban.js';
 import { AbacusStore } from './state/abacusStore.js';
 import {
   CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddDigitCommand,
@@ -108,27 +108,61 @@ let focus = 0; // focused integer place (0 = ones)
 const digitAt = place => Math.floor(store.intValue() / Math.pow(10, place)) % 10;
 const setFocus = p => { focus = Math.max(0, Math.min(INT_COLS - 1, p)); soroban.highlightColumn(focus); };
 
+// Reverse map: a complement-move token -> the key that performs it, so an
+// illegal move can suggest exactly which keys to press instead.
+const MOVE_KEYS = {
+  '+1': 'J', '+2': 'K', '+3': 'L', '+4': ';', '+5': 'U', '+10': 'I',
+  '-1': 'A', '-2': 'S', '-3': 'D', '-4': 'F', '-5': 'Q', '-10': 'W',
+};
+function keysFor(move) {
+  const toks = move.split(/\s+/);
+  return toks.every(t => MOVE_KEYS[t]) ? toks.map(t => MOVE_KEYS[t]).join(' then ') : null;
+}
+
+// Each key is a strictly literal bead move. If the move is physically
+// impossible on the focused rod, reject it and flag why (with the proper
+// complement as a hint).
 function applyMove(sign, amount) {
   const c = digitAt(focus);
   const place = INT_PLACES[focus] || `10^${focus}`;
-  const nbr = INT_PLACES[focus + 1] || 'next column';
+  const nbr = INT_PLACES[focus + 1];
   const op = `${sign > 0 ? '+' : '−'}${amount}`;
+
+  let legal, reason, hint = null;
+  if (amount === 10) {                    // carry/borrow = ±1 earth bead on the next rod
+    const hasNext = focus + 1 < INT_COLS;
+    const next = hasNext ? digitAt(focus + 1) : 0;
+    legal = hasNext && earthMoveLegal(next, 1, sign);
+    if (!legal) reason = !hasNext ? 'no column beyond the top'
+      : sign > 0 ? `${nbr} can’t take a carry bead (it’s at ${next})`
+                 : `${nbr} has no earth bead to borrow (it’s at ${next})`;
+  } else if (amount === 5) {               // heaven bead
+    legal = heavenMoveLegal(c, sign);
+    if (!legal) { reason = sign > 0 ? 'heaven bead already set' : 'heaven bead not set'; hint = (sign > 0 ? classifyAdd : classifySub)(c, 5).move; }
+  } else {                                 // 1..4 earth beads
+    legal = earthMoveLegal(c, amount, sign);
+    if (!legal) { reason = sign > 0 ? 'not enough free earth beads' : 'not enough active earth beads'; hint = (sign > 0 ? classifyAdd : classifySub)(c, amount).move; }
+  }
+
+  if (!legal) {
+    let msg = `<span class="warn">⚠ ${op} on ${place} — illegal</span>: ${reason}`;
+    if (hint) {
+      const keys = keysFor(hint);
+      msg += ` · use <span class="move">${hint.replace(/-/g, '−')}</span>${keys ? ` (${keys})` : ''}`;
+    }
+    coachEl.innerHTML = msg;
+    return; // strictly literal: an impossible move is not performed
+  }
+
   dispatch(new AddDigitCommand(store, focus, amount, sign));
   setFocus(focus); // keep the focus highlight after the re-render
-
-  if (amount === 10) { // explicit carry / borrow move
-    const kind = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
-    coachEl.innerHTML = `<b>${op}</b> on ${place} — <span class="rule big">${kind}</span>`;
-    return;
+  let detail;
+  if (amount === 10) detail = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
+  else {
+    const what = amount === 5 ? 'heaven bead' : `${amount} earth bead${amount > 1 ? 's' : ''}`;
+    detail = `${what} → ${place} now ${digitAt(focus)}`;
   }
-  const info = sign > 0 ? classifyAdd(c, amount) : classifySub(c, amount);
-  const label = { direct: 'direct', small: 'small friend', big: 'big friend' }[info.rule];
-  let tail = `<span class="move">${info.move.replace(/-/g, '−')}</span>`;
-  if (info.rule === 'big') {
-    tail += sign > 0 ? ` <span style="color:#8a929e">(carry 1 → ${nbr})</span>`
-                     : ` <span style="color:#8a929e">(borrow 1 ← ${nbr})</span>`;
-  }
-  coachEl.innerHTML = `<b>${op}</b> on ${place} — <span class="rule ${info.rule}">${label}</span>: ${tail}`;
+  coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${detail}`;
 }
 
 document.addEventListener('keydown', e => {
