@@ -1,10 +1,10 @@
 // ============================================================================
 // TutorialView — DOM binding for guided practice. It observes a TutorialSession
-// and renders the level map, current problem, streak meter and feedback; it
-// forwards button intent back to the session. The actual bead manipulation
-// happens on the shared soroban panel (same store) with the keyboard — this
-// panel only shows the problem and tracks progress. Auto-advance uses an
-// injected scheduler so it is trivial to control/stub.
+// and renders the level map, current problem, a live automaticity timer, streak
+// meter and verdict; it forwards button intent back to the session. The actual
+// bead manipulation happens on the shared soroban panel (same store) with the
+// keyboard — this panel only shows the problem and tracks progress. Auto-advance
+// uses an injected scheduler; the live timer uses setInterval (browser-only).
 // ============================================================================
 export class TutorialView {
   constructor(elements, session, { scheduler = (fn, ms) => setTimeout(fn, ms) } = {}) {
@@ -12,6 +12,9 @@ export class TutorialView {
     this.session = session;
     this.scheduler = scheduler;
     this._activeIdx = null;
+    this._timer = null;
+    this._t0 = 0;
+    this._floorMs = 0;
   }
 
   build() {
@@ -34,11 +37,32 @@ export class TutorialView {
       b.addEventListener('click', () => this.session.startLevel(+b.dataset.idx)));
   }
 
-  _meter(streak, floor) {
+  _secs(ms) { return (ms / 1000).toFixed(1); }
+
+  _meter(streak, floor, floorMs) {
     let dots = '';
     for (let i = 0; i < floor; i++) dots += i < streak ? '●' : '○';
-    return `<span class="tut-dots">${dots}</span> <span class="tut-count">${streak}/${floor} in a row to unlock</span>`;
+    return `<span class="tut-dots">${dots}</span> <span class="tut-count">${streak}/${floor} clean in a row · under ${this._secs(floorMs)}s each</span>`;
   }
+
+  // Live countdown from problem start, so the speed target is felt, not just
+  // reported. Turns red once the time floor is blown.
+  _startTimer(floorMs) {
+    this._stopTimer();
+    this._t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    this._floorMs = floorMs;
+    const tick = () => {
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      const el = (now - this._t0);
+      const over = el > this._floorMs;
+      this.el.timerEl.className = 'tut-timer' + (over ? ' over' : '');
+      this.el.timerEl.innerHTML = `⏱ ${this._secs(el)}s <span class="tut-floor">/ ${this._secs(this._floorMs)}s</span>`;
+    };
+    tick();
+    this._timer = setInterval(tick, 100);
+  }
+
+  _stopTimer() { if (this._timer) { clearInterval(this._timer); this._timer = null; } }
 
   _onEvent(evt) {
     const el = this.el;
@@ -53,27 +77,37 @@ export class TutorialView {
       case 'problem':
         el.promptEl.innerHTML = evt.prompt;
         el.subEl.textContent = evt.sub;
-        el.meterEl.innerHTML = this._meter(evt.streak, evt.floor);
+        el.meterEl.innerHTML = this._meter(evt.streak, evt.floor, evt.timeFloorMs);
         el.feedbackEl.innerHTML = '';
+        this._startTimer(evt.timeFloorMs);
         break;
-      case 'solved':
-        el.meterEl.innerHTML = this._meter(evt.streak, evt.floor);
+      case 'solved': {
+        this._stopTimer();
+        el.meterEl.innerHTML = this._meter(evt.streak, evt.floor, evt.timeFloorMs);
+        const t = `${this._secs(evt.elapsedMs)}s`;
         if (evt.justPassed) {
-          el.feedbackEl.innerHTML = '<span class="ok">✓ level cleared — next level unlocked!</span>';
+          el.feedbackEl.innerHTML = `<span class="ok">✓ ${t} — level cleared, next level unlocked!</span>`;
           this._renderLevels(evt.levels);
+        } else if (evt.clean) {
+          el.feedbackEl.innerHTML = `<span class="ok">✓ ${t}</span>`;
+        } else if (evt.verdict === 'slow') {
+          el.feedbackEl.innerHTML = `<span class="bad">⚠ too slow — ${t} (need under ${this._secs(evt.timeFloorMs)}s)</span> · streak reset`;
         } else {
-          el.feedbackEl.innerHTML = '<span class="ok">✓ correct</span>';
+          el.feedbackEl.innerHTML = `<span class="bad">✗ fumbled (illegal move or reset)</span> · streak reset`;
         }
-        this.scheduler(() => this.session.next(), 850);
+        this.scheduler(() => this.session.next(), evt.clean ? 850 : 1500);
         break;
+      }
       case 'hint':
         el.feedbackEl.innerHTML = `<span class="tut-hint">💡 ${evt.text}</span>`;
         break;
       case 'skipped':
-        el.meterEl.innerHTML = this._meter(0, evt.floor);
+        this._stopTimer();
+        el.timerEl.innerHTML = '';
         el.feedbackEl.innerHTML = `<span class="bad">answer:</span> <span class="tut-hint">${evt.text}</span> · streak reset — try it now`;
         break;
       case 'stopped':
+        this._stopTimer();
         el.stageEl.classList.remove('on');
         break;
     }

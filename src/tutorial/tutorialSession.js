@@ -2,13 +2,19 @@
 // TutorialSession — the leveled-practice state machine, DOM-free and Observable
 // (same family as DrillSession). Unlike the drill, it doesn't capture a typed
 // answer: it drives the shared AbacusStore, seeds each problem's start value,
-// and watches the store for the target value. A streak of solves at or above a
-// level's floor unlocks the next level (persisted via TutorialProgress).
+// and watches the store for the target value.
+//
+// The gate is AUTOMATICITY, not mere recognition: a solve counts toward the
+// streak only when it is CLEAN — correct, under the level's time floor (timed
+// from when the problem appears, via an injected clock), and fumble-free (no
+// illegal move / reset, reported by the app through fault()). A slow or fumbled
+// solve RESETS the streak. A streak of `floor` clean solves unlocks the next
+// level (persisted via TutorialProgress).
 //
 // Emitted events (payload.type):
-//   level    { idx, id, title, teach, floor, best, levels }
-//   problem  { prompt, sub, streak, floor }
-//   solved   { streak, floor, justPassed, unlockedIdx, levels }
+//   level    { idx, id, title, teach, floor, timeFloorMs, best, levels }
+//   problem  { prompt, sub, streak, floor, timeFloorMs }
+//   solved   { clean, verdict, elapsedMs, timeFloorMs, faults, streak, floor, justPassed, unlockedIdx, levels }
 //   hint     { text }
 //   skipped  { text, floor }
 //   locked   { idx }
@@ -17,17 +23,20 @@
 import { Observable } from '../state/observable.js';
 
 export class TutorialSession extends Observable {
-  constructor({ levels, progress, rng, store }) {
+  constructor({ levels, progress, rng, store, clock = { now: () => 0 } }) {
     super();
     this.levels = levels;
     this.progress = progress;
     this.rng = rng;
     this.store = store;
+    this.clock = clock;
     this.idx = null;
     this.problem = null;
     this.streak = 0;
     this.solved = false;
     this.armed = false; // ignore store notifications while seeding a problem
+    this.t0 = 0;
+    this.faults = 0;
     store.subscribe(() => this._onStore());
   }
 
@@ -47,7 +56,7 @@ export class TutorialSession extends Observable {
     this.idx = idx;
     this.streak = 0;
     const lv = this.levels[idx];
-    this.notify({ type: 'level', idx, id: lv.id, title: lv.title, teach: lv.teach, floor: lv.floor, best: this.progress.best(lv.id), levels: this.levelInfos() });
+    this.notify({ type: 'level', idx, id: lv.id, title: lv.title, teach: lv.teach, floor: lv.floor, timeFloorMs: lv.timeFloorMs, best: this.progress.best(lv.id), levels: this.levelInfos() });
     this.newProblem();
   }
 
@@ -57,9 +66,18 @@ export class TutorialSession extends Observable {
     this.problem = lv.gen(this.rng);
     this.solved = false;
     this.armed = false;
+    this.faults = 0;
     this.store.setScaled(this.problem.startScaled); // notify fires while disarmed
     this.armed = true;
-    this.notify({ type: 'problem', prompt: this.problem.prompt, sub: this.problem.sub, streak: this.streak, floor: lv.floor });
+    this.t0 = this.clock.now();                      // start the automaticity timer
+    this.notify({ type: 'problem', prompt: this.problem.prompt, sub: this.problem.sub, streak: this.streak, floor: lv.floor, timeFloorMs: lv.timeFloorMs });
+  }
+
+  // The app reports a fumble during the active problem (an illegal/rejected move
+  // or a reset). Any fault makes the eventual solve non-clean.
+  fault() {
+    if (this.idx === null || this.solved) return;
+    this.faults++;
   }
 
   _onStore() {
@@ -70,18 +88,31 @@ export class TutorialSession extends Observable {
   _solve() {
     this.solved = true;
     this.armed = false;
-    this.streak++;
     const lv = this.levels[this.idx];
     const floor = lv.floor;
+    const elapsedMs = this.clock.now() - this.t0;
+    const overTime = elapsedMs > lv.timeFloorMs;
+    const clean = !overTime && this.faults === 0;
+
+    // Automaticity gate: only a clean solve advances the streak; slow or fumbled
+    // solves reset it. (A correct answer is table stakes — it's how we detect a
+    // solve at all — so the verdict is about speed and cleanliness.)
+    let verdict;
+    if (clean) { this.streak++; verdict = 'clean'; }
+    else { this.streak = 0; verdict = this.faults > 0 ? 'fumbled' : 'slow'; }
+
     this.progress.setBest(lv.id, this.streak);
     let justPassed = false, unlockedIdx = null;
-    if (this.streak >= floor) {
+    if (clean && this.streak >= floor) {
       const next = this.idx + 1;
       justPassed = next < this.levels.length && !this.progress.isUnlocked(next);
       this.progress.unlock(Math.min(this.idx + 2, this.levels.length));
       unlockedIdx = next < this.levels.length ? next : null;
     }
-    this.notify({ type: 'solved', streak: this.streak, floor, justPassed, unlockedIdx, levels: this.levelInfos() });
+    this.notify({
+      type: 'solved', clean, verdict, elapsedMs, timeFloorMs: lv.timeFloorMs, faults: this.faults,
+      streak: this.streak, floor, justPassed, unlockedIdx, levels: this.levelInfos(),
+    });
   }
 
   hint() {

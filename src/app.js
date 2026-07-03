@@ -178,6 +178,7 @@ function applyMove(sign, amount) {
     }
     coachEl.innerHTML = msg;
     sound.reject();
+    if (tutorial.active) tutorial.fault(); // a rejected move fumbles the drill
     return; // strictly literal: an impossible move is not performed
   }
 
@@ -209,7 +210,7 @@ document.addEventListener('keydown', e => {
   }
   if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
   if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
-  if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
+  if (e.code === 'KeyQ') { e.preventDefault(); if (tutorial.active) tutorial.fault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
   const mv = KEYMAP[e.code];
   if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
 });
@@ -220,17 +221,18 @@ const tutorial = new TutorialSession({
   progress: new TutorialProgress(new LocalStorageProgressStore(window.localStorage)),
   rng: new MathRng(),
   store,
+  clock: { now: () => performance.now() },
 });
 new TutorialView({
   levelsEl: $('tutLevels'), stageEl: $('tutStage'), teachEl: $('tutTeach'),
-  promptEl: $('tutPrompt'), subEl: $('tutSub'), meterEl: $('tutMeter'),
+  promptEl: $('tutPrompt'), subEl: $('tutSub'), timerEl: $('tutTimer'), meterEl: $('tutMeter'),
   feedbackEl: $('tutFeedback'), hintBtn: $('tutHint'), skipBtn: $('tutSkip'), restartBtn: $('tutRestart'),
 }, tutorial).build();
 // A new problem seeds the beads at its start value — snap the column focus back
 // to the ones rod and clear any stale coach line so each problem starts clean.
 tutorial.subscribe(evt => {
   if (evt.type === 'problem' || evt.type === 'skipped') { setFocus(0); coachEl.textContent = ''; }
-  if (evt.type === 'solved') { if (evt.justPassed) sound.levelUp(); else sound.solve(); }
+  if (evt.type === 'solved') { if (evt.justPassed) sound.levelUp(); else if (evt.clean) sound.solve(); else sound.reject(); }
 });
 
 // --- Initial paint ----------------------------------------------------------

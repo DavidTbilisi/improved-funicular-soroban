@@ -4,16 +4,17 @@ import { AbacusStore } from '../src/state/abacusStore.js';
 import { TutorialSession } from '../src/tutorial/tutorialSession.js';
 import { TutorialProgress, MemoryProgressStore } from '../src/tutorial/progressStore.js';
 
-// Two deterministic stub levels (floor 2 each). Each gen() returns a fixed
-// problem, so tests don't depend on rng or the real level formulas.
+// Two deterministic stub levels (streak floor 2, time floor 1000ms each). Each
+// gen() returns a fixed problem, so tests don't depend on rng or the real level
+// formulas.
 const LEVELS = [
   {
-    id: 'l0', title: 'L0', teach: 't0', floor: 2,
+    id: 'l0', title: 'L0', teach: 't0', floor: 2, timeFloorMs: 1000,
     gen: () => ({ a: 0, b: 5, op: '+', prompt: '0 + 5', sub: 's', startScaled: 0, targetScaled: 50000 }),
     hint: () => 'do +5',
   },
   {
-    id: 'l1', title: 'L1', teach: 't1', floor: 2,
+    id: 'l1', title: 'L1', teach: 't1', floor: 2, timeFloorMs: 1000,
     gen: () => ({ a: 3, b: 4, op: '+', prompt: '3 + 4', sub: 's', startScaled: 30000, targetScaled: 70000 }),
     hint: () => 'small friend',
   },
@@ -22,63 +23,101 @@ const LEVELS = [
 function makeSession(initialProgress = {}) {
   const store = new AbacusStore(0, '');
   const progress = new TutorialProgress(new MemoryProgressStore(initialProgress));
+  const clock = { t: 0, now() { return this.t; } };
   const events = [];
-  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store });
+  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store, clock });
   session.subscribe(e => events.push(e));
-  return { store, progress, session, events };
+  return { store, progress, clock, session, events };
 }
+const lastSolved = events => events.filter(e => e.type === 'solved').pop();
 
 test('starting a level seeds the beads and emits level + problem', () => {
   const { store, session, events } = makeSession();
   session.startLevel(0);
   assert.equal(store.scaledValue(), 0);              // seeded to start
   assert.deepEqual(events.map(e => e.type), ['level', 'problem']);
-  assert.equal(events[0].teach, 't0');
+  assert.equal(events[1].timeFloorMs, 1000);
 });
 
-test('reaching the target value counts a solve', () => {
-  const { store, session, events } = makeSession();
+test('a fast, fumble-free solve is clean and counts', () => {
+  const { store, clock, session, events } = makeSession();
   session.startLevel(0);
-  store.setScaled(50000);                            // user "reaches" 5
-  const solved = events.find(e => e.type === 'solved');
-  assert.ok(solved);
-  assert.equal(solved.streak, 1);
-  assert.equal(solved.justPassed, false);            // floor is 2
+  clock.t = 500;                                     // under the 1000ms floor
+  store.setScaled(50000);
+  const s = lastSolved(events);
+  assert.equal(s.clean, true);
+  assert.equal(s.verdict, 'clean');
+  assert.equal(s.streak, 1);
+});
+
+test('a slow solve does not count and resets the streak', () => {
+  const { store, clock, session, events } = makeSession();
+  session.startLevel(0);
+  clock.t = 400; store.setScaled(50000);             // clean solve 1 -> streak 1
+  assert.equal(lastSolved(events).streak, 1);
+  session.next(); assert.equal(session.t0, 400);     // new timer baseline
+  clock.t = 400 + 2000;                              // 2000ms > floor
+  store.setScaled(50000);
+  const s = lastSolved(events);
+  assert.equal(s.clean, false);
+  assert.equal(s.verdict, 'slow');
+  assert.equal(s.streak, 0);                         // streak wiped
+});
+
+test('a fumble (fault) makes the solve non-clean and resets the streak', () => {
+  const { store, clock, session, events } = makeSession();
+  session.startLevel(0);
+  session.fault();                                   // e.g. an illegal move
+  clock.t = 200;                                     // fast, but fumbled
+  store.setScaled(50000);
+  const s = lastSolved(events);
+  assert.equal(s.clean, false);
+  assert.equal(s.verdict, 'fumbled');
+  assert.equal(s.faults, 1);
+  assert.equal(s.streak, 0);
+});
+
+test('a streak of clean solves at the floor unlocks the next level', () => {
+  const { store, progress, clock, session, events } = makeSession();
+  session.startLevel(0);
+  assert.equal(progress.isUnlocked(1), false);
+  clock.t = 300; store.setScaled(50000);             // clean 1
+  session.next();
+  clock.t = 600; store.setScaled(50000);             // clean 2 -> passes floor 2
+  const s = lastSolved(events);
+  assert.equal(s.streak, 2);
+  assert.equal(s.justPassed, true);
+  assert.equal(s.unlockedIdx, 1);
+  assert.equal(progress.isUnlocked(1), true);
+});
+
+test('a slow solve blocks the unlock even at a full streak', () => {
+  const { store, progress, clock, session } = makeSession();
+  session.startLevel(0);
+  clock.t = 300; store.setScaled(50000);             // clean 1
+  session.next();
+  clock.t = 300 + 5000; store.setScaled(50000);      // slow -> resets, no unlock
+  assert.equal(progress.isUnlocked(1), false);
 });
 
 test('seeding a new problem does not falsely count as a solve', () => {
-  const { store, session, events } = makeSession();
-  session.startLevel(0);                             // start == 0 == not target
-  session.next();                                    // re-seeds start (0) again
+  const { session, events } = makeSession();
+  session.startLevel(0);
+  session.next();
   assert.equal(events.filter(e => e.type === 'solved').length, 0);
 });
 
-test('a streak at the floor unlocks the next level', () => {
-  const { store, progress, session, events } = makeSession();
-  session.startLevel(0);
-  assert.equal(progress.isUnlocked(1), false);
-  store.setScaled(50000);                            // solve 1
-  session.next();                                    // fresh problem (start 0)
-  store.setScaled(50000);                            // solve 2 -> passes floor 2
-  const passed = events.filter(e => e.type === 'solved').pop();
-  assert.equal(passed.streak, 2);
-  assert.equal(passed.justPassed, true);
-  assert.equal(passed.unlockedIdx, 1);
-  assert.equal(progress.isUnlocked(1), true);
-  assert.equal(progress.best('l0'), 2);
-});
-
 test('locked levels refuse to start', () => {
-  const { session, events } = makeSession();         // only level 0 unlocked
+  const { session, events } = makeSession();
   session.startLevel(1);
   assert.equal(session.active, false);
   assert.deepEqual(events.map(e => e.type), ['locked']);
 });
 
 test('skip reveals the answer, resets the streak, and re-seeds the same problem', () => {
-  const { store, session, events } = makeSession();
+  const { store, clock, session, events } = makeSession();
   session.startLevel(0);
-  store.setScaled(50000);                            // streak -> 1
+  clock.t = 300; store.setScaled(50000);             // streak -> 1
   session.next();
   store.setScaled(30000);                            // a wrong value: no solve
   session.skip();

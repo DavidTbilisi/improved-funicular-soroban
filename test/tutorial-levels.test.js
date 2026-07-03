@@ -15,6 +15,7 @@ test('every level has the required Strategy shape', () => {
     assert.equal(typeof lv.gen, 'function');
     assert.equal(typeof lv.hint, 'function');
     assert.ok(lv.floor >= 1);
+    assert.ok(lv.timeFloorMs > 0, `${lv.id} has a positive time floor`);
     assert.ok(!ids.has(lv.id), `id ${lv.id} is unique`);
     ids.add(lv.id);
   }
