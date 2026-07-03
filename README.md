@@ -14,6 +14,17 @@ npm run dev     # serve at http://localhost:8000 (ES-module dev build)
 Open `http://localhost:8000/index.html`. A static server is needed because the app is
 built from native ES modules, which browsers refuse to import over `file://`.
 
+### Keyboard arithmetic
+
+Focus an integer column with `←` / `→`, then:
+
+- `0`–`9` — **add** that digit to the focused column
+- `Alt` + `0`–`9` — **subtract** it
+
+The trainer applies the correct soroban move and names the rule it used —
+*direct*, *small friend* (`+5 −friend`), or *big friend* (`+10 −friend`, with
+carry / borrow). Every move is undoable.
+
 ## Develop
 
 ```sh

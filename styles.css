@@ -82,6 +82,18 @@ h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color
 .rod-word { margin-top: 1px; font-size: 0.56rem; color: #9aa3af; text-align: center; line-height: 1.15; min-height: 2.1em; }
 .rod-place { margin-top: 1px; font-size: 0.56rem; color: #6a7482; text-align: center; }
 
+.rod.focused .rod-frame { background: rgba(240,160,80,0.10); border-radius: 8px; box-shadow: inset 0 0 0 2px var(--accent); }
+.rod.focused .rod-letter { color: var(--accent); }
+
+/* Keyboard-arithmetic coach line */
+.coach { margin-top: 10px; text-align: center; font-size: 0.9rem; color: #b8c0cc; min-height: 1.4em; }
+.coach .rule { font-weight: 700; }
+.coach .rule.direct { color: #51cf66; }
+.coach .rule.small { color: var(--accent); }
+.coach .rule.big { color: #b898e8; }
+.coach .move { font-variant-numeric: tabular-nums; color: var(--text); }
+kbd { display: inline-block; padding: 1px 6px; background: #1d2128; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; font-family: inherit; font-size: 0.82em; color: var(--text); }
+
 /* In-soroban decimal point column */
 .dp-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 22px; }
 .dp-line { height: 340px; width: 100%; position: relative; }

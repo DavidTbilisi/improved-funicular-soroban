@@ -41,6 +41,8 @@ export class SorobanView {
     const place = kind === 'int' ? (INT_PLACES[idx] || ('10^' + idx)) : (FRAC_PLACES[idx] || ('10^-' + (idx + 1)));
     const rodEl = document.createElement('div');
     rodEl.className = 'rod' + (kind === 'frac' ? ' frac' : '');
+    rodEl.dataset.kind = kind;
+    rodEl.dataset.place = idx;
     let earthHTML = '';
     for (let b = 0; b < 4; b++) earthHTML += `<div class="bead earth" id="bead-${kind}-earth-${idx}-${b}" data-kind="${kind}" data-idx="${idx}" data-earth="${b}"></div>`;
     rodEl.innerHTML = `
@@ -56,6 +58,12 @@ export class SorobanView {
       <div class="rod-word">${peg.word}</div>
       <div class="rod-place">${place}</div>`;
     return rodEl;
+  }
+
+  // Highlight the focused integer column (keyboard-arithmetic focus).
+  highlightColumn(place) {
+    this.el.querySelectorAll('.rod[data-kind="int"]').forEach(r =>
+      r.classList.toggle('focused', +r.dataset.place === place));
   }
 
   update(store) {

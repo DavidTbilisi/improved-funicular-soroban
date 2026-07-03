@@ -4,10 +4,11 @@
 // drill session → drill view. Everything below depends only on abstractions;
 // this file supplies the concrete instances (Dependency Injection by hand).
 // ============================================================================
-import { FRAC_COLS } from './domain/config.js';
+import { FRAC_COLS, INT_COLS, INT_PLACES } from './domain/config.js';
+import { classifyAdd, classifySub } from './domain/soroban.js';
 import { AbacusStore } from './state/abacusStore.js';
 import {
-  CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand,
+  CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddDigitCommand,
 } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
 import { ReadoutView } from './view/readoutView.js';
@@ -90,6 +91,38 @@ if (undoBtn) undoBtn.addEventListener('click', () => { bus.undo(); refreshUndo()
 $('radixDec').addEventListener('click', () => deepPack.setRadix(10));
 $('radixHex').addEventListener('click', () => deepPack.setRadix(16));
 
+// --- Keyboard arithmetic (soroban complement rules with live coaching) ------
+const coachEl = $('coach');
+let focus = 0; // focused integer place (0 = ones)
+const digitAt = place => Math.floor(store.intValue() / Math.pow(10, place)) % 10;
+const setFocus = p => { focus = Math.max(0, Math.min(INT_COLS - 1, p)); soroban.highlightColumn(focus); };
+
+function applyDigit(d, sign) {
+  const info = sign > 0 ? classifyAdd(digitAt(focus), d) : classifySub(digitAt(focus), d);
+  dispatch(new AddDigitCommand(store, focus, d, sign));
+  setFocus(focus); // re-highlight (store re-render rebuilds nothing, but keep focus visible)
+  const op = `${sign > 0 ? '+' : '−'}${d}`;
+  const place = INT_PLACES[focus] || `10^${focus}`;
+  const label = { direct: 'direct', small: 'small friend', big: 'big friend' }[info.rule];
+  let tail = `<span class="move">${info.move.replace(/-/g, '−')}</span>`;
+  if (info.rule === 'big') {
+    const nbr = INT_PLACES[focus + 1] || 'next column';
+    tail += sign > 0 ? ` <span style="color:#8a929e">(carry 1 → ${nbr})</span>`
+                     : ` <span style="color:#8a929e">(borrow 1 ← ${nbr})</span>`;
+  }
+  coachEl.innerHTML = `<b>${op}</b> on ${place} — <span class="rule ${info.rule}">${label}</span>: ${tail}`;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (session.activeDeckId) return; // a drill is running — don't hijack keys
+  if (e.code === 'ArrowLeft') { e.preventDefault(); setFocus(focus + 1); return; }
+  if (e.code === 'ArrowRight') { e.preventDefault(); setFocus(focus - 1); return; }
+  const m = /^(?:Digit|Numpad)([0-9])$/.exec(e.code);
+  if (m && +m[1] !== 0) { e.preventDefault(); applyDigit(+m[1], e.altKey ? -1 : 1); }
+});
+
 // --- Initial paint ----------------------------------------------------------
 store.notify(store);
 refreshUndo();
+setFocus(0);

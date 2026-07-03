@@ -30,6 +30,16 @@ export class StepIntCommand extends Command {
   apply() { this.store.setIntValue(this.store.intValue() + this.delta); }
 }
 
+// Add/subtract a single digit at a given integer place (10^place), with carry
+// and clamping handled by the store. sign is +1 or -1.
+export class AddDigitCommand extends Command {
+  constructor(store, place, digit, sign) { super(store); this.place = place; this.digit = digit; this.sign = sign; }
+  apply() {
+    const delta = this.sign * this.digit * Math.pow(10, this.place);
+    this.store.setIntValue(this.store.intValue() + delta);
+  }
+}
+
 export class ToggleSkyCommand extends Command {
   constructor(store, kind, idx) { super(store); this.kind = kind; this.idx = idx; }
   apply() {

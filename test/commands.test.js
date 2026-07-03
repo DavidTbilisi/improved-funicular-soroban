@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AbacusStore } from '../src/state/abacusStore.js';
-import { CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand } from '../src/state/commands.js';
+import { CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddDigitCommand } from '../src/state/commands.js';
 
 test('SetValueCommand sets the store from a string', () => {
   const store = new AbacusStore(0, '');
@@ -33,6 +33,21 @@ test('StepIntCommand clamps at 0', () => {
   const store = new AbacusStore(0, '');
   new CommandBus().run(new StepIntCommand(store, -1));
   assert.equal(store.intValue(), 0);
+});
+
+test('AddDigitCommand adds a digit at a place, carries, and undoes', () => {
+  const store = new AbacusStore(0, '');
+  const bus = new CommandBus();
+  bus.run(new AddDigitCommand(store, 0, 9, +1));  // +9 ones
+  assert.equal(store.intValue(), 9);
+  bus.run(new AddDigitCommand(store, 0, 6, +1));  // +6 ones -> carry to tens
+  assert.equal(store.intValue(), 15);
+  bus.run(new AddDigitCommand(store, 1, 2, +1));  // +2 tens
+  assert.equal(store.intValue(), 35);
+  bus.run(new AddDigitCommand(store, 0, 7, -1));  // -7 ones -> borrow
+  assert.equal(store.intValue(), 28);
+  bus.undo();
+  assert.equal(store.intValue(), 35);
 });
 
 test('ToggleSkyCommand and ClickEarthCommand mutate a rod and undo cleanly', () => {
