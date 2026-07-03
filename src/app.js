@@ -91,22 +91,40 @@ if (undoBtn) undoBtn.addEventListener('click', () => { bus.undo(); refreshUndo()
 $('radixDec').addEventListener('click', () => deepPack.setRadix(10));
 $('radixHex').addEventListener('click', () => deepPack.setRadix(16));
 
-// --- Keyboard arithmetic (soroban complement rules with live coaching) ------
+// --- Keyboard arithmetic (home-row soroban moves with live coaching) --------
+// Right hand adds, left hand subtracts. Home row = 1..4, the row above = 5/10.
+//   add:  J K L ;  = +1 +2 +3 +4    U = +5    I = +10 (carry)
+//   sub:  A S D F  = -1 -2 -3 -4    Q = -5    W = -10 (borrow)
+// Q/W mirror U/I: they sit directly above A/S just as U/I sit above J/K.
+const KEYMAP = {
+  KeyJ: { sign: +1, amount: 1 }, KeyK: { sign: +1, amount: 2 }, KeyL: { sign: +1, amount: 3 }, Semicolon: { sign: +1, amount: 4 },
+  KeyU: { sign: +1, amount: 5 }, KeyI: { sign: +1, amount: 10 },
+  KeyA: { sign: -1, amount: 1 }, KeyS: { sign: -1, amount: 2 }, KeyD: { sign: -1, amount: 3 }, KeyF: { sign: -1, amount: 4 },
+  KeyQ: { sign: -1, amount: 5 }, KeyW: { sign: -1, amount: 10 },
+};
+
 const coachEl = $('coach');
 let focus = 0; // focused integer place (0 = ones)
 const digitAt = place => Math.floor(store.intValue() / Math.pow(10, place)) % 10;
 const setFocus = p => { focus = Math.max(0, Math.min(INT_COLS - 1, p)); soroban.highlightColumn(focus); };
 
-function applyDigit(d, sign) {
-  const info = sign > 0 ? classifyAdd(digitAt(focus), d) : classifySub(digitAt(focus), d);
-  dispatch(new AddDigitCommand(store, focus, d, sign));
-  setFocus(focus); // re-highlight (store re-render rebuilds nothing, but keep focus visible)
-  const op = `${sign > 0 ? '+' : '−'}${d}`;
+function applyMove(sign, amount) {
+  const c = digitAt(focus);
   const place = INT_PLACES[focus] || `10^${focus}`;
+  const nbr = INT_PLACES[focus + 1] || 'next column';
+  const op = `${sign > 0 ? '+' : '−'}${amount}`;
+  dispatch(new AddDigitCommand(store, focus, amount, sign));
+  setFocus(focus); // keep the focus highlight after the re-render
+
+  if (amount === 10) { // explicit carry / borrow move
+    const kind = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
+    coachEl.innerHTML = `<b>${op}</b> on ${place} — <span class="rule big">${kind}</span>`;
+    return;
+  }
+  const info = sign > 0 ? classifyAdd(c, amount) : classifySub(c, amount);
   const label = { direct: 'direct', small: 'small friend', big: 'big friend' }[info.rule];
   let tail = `<span class="move">${info.move.replace(/-/g, '−')}</span>`;
   if (info.rule === 'big') {
-    const nbr = INT_PLACES[focus + 1] || 'next column';
     tail += sign > 0 ? ` <span style="color:#8a929e">(carry 1 → ${nbr})</span>`
                      : ` <span style="color:#8a929e">(borrow 1 ← ${nbr})</span>`;
   }
@@ -116,10 +134,11 @@ function applyDigit(d, sign) {
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (session.activeDeckId) return; // a drill is running — don't hijack keys
+  if (e.altKey || e.ctrlKey || e.metaKey) return; // leave browser/OS shortcuts alone
   if (e.code === 'ArrowLeft') { e.preventDefault(); setFocus(focus + 1); return; }
   if (e.code === 'ArrowRight') { e.preventDefault(); setFocus(focus - 1); return; }
-  const m = /^(?:Digit|Numpad)([0-9])$/.exec(e.code);
-  if (m && +m[1] !== 0) { e.preventDefault(); applyDigit(+m[1], e.altKey ? -1 : 1); }
+  const mv = KEYMAP[e.code];
+  if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
 });
 
 // --- Initial paint ----------------------------------------------------------

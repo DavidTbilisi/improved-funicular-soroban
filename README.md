@@ -16,14 +16,17 @@ built from native ES modules, which browsers refuse to import over `file://`.
 
 ### Keyboard arithmetic
 
-Focus an integer column with `←` / `→`, then:
+Focus an integer column with `←` / `→`. Then the home row drives soroban moves —
+right hand adds, left hand subtracts:
 
-- `0`–`9` — **add** that digit to the focused column
-- `Alt` + `0`–`9` — **subtract** it
+```
+add  J K L ;  = +1 +2 +3 +4     U = +5     I = +10 (carry)
+sub  A S D F  = -1 -2 -3 -4     Q = -5     W = -10 (borrow)
+```
 
-The trainer applies the correct soroban move and names the rule it used —
-*direct*, *small friend* (`+5 −friend`), or *big friend* (`+10 −friend`, with
-carry / borrow). Every move is undoable.
+The trainer applies the move and names the rule — *direct*, *small friend*
+(`+5 −friend`), or *big friend* (`+10 −friend`). Compose bigger digits from the
+primitives (e.g. `+7` = `U` then `K`). Every move is undoable.
 
 ## Develop
 
