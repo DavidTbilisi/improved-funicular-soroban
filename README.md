@@ -14,12 +14,6 @@ npm run dev     # serve at http://localhost:8000 (ES-module dev build)
 Open `http://localhost:8000/index.html`. A static server is needed because the app is
 built from native ES modules, which browsers refuse to import over `file://`.
 
-To get a single self-contained file that opens by double-click (no server):
-
-```sh
-npm run build   # -> dist/index.html  (styles + all modules inlined)
-```
-
 ## Develop
 
 ```sh
