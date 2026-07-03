@@ -9,8 +9,7 @@ An interactive soroban (Japanese abacus) trainer that teaches a **place-value be
 ## Commands
 
 - `npm test` — run the unit suite (`node --test`, no dependencies). Tests live in `test/*.test.js` and cover the DOM-free layers (domain, codec, commands, drill session, stats). Run one file with `node --test test/codec.test.js`.
-- `npm run dev` — serve over `http://localhost:8000` (`python3 -m http.server`). **Required for the ESM `index.html`**: browsers block `<script type="module">` imports over `file://`.
-- `npm run build` — bundle everything into a single self-contained `dist/index.html` (inlines `styles.css` + the whole module graph). This artifact opens by double-click with no server. `dist/` is gitignored — rebuild it.
+- `npm run dev` — serve over `http://localhost:8000` (`python3 -m http.server`). **Required for the ESM `index.html`**: browsers block `<script type="module">` imports over `file://`, so the app must be served, not opened as a file.
 
 ## Architecture
 
@@ -32,5 +31,4 @@ User action → `app.js` builds a **Command** → `CommandBus.run` executes it a
 
 - **Frozen tables are contracts.** The peg/face/matrix tables and the seal rules (`sealDigit` = digit-sum mod 9→9; `sealHex` = nibble-sum mod 15→F) are described as "frozen"/"registered" and reference external spec docs not in this repo (`soroban-learning-method`, `number-codec-ladder`). Changing a peg or seal rule silently breaks numbers users have already memorized — flag such changes, don't make them casually.
 - **Keep the DOM out of `src/domain`, `src/state`, `src/drill`.** New logic belongs there (and gets a test); only `src/view/*` and `app.js` may reference `document`/`window`.
-- **The bundler dialect is deliberately narrow.** `build.mjs` is a hand-rolled inliner that only understands `import { ... } from './rel.js'` and `export function|class|const` / `export { ... }`. Avoid default exports, `import *`, and dynamic import in `src/`, or the single-file build breaks. After changing `src/`, run `npm run build` to confirm it still bundles.
 - Emoji are load-bearing data, not decoration — keep `emoji`/`word`/`color` in sync when editing tables.

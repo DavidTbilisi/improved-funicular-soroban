@@ -36,6 +36,5 @@ src/
   drill/            decks, modes, session state machine, stats persistence, rng
   view/             one class per panel (observers of the store/session)
   app.js            composition root (the only module that touches the DOM)
-build.mjs           zero-dependency single-file bundler
 test/               node:test suites for the DOM-free layers
 ```
