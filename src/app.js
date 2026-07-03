@@ -25,6 +25,7 @@ import { TUTORIAL_LEVELS } from './tutorial/levels.js';
 import { LocalStorageProgressStore, TutorialProgress } from './tutorial/progressStore.js';
 import { TutorialSession } from './tutorial/tutorialSession.js';
 import { TutorialView } from './view/tutorialView.js';
+import { SoundService } from './view/soundService.js';
 
 const $ = id => document.getElementById(id);
 
@@ -35,10 +36,23 @@ const undoBtn = $('undoBtn');
 const refreshUndo = () => { if (undoBtn) undoBtn.disabled = !bus.canUndo; };
 const dispatch = cmd => { bus.run(cmd); refreshUndo(); };
 
+// --- Audio feedback ---------------------------------------------------------
+const soundOn = localStorage.getItem('npv-sound') !== 'off'; // default on
+const sound = new SoundService({ enabled: soundOn });
+const soundBtn = $('soundBtn');
+const paintSoundBtn = () => { if (soundBtn) soundBtn.textContent = sound.enabled ? '🔊 Sound on' : '🔇 Sound off'; };
+if (soundBtn) soundBtn.addEventListener('click', () => {
+  sound.setEnabled(!sound.enabled);
+  localStorage.setItem('npv-sound', sound.enabled ? 'on' : 'off');
+  paintSoundBtn();
+  if (sound.enabled) sound.bead(); // audible confirmation
+});
+paintSoundBtn();
+
 // --- Views (observers of the store) -----------------------------------------
 const soroban = new SorobanView($('soroban'), {
-  onToggleSky: (kind, idx) => dispatch(new ToggleSkyCommand(store, kind, idx)),
-  onClickEarth: (kind, idx, bead) => dispatch(new ClickEarthCommand(store, kind, idx, bead)),
+  onToggleSky: (kind, idx) => { dispatch(new ToggleSkyCommand(store, kind, idx)); sound.bead(); },
+  onClickEarth: (kind, idx, bead) => { dispatch(new ClickEarthCommand(store, kind, idx, bead)); sound.bead(); },
 });
 soroban.init();
 
@@ -163,10 +177,12 @@ function applyMove(sign, amount) {
       msg += ` · use <span class="move">${hint.replace(/-/g, '−')}</span>${keys ? ` (${keys})` : ''}`;
     }
     coachEl.innerHTML = msg;
+    sound.reject();
     return; // strictly literal: an impossible move is not performed
   }
 
   dispatch(new AddAtColumnCommand(store, focus, amount, sign));
+  if (amount === 10) sound.carry(sign); else sound.bead(sign);
   setFocus(focus); // keep the focus highlight after the re-render
   let detail;
   if (amount === 10) detail = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
@@ -193,7 +209,7 @@ document.addEventListener('keydown', e => {
   }
   if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
   if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
-  if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; return; }
+  if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
   const mv = KEYMAP[e.code];
   if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
 });
@@ -214,6 +230,7 @@ new TutorialView({
 // to the ones rod and clear any stale coach line so each problem starts clean.
 tutorial.subscribe(evt => {
   if (evt.type === 'problem' || evt.type === 'skipped') { setFocus(0); coachEl.textContent = ''; }
+  if (evt.type === 'solved') { if (evt.justPassed) sound.levelUp(); else sound.solve(); }
 });
 
 // --- Initial paint ----------------------------------------------------------
