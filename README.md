@@ -16,16 +16,18 @@ built from native ES modules, which browsers refuse to import over `file://`.
 
 ### Keyboard arithmetic
 
-Focus an integer column with `←` / `→` (or `G` / `H`, keeping your hands on the
-home row). Each key is a **literal bead move** — right hand adds, left hand
-subtracts:
+Focus any column — integer **or** decimal — with `←` / `→` (or `G` / `H`, keeping
+your hands on the home row). Each key is a **literal bead move** — right hand
+adds, left hand subtracts:
 
 ```
 add  J K L ;  = push 1..4 earth beads   U = set heaven (5)    I = carry (+10)
 sub  F D S A  = pull 1..4 earth beads   R = clear heaven (5)  E = borrow (-10)
+Q    = reset to 0
 ```
 
 The subtract keys are the finger-mirror of the add keys (`F` mirrors `J`, etc).
+Carry/borrow cross the decimal point — `+10` on the tenths lands in the ones.
 A move that can't be made on the current rod (not enough free/active beads, or
 the heaven bead is already set/clear) is **rejected and flagged**, with the
 correct complement suggested — you compose it yourself, e.g. `+3` on a 4 is

@@ -60,10 +60,13 @@ export class SorobanView {
     return rodEl;
   }
 
-  // Highlight the focused integer column (keyboard-arithmetic focus).
-  highlightColumn(place) {
-    this.el.querySelectorAll('.rod[data-kind="int"]').forEach(r =>
-      r.classList.toggle('focused', +r.dataset.place === place));
+  // Highlight the focused column by power-of-ten exponent (>=0 = integer place,
+  // <0 = fraction place; -1 = tenths).
+  highlightColumn(exponent) {
+    const kind = exponent >= 0 ? 'int' : 'frac';
+    const place = exponent >= 0 ? exponent : (-exponent - 1);
+    this.el.querySelectorAll('.rod').forEach(r =>
+      r.classList.toggle('focused', r.dataset.kind === kind && +r.dataset.place === place));
   }
 
   update(store) {

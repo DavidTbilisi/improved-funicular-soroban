@@ -5,7 +5,7 @@
 // execute time (a lightweight Memento), which keeps each command trivial.
 // ============================================================================
 import { parseDecimal } from '../domain/number.js';
-import { intValOf } from '../domain/rod.js';
+import { FRAC_COLS } from '../domain/config.js';
 
 class Command {
   constructor(store) { this.store = store; this._before = null; }
@@ -30,13 +30,15 @@ export class StepIntCommand extends Command {
   apply() { this.store.setIntValue(this.store.intValue() + this.delta); }
 }
 
-// Add/subtract a single digit at a given integer place (10^place), with carry
-// and clamping handled by the store. sign is +1 or -1.
-export class AddDigitCommand extends Command {
-  constructor(store, place, digit, sign) { super(store); this.place = place; this.digit = digit; this.sign = sign; }
+// Add/subtract `amount` at a column identified by its power-of-ten exponent
+// (0 = ones, 1 = tens, −1 = tenths, …), with carry/borrow and clamping handled
+// by the store's scaled-integer representation. sign is +1 or -1. Works across
+// the decimal point (e.g. a carry out of the tenths lands in the ones).
+export class AddAtColumnCommand extends Command {
+  constructor(store, exponent, amount, sign) { super(store); this.exponent = exponent; this.amount = amount; this.sign = sign; }
   apply() {
-    const delta = this.sign * this.digit * Math.pow(10, this.place);
-    this.store.setIntValue(this.store.intValue() + delta);
+    const delta = this.sign * this.amount * Math.pow(10, this.exponent + FRAC_COLS);
+    this.store.setScaled(this.store.scaledValue() + delta);
   }
 }
 

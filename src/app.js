@@ -4,11 +4,12 @@
 // drill session → drill view. Everything below depends only on abstractions;
 // this file supplies the concrete instances (Dependency Injection by hand).
 // ============================================================================
-import { FRAC_COLS, INT_COLS, INT_PLACES } from './domain/config.js';
+import { FRAC_COLS, INT_COLS, INT_PLACES, FRAC_PLACES } from './domain/config.js';
+import { rodValue } from './domain/rod.js';
 import { classifyAdd, classifySub, earthMoveLegal, heavenMoveLegal } from './domain/soroban.js';
 import { AbacusStore } from './state/abacusStore.js';
 import {
-  CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddDigitCommand,
+  CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddAtColumnCommand,
 } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
 import { ReadoutView } from './view/readoutView.js';
@@ -104,9 +105,15 @@ const KEYMAP = {
 };
 
 const coachEl = $('coach');
-let focus = 0; // focused integer place (0 = ones)
-const digitAt = place => Math.floor(store.intValue() / Math.pow(10, place)) % 10;
-const setFocus = p => { focus = Math.max(0, Math.min(INT_COLS - 1, p)); soroban.highlightColumn(focus); };
+// focus is a power-of-ten exponent: 0 = ones, 1 = tens, … up to INT_COLS-1 (K);
+// -1 = tenths, … down to -FRAC_COLS (ten-thousandths). Columns run left→right.
+let focus = 0;
+const MIN_EXP = -FRAC_COLS, MAX_EXP = INT_COLS - 1;
+const colDigit = e => e >= 0
+  ? Math.floor(store.intValue() / Math.pow(10, e)) % 10
+  : rodValue(store.frac[-e - 1]);
+const placeName = e => e >= 0 ? (INT_PLACES[e] || `10^${e}`) : (FRAC_PLACES[-e - 1] || `10^${e}`);
+const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); };
 
 // Reverse map: a complement-move token -> the key that performs it, so an
 // illegal move can suggest exactly which keys to press instead.
@@ -123,15 +130,15 @@ function keysFor(move) {
 // impossible on the focused rod, reject it and flag why (with the proper
 // complement as a hint).
 function applyMove(sign, amount) {
-  const c = digitAt(focus);
-  const place = INT_PLACES[focus] || `10^${focus}`;
-  const nbr = INT_PLACES[focus + 1];
+  const c = colDigit(focus);
+  const place = placeName(focus);
+  const nbr = placeName(focus + 1);
   const op = `${sign > 0 ? '+' : '−'}${amount}`;
 
   let legal, reason, hint = null;
   if (amount === 10) {                    // carry/borrow = ±1 earth bead on the next rod
-    const hasNext = focus + 1 < INT_COLS;
-    const next = hasNext ? digitAt(focus + 1) : 0;
+    const hasNext = focus + 1 <= MAX_EXP;
+    const next = hasNext ? colDigit(focus + 1) : 0;
     legal = hasNext && earthMoveLegal(next, 1, sign);
     if (!legal) reason = !hasNext ? 'no column beyond the top'
       : sign > 0 ? `${nbr} can’t take a carry bead (it’s at ${next})`
@@ -154,13 +161,13 @@ function applyMove(sign, amount) {
     return; // strictly literal: an impossible move is not performed
   }
 
-  dispatch(new AddDigitCommand(store, focus, amount, sign));
+  dispatch(new AddAtColumnCommand(store, focus, amount, sign));
   setFocus(focus); // keep the focus highlight after the re-render
   let detail;
   if (amount === 10) detail = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
   else {
     const what = amount === 5 ? 'heaven bead' : `${amount} earth bead${amount > 1 ? 's' : ''}`;
-    detail = `${what} → ${place} now ${digitAt(focus)}`;
+    detail = `${what} → ${place} now ${colDigit(focus)}`;
   }
   coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${detail}`;
 }
@@ -171,6 +178,7 @@ document.addEventListener('keydown', e => {
   if (e.altKey || e.ctrlKey || e.metaKey) return; // leave browser/OS shortcuts alone
   if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
   if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
+  if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; return; }
   const mv = KEYMAP[e.code];
   if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
 });

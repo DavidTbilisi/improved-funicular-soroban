@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AbacusStore } from '../src/state/abacusStore.js';
-import { CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddDigitCommand } from '../src/state/commands.js';
+import { rodValue } from '../src/domain/rod.js';
+import { CommandBus, SetValueCommand, StepIntCommand, ToggleSkyCommand, ClickEarthCommand, AddAtColumnCommand } from '../src/state/commands.js';
 
 test('SetValueCommand sets the store from a string', () => {
   const store = new AbacusStore(0, '');
@@ -35,19 +36,40 @@ test('StepIntCommand clamps at 0', () => {
   assert.equal(store.intValue(), 0);
 });
 
-test('AddDigitCommand adds a digit at a place, carries, and undoes', () => {
+test('AddAtColumnCommand adds at an integer place, carries, and undoes', () => {
   const store = new AbacusStore(0, '');
   const bus = new CommandBus();
-  bus.run(new AddDigitCommand(store, 0, 9, +1));  // +9 ones
+  bus.run(new AddAtColumnCommand(store, 0, 9, +1));  // +9 ones
   assert.equal(store.intValue(), 9);
-  bus.run(new AddDigitCommand(store, 0, 6, +1));  // +6 ones -> carry to tens
+  bus.run(new AddAtColumnCommand(store, 0, 6, +1));  // +6 ones -> carry to tens
   assert.equal(store.intValue(), 15);
-  bus.run(new AddDigitCommand(store, 1, 2, +1));  // +2 tens
+  bus.run(new AddAtColumnCommand(store, 1, 2, +1));  // +2 tens
   assert.equal(store.intValue(), 35);
-  bus.run(new AddDigitCommand(store, 0, 7, -1));  // -7 ones -> borrow
+  bus.run(new AddAtColumnCommand(store, 0, 7, -1));  // -7 ones -> borrow
   assert.equal(store.intValue(), 28);
   bus.undo();
   assert.equal(store.intValue(), 35);
+});
+
+test('AddAtColumnCommand works on fraction columns (negative exponent)', () => {
+  const store = new AbacusStore(0, '');
+  const bus = new CommandBus();
+  bus.run(new AddAtColumnCommand(store, -1, 5, +1));  // +5 tenths -> 0.5
+  assert.equal(store.scaledValue(), 5000);
+  assert.equal(rodValue(store.frac[0]), 5);
+  bus.run(new AddAtColumnCommand(store, -2, 3, +1));  // +3 hundredths -> 0.53
+  assert.equal(rodValue(store.frac[1]), 3);
+});
+
+test('a carry out of the tenths crosses the decimal point into the ones', () => {
+  const store = new AbacusStore(0, '9'); // 0.9
+  const bus = new CommandBus();
+  bus.run(new AddAtColumnCommand(store, -1, 1, +1)); // +1 tenth -> 1.0
+  assert.equal(store.intValue(), 1);
+  assert.equal(rodValue(store.frac[0]), 0);
+  assert.equal(store.scaledValue(), 10000);
+  bus.undo();
+  assert.equal(store.scaledValue(), 9000); // back to 0.9
 });
 
 test('ToggleSkyCommand and ClickEarthCommand mutate a rod and undo cleanly', () => {
