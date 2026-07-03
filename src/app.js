@@ -21,6 +21,10 @@ import { MODES } from './drill/drillMode.js';
 import { MathRng } from './drill/rng.js';
 import { LocalStorageStatsStore, DrillStatsService } from './drill/statsStore.js';
 import { DrillSession } from './drill/drillSession.js';
+import { TUTORIAL_LEVELS } from './tutorial/levels.js';
+import { LocalStorageProgressStore, TutorialProgress } from './tutorial/progressStore.js';
+import { TutorialSession } from './tutorial/tutorialSession.js';
+import { TutorialView } from './view/tutorialView.js';
 
 const $ = id => document.getElementById(id);
 
@@ -192,6 +196,24 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyQ') { e.preventDefault(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; return; }
   const mv = KEYMAP[e.code];
   if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
+});
+
+// --- Guided practice (leveled tutorial, drives the same store) --------------
+const tutorial = new TutorialSession({
+  levels: TUTORIAL_LEVELS,
+  progress: new TutorialProgress(new LocalStorageProgressStore(window.localStorage)),
+  rng: new MathRng(),
+  store,
+});
+new TutorialView({
+  levelsEl: $('tutLevels'), stageEl: $('tutStage'), teachEl: $('tutTeach'),
+  promptEl: $('tutPrompt'), subEl: $('tutSub'), meterEl: $('tutMeter'),
+  feedbackEl: $('tutFeedback'), hintBtn: $('tutHint'), skipBtn: $('tutSkip'), restartBtn: $('tutRestart'),
+}, tutorial).build();
+// A new problem seeds the beads at its start value — snap the column focus back
+// to the ones rod and clear any stale coach line so each problem starts clean.
+tutorial.subscribe(evt => {
+  if (evt.type === 'problem' || evt.type === 'skipped') { setFocus(0); coachEl.textContent = ''; }
 });
 
 // --- Initial paint ----------------------------------------------------------
