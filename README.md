@@ -5,6 +5,8 @@ number system. Every column is a food (which *place*), cube faces name the digit
 *value*), and an L3 "deep-pack" codec turns long numbers into memorable scenes with
 checksum seals, in decimal or hex.
 
+**▶ Live demo: https://davidtbilisi.github.io/improved-funicular-soroban/**
+
 ## Run it
 
 ```sh
