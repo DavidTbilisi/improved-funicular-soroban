@@ -169,8 +169,8 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (session.activeDeckId) return; // a drill is running — don't hijack keys
   if (e.altKey || e.ctrlKey || e.metaKey) return; // leave browser/OS shortcuts alone
-  if (e.code === 'ArrowLeft') { e.preventDefault(); setFocus(focus + 1); return; }
-  if (e.code === 'ArrowRight') { e.preventDefault(); setFocus(focus - 1); return; }
+  if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
+  if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
   const mv = KEYMAP[e.code];
   if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
 });

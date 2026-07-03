@@ -16,8 +16,9 @@ built from native ES modules, which browsers refuse to import over `file://`.
 
 ### Keyboard arithmetic
 
-Focus an integer column with `←` / `→`. Each key is a **literal bead move** —
-right hand adds, left hand subtracts:
+Focus an integer column with `←` / `→` (or `G` / `H`, keeping your hands on the
+home row). Each key is a **literal bead move** — right hand adds, left hand
+subtracts:
 
 ```
 add  J K L ;  = push 1..4 earth beads   U = set heaven (5)    I = carry (+10)
