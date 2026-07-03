@@ -21,21 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: Build
-        run: node build.mjs
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # The app is native ES modules; Pages serves over HTTPS, so no bundling
+      # is needed — publish the site as-is (index.html + styles.css + src/).
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: .
 
   deploy:
     environment:

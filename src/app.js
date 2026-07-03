@@ -92,15 +92,15 @@ $('radixDec').addEventListener('click', () => deepPack.setRadix(10));
 $('radixHex').addEventListener('click', () => deepPack.setRadix(16));
 
 // --- Keyboard arithmetic (home-row soroban moves with live coaching) --------
-// Right hand adds, left hand subtracts. Home row = 1..4, the row above = 5/10.
+// Right hand adds, left hand subtracts — a finger-symmetric mirror.
 //   add:  J K L ;  = +1 +2 +3 +4    U = +5    I = +10 (carry)
-//   sub:  A S D F  = -1 -2 -3 -4    Q = -5    W = -10 (borrow)
-// Q/W mirror U/I: they sit directly above A/S just as U/I sit above J/K.
+//   sub:  F D S A  = -1 -2 -3 -4    R = -5    E = -10 (borrow)
+// F mirrors J (both index); R/E sit above F/D just as U/I sit above J/K.
 const KEYMAP = {
   KeyJ: { sign: +1, amount: 1 }, KeyK: { sign: +1, amount: 2 }, KeyL: { sign: +1, amount: 3 }, Semicolon: { sign: +1, amount: 4 },
   KeyU: { sign: +1, amount: 5 }, KeyI: { sign: +1, amount: 10 },
-  KeyA: { sign: -1, amount: 1 }, KeyS: { sign: -1, amount: 2 }, KeyD: { sign: -1, amount: 3 }, KeyF: { sign: -1, amount: 4 },
-  KeyQ: { sign: -1, amount: 5 }, KeyW: { sign: -1, amount: 10 },
+  KeyF: { sign: -1, amount: 1 }, KeyD: { sign: -1, amount: 2 }, KeyS: { sign: -1, amount: 3 }, KeyA: { sign: -1, amount: 4 },
+  KeyR: { sign: -1, amount: 5 }, KeyE: { sign: -1, amount: 10 },
 };
 
 const coachEl = $('coach');
@@ -112,7 +112,7 @@ const setFocus = p => { focus = Math.max(0, Math.min(INT_COLS - 1, p)); soroban.
 // illegal move can suggest exactly which keys to press instead.
 const MOVE_KEYS = {
   '+1': 'J', '+2': 'K', '+3': 'L', '+4': ';', '+5': 'U', '+10': 'I',
-  '-1': 'A', '-2': 'S', '-3': 'D', '-4': 'F', '-5': 'Q', '-10': 'W',
+  '-1': 'F', '-2': 'D', '-3': 'S', '-4': 'A', '-5': 'R', '-10': 'E',
 };
 function keysFor(move) {
   const toks = move.split(/\s+/);

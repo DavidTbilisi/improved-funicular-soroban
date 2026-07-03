@@ -21,13 +21,14 @@ right hand adds, left hand subtracts:
 
 ```
 add  J K L ;  = push 1..4 earth beads   U = set heaven (5)    I = carry (+10)
-sub  A S D F  = pull 1..4 earth beads   Q = clear heaven (5)  W = borrow (-10)
+sub  F D S A  = pull 1..4 earth beads   R = clear heaven (5)  E = borrow (-10)
 ```
 
+The subtract keys are the finger-mirror of the add keys (`F` mirrors `J`, etc).
 A move that can't be made on the current rod (not enough free/active beads, or
 the heaven bead is already set/clear) is **rejected and flagged**, with the
 correct complement suggested — you compose it yourself, e.g. `+3` on a 4 is
-`U` then `S` (`+5 −2`). Every move is undoable.
+`U` then `D` (`+5 −2`). Every move is undoable.
 
 ## Develop
 
