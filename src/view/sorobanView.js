@@ -69,6 +69,15 @@ export class SorobanView {
       r.classList.toggle('focused', r.dataset.kind === kind && +r.dataset.place === place));
   }
 
+  // Mark a set of integer rods as the current step's targets (used by the
+  // rod-placement trainer to point at where the next digit goes). Independent
+  // of the keyboard's single-column `focused` highlight.
+  markTargets(exponents = []) {
+    const set = new Set(exponents);
+    this.el.querySelectorAll('.rod').forEach(r =>
+      r.classList.toggle('target', r.dataset.kind === 'int' && set.has(+r.dataset.place)));
+  }
+
   update(store) {
     [['int', store.int, INT_COLS], ['frac', store.frac, FRAC_COLS]].forEach(([kind, rods, cols]) => {
       for (let i = 0; i < cols; i++) {

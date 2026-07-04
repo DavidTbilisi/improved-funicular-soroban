@@ -34,10 +34,25 @@ test('generated problems are well-formed and reachable', () => {
       if (lv.id === 'read') {
         assert.equal(p.startScaled, 0);
         assert.equal(p.targetScaled, p.b * SCALE);
-      } else {
+      } else if (p.op === '+' || p.op === '-') {
         const expected = p.op === '+' ? p.a + p.b : p.a - p.b;
         assert.equal(p.startScaled, p.a * SCALE, `${lv.id} start encodes a`);
         assert.equal(p.targetScaled, expected * SCALE, `${lv.id} target encodes a${p.op}b`);
+      } else if (p.op === '×') {
+        // reached by repeated addition from the multiplicand up to the product
+        assert.equal(p.startScaled, p.a * SCALE, `${lv.id} start encodes a`);
+        assert.equal(p.targetScaled, p.a * p.b * SCALE, `${lv.id} target encodes a×b`);
+      } else if (p.op === '^') {
+        assert.equal(p.startScaled, p.a * SCALE, `${lv.id} start encodes the base`);
+        assert.equal(p.targetScaled, Math.pow(p.a, p.b) * SCALE, `${lv.id} target encodes a^b`);
+      } else if (p.op === '÷') {
+        // reached by repeated subtraction from the dividend down to 0
+        assert.equal(p.startScaled, p.a * SCALE, `${lv.id} start encodes the dividend`);
+        assert.equal(p.targetScaled, 0, `${lv.id} target is 0`);
+        assert.equal(p.a % p.b, 0, `${lv.id} divides exactly`);
+        assert.equal(p.q, p.a / p.b, `${lv.id} carries the quotient`);
+      } else {
+        assert.fail(`${lv.id} produced an unknown op ${p.op}`);
       }
     }
   }
