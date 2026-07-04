@@ -93,8 +93,19 @@ h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color
 .coach .rule.big { color: #b898e8; }
 .coach .move { font-variant-numeric: tabular-nums; color: var(--text); }
 .coach .warn { color: #ff6b6b; font-weight: 700; }
-.sound-row { text-align: center; margin-top: 8px; }
+.sound-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
 .sound-toggle { padding: 5px 12px; font-size: 0.8rem; }
+.metro { display: inline-flex; align-items: center; gap: 9px; }
+.metro-toggle { padding: 5px 12px; font-size: 0.8rem; }
+.metro-toggle.on { color: var(--accent); border-color: var(--accent); }
+.metro-beat { width: 12px; height: 12px; border-radius: 50%; background: #2a2f38; border: 1px solid var(--border); flex: none; }
+.metro-beat.pulse { animation: metroPulse 0.16s ease-out; }
+.metro-beat.accent.pulse { animation: metroPulseAccent 0.16s ease-out; }
+@keyframes metroPulse { 0% { background: var(--accent); transform: scale(1.5); } 100% { background: #2a2f38; transform: scale(1); } }
+@keyframes metroPulseAccent { 0% { background: #ffd27f; transform: scale(1.8); box-shadow: 0 0 8px var(--accent); } 100% { background: #2a2f38; transform: scale(1); } }
+.metro input[type="range"] { width: 96px; accent-color: var(--accent); }
+.metro-bpm { font-size: 0.8rem; color: #b8c0cc; font-variant-numeric: tabular-nums; min-width: 58px; }
+.metro-bpm span { color: var(--text); font-weight: 700; }
 kbd { display: inline-block; padding: 1px 6px; background: #1d2128; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; font-family: inherit; font-size: 0.82em; color: var(--text); }
 
 /* In-soroban decimal point column */

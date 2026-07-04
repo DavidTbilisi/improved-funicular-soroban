@@ -26,6 +26,7 @@ import { LocalStorageProgressStore, TutorialProgress } from './tutorial/progress
 import { TutorialSession } from './tutorial/tutorialSession.js';
 import { TutorialView } from './view/tutorialView.js';
 import { SoundService } from './view/soundService.js';
+import { Metronome } from './view/metronome.js';
 
 const $ = id => document.getElementById(id);
 
@@ -48,6 +49,38 @@ if (soundBtn) soundBtn.addEventListener('click', () => {
   if (sound.enabled) sound.bead(); // audible confirmation
 });
 paintSoundBtn();
+
+// --- Metronome (steady beat to pace bead strokes) ---------------------------
+// Practice smooth: make one bead move per tick, then ratchet the tempo up. The
+// visual dot pulses in sync so it works muted too. BPM persists per browser.
+const savedBpm = parseInt(localStorage.getItem('npv-bpm'), 10);
+const metronome = new Metronome({ bpm: Number.isFinite(savedBpm) ? savedBpm : 60 });
+const metroBtn = $('metroBtn'), metroBeat = $('metroBeat'), metroBpm = $('metroBpm'), metroBpmVal = $('metroBpmVal');
+const paintMetro = () => {
+  if (metroBtn) { metroBtn.textContent = metronome.running ? '⏸ Metronome' : '▶ Metronome'; metroBtn.classList.toggle('on', metronome.running); }
+};
+metronome.onBeat = (_beat, accent) => {
+  if (!metroBeat) return;
+  metroBeat.classList.toggle('accent', accent);
+  metroBeat.classList.remove('pulse');
+  void metroBeat.offsetWidth; // reflow so the CSS animation restarts each beat
+  metroBeat.classList.add('pulse');
+};
+if (metroBtn) metroBtn.addEventListener('click', () => {
+  metronome.toggle();
+  if (!metronome.running && metroBeat) metroBeat.classList.remove('pulse', 'accent');
+  paintMetro();
+});
+if (metroBpm) {
+  metroBpm.value = metronome.bpm;
+  metroBpm.addEventListener('input', () => {
+    const v = metronome.setBpm(+metroBpm.value);
+    if (metroBpmVal) metroBpmVal.textContent = v;
+    localStorage.setItem('npv-bpm', String(v));
+  });
+}
+if (metroBpmVal) metroBpmVal.textContent = metronome.bpm;
+paintMetro();
 
 // --- Views (observers of the store) -----------------------------------------
 const soroban = new SorobanView($('soroban'), {

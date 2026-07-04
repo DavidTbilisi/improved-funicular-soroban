@@ -5,11 +5,11 @@
 // in the DOM-free core. All methods are no-ops when audio is muted or when
 // there is no AudioContext (e.g. under node in tests), so it is import-safe.
 //
-// The AudioContext is created lazily and resumed on demand — every sound is
-// triggered from inside a user gesture (keydown / click), which satisfies the
-// browser autoplay policy without extra plumbing.
+// The AudioContext is shared (see audioContext.js), created lazily and resumed
+// on demand — every sound is triggered from inside a user gesture (keydown /
+// click), which satisfies the browser autoplay policy without extra plumbing.
 // ============================================================================
-const root = typeof globalThis !== 'undefined' ? globalThis : {};
+import { getAudioContext } from './audioContext.js';
 
 export class SoundService {
   constructor({ enabled = true } = {}) {
@@ -18,10 +18,7 @@ export class SoundService {
   }
 
   _ac() {
-    const AC = root.AudioContext || root.webkitAudioContext;
-    if (!AC) return null;
-    if (!this.ctx) this.ctx = new AC();
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.ctx = getAudioContext(); // shared singleton; null under node (import-safe)
     return this.ctx;
   }
 
