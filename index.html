@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Place-Value Peg Soroban — every column is a food, flipped for decimals</title>
+<title>Place-Value Peg Soroban — explore the board</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,113 +11,19 @@
 <div class="app">
   <h1>Place-Value Peg Soroban</h1>
   <p class="subtitle">Every column is a food (horizontal axis: <em>which place</em>). Upright = integer place, <span style="color:#b898e8">flipped = decimal place</span>. Cube faces name the digit (vertical axis: <em>which value</em>) — 🌹 rose is the sky bead.</p>
+  <div id="nav"></div>
 
-  <div class="readout">
-    <div class="num-box">
-      <div class="label">Number</div>
-      <div class="value" id="numValue">0</div>
-    </div>
-    <div class="decode" id="decode"></div>
-  </div>
+  <!-- board shell injects: readout + soroban + set-number/presets -->
+  <div id="boardMount"></div>
 
   <div class="panel">
-    <div class="soroban-wrap">
-      <div class="soroban" id="soroban"></div>
-    </div>
-    <div class="coach" id="coach">Keyboard: <kbd>←</kbd> <kbd>→</kbd> or <kbd>G</kbd> <kbd>H</kbd> pick a column (integer or decimal) · add <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>=+1..4 <kbd>U</kbd>=+5 <kbd>I</kbd>=+10 · sub <kbd>F</kbd><kbd>D</kbd><kbd>S</kbd><kbd>A</kbd>=−1..4 <kbd>R</kbd>=−5 <kbd>E</kbd>=−10 · <kbd>Q</kbd>=reset · type <kbd>0</kbd>–<kbd>9</kbd> to enter a number</div>
-    <div class="sound-row">
-      <button id="soundBtn" class="sound-toggle">🔊 Sound on</button>
-      <span class="metro">
-        <button id="metroBtn" class="metro-toggle">▶ Metronome</button>
-        <span class="metro-beat" id="metroBeat" aria-hidden="true"></span>
-        <input type="range" id="metroBpm" min="40" max="200" step="5" value="60" aria-label="Metronome tempo">
-        <span class="metro-bpm"><span id="metroBpmVal">60</span> BPM</span>
-      </span>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Guided practice — leveled bead drills</h2>
-    <p class="help" style="margin-bottom:12px;">Work the ladder: pick a level, then solve problems <strong>on the beads above</strong> with the keyboard. The gate is <strong>automaticity</strong> — a solve only counts if it's <strong>under the level's time floor</strong> and <strong>fumble-free</strong> (an illegal move or a reset spoils it). A slow or fumbled solve <strong>resets your streak</strong>, so you must string together several fluent solves <strong>in a row</strong> to unlock the next level. 🔒 = locked · progress is saved per browser.</p>
-    <div class="tut-levels" id="tutLevels"></div>
-    <div class="tut-stage" id="tutStage">
-      <div class="tut-teach" id="tutTeach"></div>
-      <div class="tut-prompt" id="tutPrompt"></div>
-      <div class="tut-sub" id="tutSub"></div>
-      <div class="tut-timer" id="tutTimer"></div>
-      <div class="tut-meter" id="tutMeter"></div>
-      <div class="tut-feedback" id="tutFeedback"></div>
-      <div class="tut-controls">
-        <button id="tutHint">Hint</button>
-        <button id="tutSkip">Show answer (reset streak)</button>
-        <button id="tutRestart">Restart level</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Multiplication &amp; division — the real soroban method</h2>
-    <p class="help" style="margin-bottom:12px;">The authentic rod-placement algorithms from the Japan Chamber of Commerce <em>Soroban</em> handbook. Pick a type; the beads above are seeded with the <strong>multiplier / multiplicand</strong> (or <strong>dividend / divisor</strong>). Then work the highlighted rods with the keyboard, one step at a time — each partial product / subtraction lands on a fixed rod, and the trainer advances only when the board reads the right value, so it <strong>verifies your rod placement</strong>, not just the final answer. Stuck on a step? <strong>Do this step</strong> plays it for you.</p>
-    <div class="tut-levels" id="rtModes"></div>
-    <div class="tut-stage" id="rtStage">
-      <div class="rt-head"><span class="rt-title" id="rtTitle"></span></div>
-      <div class="tut-teach" id="rtTeach"></div>
-      <div class="tut-prompt" id="rtPrompt"></div>
-      <div class="rt-setup" id="rtSetup"></div>
-      <div class="tut-meter" id="rtProgress"></div>
-      <div class="rt-instr" id="rtInstr"></div>
-      <div class="tut-feedback" id="rtFeedback"></div>
-      <div class="tut-controls">
-        <button id="rtDoStep">Do this step →</button>
-        <button id="rtNext">Next problem</button>
-        <button id="rtStop">Stop</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Set a number</h2>
-    <div class="input-row">
-      <label for="numInput">Value:</label>
-      <input type="text" id="numInput" inputmode="decimal" placeholder="e.g. 15.98" value="15.98">
-      <button id="setBtn" class="primary">Set</button>
-      <button id="clearBtn">Clear (0)</button>
-      <button id="incBtn">+1</button>
-      <button id="decBtn">−1</button>
-      <button id="randBtn">Random</button>
-      <button id="undoBtn" disabled>Undo</button>
-    </div>
-    <div class="presets" id="presets"></div>
-    <p class="help" style="margin-top:14px;">
+    <p class="help">
       Click any bead to move it. Each column has <strong>1 sky bead</strong> (worth <code>5</code>) and <strong>4 earth beads</strong> (worth <code>1</code> each). Integer places sit <strong>left</strong> of the green point with <strong>upright</strong> pegs (Apple = ones, Banana = tens…). Decimal places sit <span class="fr">right</span> of the point with <span class="fr">flipped</span> pegs reusing the same foods (flipped Apple = tenths, flipped Banana = hundredths…). Under each column the <strong>cube faces</strong> show the digit as one percept: earth beads = 🚕🍊👽🌊, sky bead = 🌹, so <code>8</code> is 🌹👽 (rose + alien).
     </p>
     <p class="help" style="margin-top:10px;">
-      <strong>Keyboard arithmetic.</strong> Each key is a <strong>literal bead move</strong>. Use <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>G</kbd>/<kbd>H</kbd>, staying on the home row) to focus any column — <strong>integer or decimal</strong>; a carry out of the tenths crosses the point into the ones. <kbd>Q</kbd> resets to 0. The <strong>right hand adds</strong> — <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> = push <code>1</code>–<code>4</code> earth beads, <kbd>U</kbd> = set the <code>5</code> (heaven) bead, <kbd>I</kbd> = carry (<code>+10</code>). The <strong>left hand subtracts</strong> (mirror of the right) — <kbd>F</kbd> <kbd>D</kbd> <kbd>S</kbd> <kbd>A</kbd> = pull <code>1</code>–<code>4</code> earth beads, <kbd>R</kbd> = clear the heaven bead, <kbd>E</kbd> = borrow (<code>−10</code>). A move that can’t be made on the current rod (e.g. <kbd>L</kbd> when there aren’t 3 free beads, or <kbd>U</kbd> when the heaven bead is already set) is <span style="color:#ff6b6b">rejected and flagged</span>, with the correct complement suggested — you compose it yourself, e.g. <code>+3</code> on a 4 → <kbd>U</kbd> then <kbd>D</kbd> (<code>+5 −2</code>). Every move is undoable with the <strong>Undo</strong> button.
+      <strong>Keyboard arithmetic.</strong> Each key is a <strong>literal bead move</strong>. Use <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>G</kbd>/<kbd>H</kbd>, staying on the home row) to focus any column — <strong>integer or decimal</strong>; a carry out of the tenths crosses the point into the ones. <kbd>Q</kbd> resets to 0. The <strong>right hand adds</strong> — <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> = push <code>1</code>–<code>4</code> earth beads, <kbd>U</kbd> = set the <code>5</code> (heaven) bead, <kbd>I</kbd> = carry (<code>+10</code>). The <strong>left hand subtracts</strong> (mirror of the right) — <kbd>F</kbd> <kbd>D</kbd> <kbd>S</kbd> <kbd>A</kbd> = pull <code>1</code>–<code>4</code> earth beads, <kbd>R</kbd> = clear the heaven bead, <kbd>E</kbd> = borrow (<code>−10</code>). A move that can’t be made on the current rod is <span style="color:#ff6b6b">rejected and flagged</span>, with the correct complement suggested — you compose it yourself, e.g. <code>+3</code> on a 4 → <kbd>U</kbd> then <kbd>D</kbd> (<code>+5 −2</code>). Every move is undoable with the <strong>Undo</strong> button.
       <br><strong>Input mode:</strong> just start typing a number — press any digit (or <kbd>.</kbd>) to jump into the value field, then <kbd>Enter</kbd> to place it on the soroban (<kbd>Esc</kbd> to cancel). The number row types numbers; the home row moves beads.
     </p>
-  </div>
-
-  <div class="panel">
-    <h2>Drill mode — timed against the METER pass-floors</h2>
-    <p class="help" style="margin-bottom:12px;">Pick a deck; items keep coming until you stop. Typed decks check exactly (case-insensitive, <code>0x</code> optional); recall decks reveal for self-grading — the timer measures until you hit <strong>Reveal</strong>. A rep passes its floor only if it's <em>correct and under time</em>. Session stats persist per deck (localStorage). Drill order per the tier discipline: atomics (pegs, faces, actions) → cells → scenes → seals.</p>
-    <div class="drill-decks" id="drillDecks"></div>
-    <div class="drill-stage" id="drillStage">
-      <div class="drill-floor" id="drillFloor"></div>
-      <div class="drill-prompt" id="drillPrompt"></div>
-      <div class="drill-sub" id="drillSub"></div>
-      <div class="drill-answer-row" id="drillTypeRow">
-        <input type="text" id="drillInput" autocomplete="off" placeholder="answer + Enter">
-      </div>
-      <div class="drill-answer-row" id="drillRevealRow" style="display:none;">
-        <button id="drillRevealBtn" class="primary">Reveal (Space)</button>
-        <button id="drillGotIt" style="display:none;">✓ Got it (G)</button>
-        <button id="drillMissed" style="display:none;">✗ Missed (M)</button>
-      </div>
-      <div class="drill-feedback" id="drillFeedback"></div>
-      <div class="drill-stats" id="drillStats"></div>
-      <div class="drill-best" id="drillBest"></div>
-      <div style="margin-top:12px;"><button id="drillStop">Stop session</button></div>
-    </div>
   </div>
 
   <div class="panel">
@@ -131,27 +37,9 @@
     <div class="pack-digits-line" id="packDigitsLine"></div>
     <div class="locus-list" id="packLoci"></div>
   </div>
-
-  <div class="panel">
-    <h2>Cube digit faces (vertical axis)</h2>
-    <p class="help" style="margin-bottom:12px;">Each digit has exactly <strong>one</strong> form, mirroring the bead grammar: <code>0</code> = bare column, <code>1–4</code> = earth face, <code>5</code> = 🌹 Rose alone (the <strong>sky bead</strong>), <code>6–9</code> = Rose + earth face. Every image wears its face color. 😇 Angel (white, die-face 6) is <strong>retired from digit duty</strong> — reserved-icon inventory. Orientation carries no digit information. Spec: wiki §Cube Digit Faces (soroban-learning-method).</p>
-    <div class="cube-grid" id="cubeGrid"></div>
-  </div>
-
-  <div class="panel">
-    <h2>16×16 hex extension pegs (A–F, frozen 2026-07-02)</h2>
-    <p class="help" style="margin-bottom:12px;">Audio <code>A–F</code> = <strong>NATO phonetic</strong> (rhyme can't extend to letters — B/C/D/E all rhyme "-ee"); visual <code>A–F</code> = <strong>letterform objects</strong> (same logic as donut=0, wand=1). Mnemonic: <strong>"Radio says the tens, shape shows the units."</strong> Guards: Alpha wolf is <em>gray + howling</em> vs Foxtrot fox <em>orange + dancing</em>; the Moon <em>glows</em> (the croissant is baked); the Flag is the generic red one. The radix lives in the mode, never in the image — cell <code>47</code> is decimal 47 or 0x47 depending on the consumer.</p>
-    <div class="peg-grid" id="hexPegGrid"></div>
-  </div>
-
-  <div class="panel">
-    <h2>A–Z food peg columns</h2>
-    <p class="help" style="margin-bottom:12px;">Integer columns use <code>A</code>–<code>K</code> upright; decimal columns reuse <code>A</code>–<code>D</code> flipped. The flip is the only difference between a place and its fractional echo.</p>
-    <div class="peg-grid" id="pegGrid"></div>
-  </div>
 </div>
 
-<script type="module" src="src/app.js"></script>
+<script type="module" src="src/pages/explore.js"></script>
 
 </body>
 </html>

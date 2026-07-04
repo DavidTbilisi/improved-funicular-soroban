@@ -17,11 +17,14 @@ export class ReferenceView {
     this.onPreset = onPreset;
   }
 
+  // Each section is optional so a page can mount only the grids it shows (the
+  // reference page wants the tables; the explore page wants only the presets).
   build() {
-    this._buildPegGrid();
-    this._buildCubeGrid();
-    this._buildHexPegGrid();
-    this._buildPresets();
+    if (this.pegGridEl) this._buildPegGrid();
+    if (this.cubeGridEl) this._buildCubeGrid();
+    if (this.hexPegGridEl) this._buildHexPegGrid();
+    if (this.presetsEl) this._buildPresets();
+    return this;
   }
 
   _buildPegGrid() {

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">Reference tables — the frozen peg, face, and hex-extension grammars.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Cube digit faces (vertical axis)</h2>
+    <p class="help" style="margin-bottom:12px;">Each digit has exactly <strong>one</strong> form, mirroring the bead grammar: <code>0</code> = bare column, <code>1–4</code> = earth face, <code>5</code> = 🌹 Rose alone (the <strong>sky bead</strong>), <code>6–9</code> = Rose + earth face. Every image wears its face color. 😇 Angel (white, die-face 6) is <strong>retired from digit duty</strong> — reserved-icon inventory. Orientation carries no digit information. Spec: wiki §Cube Digit Faces (soroban-learning-method).</p>
+    <div class="cube-grid" id="cubeGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>16×16 hex extension pegs (A–F, frozen 2026-07-02)</h2>
+    <p class="help" style="margin-bottom:12px;">Audio <code>A–F</code> = <strong>NATO phonetic</strong> (rhyme can't extend to letters — B/C/D/E all rhyme "-ee"); visual <code>A–F</code> = <strong>letterform objects</strong> (same logic as donut=0, wand=1). Mnemonic: <strong>"Radio says the tens, shape shows the units."</strong> Guards: Alpha wolf is <em>gray + howling</em> vs Foxtrot fox <em>orange + dancing</em>; the Moon <em>glows</em> (the croissant is baked); the Flag is the generic red one. The radix lives in the mode, never in the image — cell <code>47</code> is decimal 47 or 0x47 depending on the consumer.</p>
+    <div class="peg-grid" id="hexPegGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>A–Z food peg columns</h2>
+    <p class="help" style="margin-bottom:12px;">Integer columns use <code>A</code>–<code>K</code> upright; decimal columns reuse <code>A</code>–<code>D</code> flipped. The flip is the only difference between a place and its fractional echo.</p>
+    <div class="peg-grid" id="pegGrid"></div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/reference.js"></script>
+
+</body>
+</html>
