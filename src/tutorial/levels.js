@@ -40,6 +40,46 @@ function movesOf(p) {
   return cl.move.replace(/-/g, '−');
 }
 
+// --- Advanced builders ------------------------------------------------------
+// ×, ÷, and powers are not new bead rules — they DECOMPOSE into the adds and
+// subtracts the earlier levels drilled. Each problem is reached on the beads by
+// the decomposition the level teaches, so the session's value-compare still
+// detects a correct solve, and the keyboard's move-legality still proves clean
+// technique. Operands stay whole so *Scaled is exact.
+const times = n => (n === 1 ? '1 more time' : `${n} more times`);
+
+// a × m, reached by adding a (m−1) more times: a → 2a → … → m·a.
+function mkMul(a, m) {
+  return {
+    a, b: m, op: '×',
+    prompt: `<b>${a}</b> × <b>${m}</b>`,
+    sub: `beads start at ${a} — add ${a} until you reach ${a * m}`,
+    startScaled: scaled(a), targetScaled: scaled(a * m),
+  };
+}
+
+// a^n (small n), reached the same way — a square is n=2 groups of a.
+function mkPow(a, n) {
+  const t = Math.pow(a, n);
+  return {
+    a, b: n, op: '^',
+    prompt: `<b>${a}</b><sup>${n}</sup>`,
+    sub: `beads start at ${a} — ${a} groups of ${a} → reach ${t}`,
+    startScaled: scaled(a), targetScaled: scaled(t),
+  };
+}
+
+// D ÷ b (exact), reached by subtracting b repeatedly down to 0. The quotient q
+// is how many subtractions it takes — the answer the user counts off mentally.
+function mkDiv(D, b) {
+  return {
+    a: D, b, op: '÷', q: D / b,
+    prompt: `<b>${D}</b> ÷ <b>${b}</b>`,
+    sub: `beads start at ${D} — subtract ${b} repeatedly down to 0`,
+    startScaled: scaled(D), targetScaled: 0,
+  };
+}
+
 export const TUTORIAL_LEVELS = [
   {
     id: 'read', title: 'Read & set', floor: 6, timeFloorMs: 2500,
@@ -126,5 +166,34 @@ export const TUTORIAL_LEVELS = [
       return mk(19, 3, '+');
     },
     hint: () => 'work column by column; carry +10 into the next rod, or borrow −10 from it',
+  },
+  {
+    id: 'mult', title: 'Multiply (repeated +)', floor: 5, timeFloorMs: 12000,
+    teach: 'Multiplication is <b>repeated addition</b>. 6 × 4 → set <b>6</b>, then add 6 three more times: 6 → 12 → 18 → <b>24</b>. Every step is an add you already know (direct / friend / carry).',
+    gen(rng) {
+      const m = 2 + rng.int(4);   // 2..5 groups
+      const a = 2 + rng.int(8);   // 2..9 multiplicand → product 4..45
+      return mkMul(a, m);
+    },
+    hint: p => `add ${p.a} — ${times(p.b - 1)} → ${p.a * p.b}`,
+  },
+  {
+    id: 'square', title: 'Squares & powers', floor: 5, timeFloorMs: 15000,
+    teach: 'A power is repeated multiplication — and a <b>square</b> is repeated addition. 4² = 4 groups of 4 → set <b>4</b>, add 4 three more times → <b>16</b>.',
+    gen(rng) {
+      const a = 2 + rng.int(6);   // 2..7 → squares 4..49 (≤6 adds)
+      return mkPow(a, 2);
+    },
+    hint: p => `${p.a}² = add ${p.a}, ${times(p.a - 1)} → ${p.a * p.a}`,
+  },
+  {
+    id: 'divide', title: 'Divide (repeated −)', floor: 5, timeFloorMs: 15000,
+    teach: 'Division is <b>repeated subtraction</b>. 56 ÷ 7 → set <b>56</b>, subtract 7 until the beads read 0; the number of subtractions (<b>8</b>) is the answer. Each step is a subtract you know (direct / friend / borrow).',
+    gen(rng) {
+      const b = 2 + rng.int(8);   // divisor 2..9
+      const q = 2 + rng.int(5);   // quotient 2..6 (≤6 subtractions)
+      return mkDiv(b * q, b);     // exact dividend 4..54
+    },
+    hint: p => `subtract ${p.b} down to 0 — that takes ${p.q} steps, so ${p.a} ÷ ${p.b} = ${p.q}`,
   },
 ];
