@@ -25,6 +25,9 @@ import { TUTORIAL_LEVELS } from './tutorial/levels.js';
 import { LocalStorageProgressStore, TutorialProgress } from './tutorial/progressStore.js';
 import { TutorialSession } from './tutorial/tutorialSession.js';
 import { TutorialView } from './view/tutorialView.js';
+import { RodTrainerSession } from './tutorial/rodTrainerSession.js';
+import { RodTrainerView } from './view/rodTrainerView.js';
+import { ROD_MODES } from './domain/mulDiv.js';
 import { SoundService } from './view/soundService.js';
 import { Metronome } from './view/metronome.js';
 
@@ -267,6 +270,26 @@ tutorial.subscribe(evt => {
   if (evt.type === 'problem' || evt.type === 'skipped') { setFocus(0); coachEl.textContent = ''; }
   if (evt.type === 'solved') { if (evt.justPassed) sound.levelUp(); else if (evt.clean) sound.solve(); else sound.reject(); }
 });
+
+// --- Multiplication/division rod-placement trainer (drives the same store) --
+// The authentic soroban method: it seeds the multiplier/multiplicand (or
+// dividend/divisor) layout and walks the operator through each rod placement,
+// pointing the shared soroban at the target rods and advancing only when the
+// board reads the step's value. Mutually exclusive with a leveled tutorial.
+const rodTrainer = new RodTrainerSession({ modes: ROD_MODES, rng: new MathRng(), store });
+new RodTrainerView({
+  modesEl: $('rtModes'), stageEl: $('rtStage'), titleEl: $('rtTitle'), teachEl: $('rtTeach'),
+  promptEl: $('rtPrompt'), setupEl: $('rtSetup'), progressEl: $('rtProgress'), instrEl: $('rtInstr'),
+  feedbackEl: $('rtFeedback'), doStepBtn: $('rtDoStep'), nextBtn: $('rtNext'), stopBtn: $('rtStop'),
+}, rodTrainer, { onTargets: rods => soroban.markTargets(rods) }).build();
+rodTrainer.subscribe(evt => {
+  if (evt.type === 'problem') { if (tutorial.active) tutorial.stop(); setFocus(0); coachEl.textContent = 'trainer: place the highlighted rods with the keyboard'; }
+  else if (evt.type === 'step') setFocus(Math.min(...evt.targets)); // snap focus to the step's rightmost target
+  else if (evt.type === 'solved') sound.solve();
+  else if (evt.type === 'stopped') soroban.markTargets([]);
+});
+// Starting a leveled tutorial and the rod trainer are mutually exclusive.
+tutorial.subscribe(evt => { if (evt.type === 'level' && rodTrainer.active) rodTrainer.stop(); });
 
 // --- Initial paint ----------------------------------------------------------
 store.notify(store);

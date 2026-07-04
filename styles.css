@@ -188,6 +188,22 @@ button.primary:hover { background: var(--accent); border-color: var(--accent); }
 .tut-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .tut-controls button { font-size: 0.82rem; }
 
+/* Rod-placement trainer (real multiplication/division method) */
+.rod.target .rod-frame { background: rgba(81,207,102,0.12); border-radius: 8px; box-shadow: inset 0 0 0 2px #51cf66; }
+.rod.target .rod-letter { color: #51cf66; }
+.rod.target.focused .rod-frame { box-shadow: inset 0 0 0 2px #51cf66, 0 0 0 2px var(--accent); }
+.rt-head { margin-bottom: 8px; }
+.rt-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.rt-setup { font-size: 0.82rem; color: #b8c0cc; line-height: 1.55; margin: 2px auto 10px; max-width: 62ch; }
+.rt-setup b { color: var(--accent); }
+.rt-dots { letter-spacing: 3px; color: #51cf66; font-size: 1.05rem; }
+.rt-count { color: var(--muted); font-size: 0.82rem; }
+.rt-instr { font-size: 1rem; color: var(--text); line-height: 1.6; margin: 6px auto 6px; max-width: 62ch; min-height: 1.6em; }
+.rt-instr b { color: var(--accent); }
+.rt-kind { font-weight: 700; color: var(--muted); }
+.rt-kind.rt-clear, .rt-kind.rt-subtract { color: #ff9b6b; }
+.rt-kind.rt-quotient { color: #b898e8; }
+
 /* L3 Deep Pack */
 .locus-list { display: flex; flex-direction: column; gap: 10px; }
 .locus { display: flex; gap: 12px; align-items: stretch; padding: 10px 12px; background: #1d2128; border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap; }
