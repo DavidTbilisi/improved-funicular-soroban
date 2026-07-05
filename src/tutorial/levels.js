@@ -16,6 +16,7 @@
 // ============================================================================
 import { FRAC_COLS } from '../domain/config.js';
 import { classifyAdd, classifySub } from '../domain/soroban.js';
+import { planAdd, planSub, stepsText, keysText } from '../domain/movePlan.js';
 
 const SCALE = Math.pow(10, FRAC_COLS);
 const scaled = v => Math.round(v * SCALE);
@@ -33,11 +34,22 @@ function mk(a, b, op) {
   };
 }
 
-// Move string for the ones-column operation (used by hints).
+// Fully-flattened move hint for the ones-column operation. One level of
+// classification isn't a usable hint when the trade nests ("+7 = +10 −3" on a 6
+// leaves you staring at an impossible −3) — so narrate every trade in the
+// chain, then give the whole thing as keys.
 function movesOf(p) {
   const c = p.a % 10;
-  const cl = p.op === '+' ? classifyAdd(c, p.b) : classifySub(c, p.b);
-  return cl.move.replace(/-/g, '−');
+  const plan = p.op === '+' ? planAdd(c, p.b) : planSub(c, p.b);
+  const pretty = s => s.replace(/-/g, '−');
+  const chain = `<b>${stepsText(plan.steps)}</b>`;
+  const keys = keysText(plan.steps);
+  if (plan.story.length > 1) {
+    const [top, pay] = plan.story;
+    return `${pretty(top.op)} = ${pretty(top.into)} — but ${pretty(pay.op)} is blocked on this rod, so it trades too: ` +
+      `${pretty(pay.op)} = ${pretty(pay.into)}. Chain: ${chain}${keys ? ` (${keys})` : ''}`;
+  }
+  return `${chain}${keys ? ` (${keys})` : ''}`;
 }
 
 // --- Advanced builders ------------------------------------------------------
@@ -152,6 +164,26 @@ export const TUTORIAL_LEVELS = [
       return mk(13, 5, '-');
     },
     hint: p => `big friend (borrow): ${movesOf(p)}`,
+  },
+  {
+    // NOTE: inserted at index 6 after release — progressStore migrates older
+    // saved `unlocked` counts past this slot (see TutorialProgress._data).
+    id: 'compound', title: 'Compound trades', floor: 6, timeFloorMs: 6000,
+    teach: 'Sometimes one trade opens another: <b>6 + 7</b> crosses ten, so +7 = +10 −3 — but −3 is blocked (only 1 earth bead down), so it trades too: −3 = −5 +2. <b>Never plan the whole chain.</b> Ask one question per move — <i>can I do this directly? if not, which trade?</i> — and the chain unrolls itself: <kbd>I</kbd> <kbd>R</kbd> <kbd>K</kbd>.',
+    gen(rng) {
+      for (let k = 0; k < 200; k++) {
+        const add = rng.int(2) === 0;
+        if (add) {
+          const a = 5 + rng.int(4), b = 6 + rng.int(4);          // a 5..8, b 6..9
+          if (a + b >= 10 && planAdd(a, b).story.length > 1) return mk(a, b, '+');
+        } else {
+          const A = 10 + rng.int(5), b = 6 + rng.int(4);         // A 10..14, b 6..9
+          if (A - b >= 0 && A % 10 < b && planSub(A % 10, b).story.length > 1) return mk(A, b, '-');
+        }
+      }
+      return mk(6, 7, '+');
+    },
+    hint: p => `compound trade: ${movesOf(p)}`,
   },
   {
     id: 'multi', title: 'Multi-digit', floor: 6, timeFloorMs: 9000,

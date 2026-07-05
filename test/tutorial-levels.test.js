@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TUTORIAL_LEVELS } from '../src/tutorial/levels.js';
 import { classifyAdd, classifySub } from '../src/domain/soroban.js';
+import { planAdd, planSub } from '../src/domain/movePlan.js';
 import { MathRng } from '../src/drill/rng.js';
 import { FRAC_COLS } from '../src/domain/config.js';
 
@@ -72,6 +73,28 @@ test('each rule-specific level forces its intended technique on the ones column'
       assert.equal(ruleOf(lv, p), want, `${lv.id} should produce a "${want}" move (got ${p.a}${p.op}${p.b})`);
     }
   }
+});
+
+test('compound level always nests: the big trade’s payback needs its own trade', () => {
+  const lv = TUTORIAL_LEVELS.find(l => l.id === 'compound');
+  for (let k = 0; k < 300; k++) {
+    const p = lv.gen(rng);
+    const c = p.a % 10;
+    const plan = p.op === '+' ? planAdd(c, p.b) : planSub(c, p.b);
+    assert.equal(plan.rule, 'big', `${p.a}${p.op}${p.b} crosses ten`);
+    assert.equal(plan.story.length, 2, `${p.a}${p.op}${p.b} nests a second trade`);
+    if (p.op === '-') assert.ok(p.a - p.b >= 0, 'result non-negative');
+    // the hint narrates the whole chain, ending in single keys
+    assert.match(lv.hint(p), /Chain: <b>/);
+  }
+});
+
+test('nested hints narrate every trade down to keys', () => {
+  const big = TUTORIAL_LEVELS.find(l => l.id === 'big-add');
+  const h = big.hint({ a: 6, b: 7, op: '+' });
+  assert.match(h, /\+7 = \+10 −3/);
+  assert.match(h, /−3 = −5 \+2/);
+  assert.match(h, /<b>\+10 −5 \+2<\/b> \(I then R then K\)/);
 });
 
 test('multi-digit level uses two-digit operands and a non-negative result', () => {

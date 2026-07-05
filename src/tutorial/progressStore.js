@@ -28,6 +28,10 @@ export class TutorialProgress {
     const d = this.store.load();
     if (typeof d.unlocked !== 'number') d.unlocked = 1; // level 0 is always open
     if (!d.best) d.best = {};
+    // v2: 'Compound trades' was inserted at ladder index 6 — shift older saved
+    // counts past it so a level that was open never relocks. Idempotent whether
+    // or not the shifted blob gets saved (the raw count re-migrates the same way).
+    if (!(d.v >= 2)) { if (d.unlocked > 6) d.unlocked += 1; d.v = 2; }
     return d;
   }
 
