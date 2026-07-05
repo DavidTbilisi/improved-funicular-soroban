@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codec drills — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">Timed recall drills for the mnemonic number-codec — pegs, cells, scenes, seals.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Drill mode — timed against the METER pass-floors</h2>
+    <p class="help" style="margin-bottom:12px;">Pick a deck; items keep coming until you stop. Typed decks check exactly (case-insensitive, <code>0x</code> optional); recall decks reveal for self-grading — the timer measures until you hit <strong>Reveal</strong>. A rep passes its floor only if it's <em>correct and under time</em>. Session stats persist per deck (localStorage). Drill order per the tier discipline: atomics (pegs, faces, actions) → cells → scenes → seals.</p>
+    <div class="drill-decks" id="drillDecks"></div>
+    <div class="drill-stage" id="drillStage">
+      <div class="drill-floor" id="drillFloor"></div>
+      <div class="drill-prompt" id="drillPrompt"></div>
+      <div class="drill-sub" id="drillSub"></div>
+      <div class="drill-answer-row" id="drillTypeRow">
+        <input type="text" id="drillInput" autocomplete="off" placeholder="answer + Enter">
+      </div>
+      <div class="drill-answer-row" id="drillRevealRow" style="display:none;">
+        <button id="drillRevealBtn" class="primary">Reveal (Space)</button>
+        <button id="drillGotIt" style="display:none;">✓ Got it (G)</button>
+        <button id="drillMissed" style="display:none;">✗ Missed (M)</button>
+      </div>
+      <div class="drill-feedback" id="drillFeedback"></div>
+      <div class="drill-stats" id="drillStats"></div>
+      <div class="drill-best" id="drillBest"></div>
+      <div style="margin-top:12px;"><button id="drillStop">Stop session</button></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/drills.js"></script>
+
+</body>
+</html>
