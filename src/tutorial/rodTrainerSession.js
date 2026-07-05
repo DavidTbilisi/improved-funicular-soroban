@@ -72,7 +72,7 @@ export class RodTrainerSession extends Observable {
     const s = this.problem.steps[this.cur];
     this.notify({
       type: 'step', n: this.cur + 1, total: this.problem.steps.length,
-      instr: s.instr, kind: s.kind, targets: s.targets, done: this.cur,
+      instr: s.instr, kind: s.kind, targets: s.targets, factors: s.factors || null, done: this.cur,
     });
   }
 

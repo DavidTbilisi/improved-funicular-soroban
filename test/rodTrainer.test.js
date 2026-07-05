@@ -28,6 +28,7 @@ test('start seeds the layout and emits problem + first step', () => {
   assert.equal(events[0].answer, 18);
   assert.equal(events[1].n, 1);
   assert.deepEqual(events[1].targets, P.steps[0].targets);
+  assert.deepEqual(events[1].factors, [6, 3], 'step event exposes the mult-table cell');
 });
 
 test('reaching a step value advances to the next step', () => {
