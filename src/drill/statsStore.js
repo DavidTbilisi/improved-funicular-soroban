@@ -35,6 +35,9 @@ export class DrillStatsService {
 
   best(deckId) { return (this.store.load()[deckId] || {}).best || null; }
 
+  // The persisted session records for one deck (oldest → newest, ≤ 20).
+  history(deckId) { return (this.store.load()[deckId] || {}).sessions || []; }
+
   // counters: { n, correct, sumMs, floorPass }
   saveSession(deckId, counters) {
     if (!deckId || counters.n === 0) return null;

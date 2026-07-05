@@ -65,6 +65,7 @@ export function buildMultiplication(a, b) {
         kind: 'partial',
         instr: `<b>${mcD[i]} × ${mpD[k]} = ${prod}</b> — add <b>${pad2(prod)}</b> with its tens on rod <b>${L(ones + 1)}</b>, ones on rod <b>${L(ones)}</b>.`,
         targets: [ones, ones + 1],
+        factors: [mcD[i], mpD[k]],   // the multiplication-table cell this step reads
         expected: board,
       });
     }
@@ -136,6 +137,7 @@ export function buildDivision(a, b) {
         kind: 'subtract',
         instr: `<b>${q} × ${vD[k]} = ${p}</b> — subtract <b>${pad2(p)}</b> from the dividend, tens on rod <b>${L(ones + 1)}</b>, ones on rod <b>${L(ones)}</b>.`,
         targets: [ones, ones + 1],
+        factors: [q, vD[k]],         // the multiplication-table cell this step reads
         expected: board,
       });
     }

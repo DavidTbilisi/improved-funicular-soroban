@@ -71,6 +71,21 @@ test('division rejects non-exact division', () => {
   assert.throws(() => buildDivision(10, 3));
 });
 
+test('every table-reading step carries its single-digit factors', () => {
+  for (const P of [buildMultiplication(76, 3), buildMultiplication(54, 37), buildDivision(3869, 53)]) {
+    for (const s of P.steps) {
+      if (s.kind === 'partial' || s.kind === 'subtract') {
+        assert.ok(Array.isArray(s.factors) && s.factors.length === 2, `${P.prompt} ${s.kind} has factors`);
+        assert.ok(s.factors.every(f => f >= 1 && f <= 9), 'factors are table digits 1..9');
+        // the instruction quotes exactly this product
+        assert.ok(s.instr.includes(`= ${s.factors[0] * s.factors[1]}`), 'instr matches factors');
+      } else {
+        assert.equal(s.factors, undefined, 'non-table steps carry no factors');
+      }
+    }
+  }
+});
+
 test('a quotient digit only lands on an already-vacated rod (no live collision)', () => {
   // Walk the steps; whenever a quotient digit is set, that rod must read 0 first.
   for (const [a, b] of [[69, 3], [144, 3], [95, 5], [756, 7], [1272, 4], [3869, 53]]) {

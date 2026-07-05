@@ -18,11 +18,11 @@ import { SoundService } from './view/soundService.js';
 import { Metronome } from './view/metronome.js';
 
 const SHELL_HTML = `
-  <div class="readout">
+  <div class="readout" id="shellReadout">
     <div class="num-box"><div class="label">Number</div><div class="value" id="numValue">0</div></div>
     <div class="decode" id="decode"></div>
   </div>
-  <div class="panel">
+  <div class="panel" id="shellBoard">
     <div class="soroban-wrap"><div class="soroban" id="soroban"></div></div>
     <div class="coach" id="coach">Keyboard: <kbd>←</kbd> <kbd>→</kbd> or <kbd>G</kbd> <kbd>H</kbd> pick a column (integer or decimal) · add <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>=+1..4 <kbd>U</kbd>=+5 <kbd>I</kbd>=+10 · sub <kbd>F</kbd><kbd>D</kbd><kbd>S</kbd><kbd>A</kbd>=−1..4 <kbd>R</kbd>=−5 <kbd>E</kbd>=−10 · <kbd>Q</kbd>=reset · type <kbd>0</kbd>–<kbd>9</kbd> to enter a number</div>
     <div class="sound-row">
@@ -35,7 +35,7 @@ const SHELL_HTML = `
       </span>
     </div>
   </div>
-  <div class="panel">
+  <div class="panel" id="shellSetter">
     <div class="input-row">
       <label for="numInput">Value:</label>
       <input type="text" id="numInput" inputmode="decimal" placeholder="e.g. 15.98" value="15.98">
@@ -205,6 +205,17 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     store, dispatch, bus, soroban, readout, sound, metronome, coachEl,
     setFocus, refreshUndo,
     setFaultHook(fn) { faultHook = fn; },
+    // The shell's three top-level chunks, so a page can rearrange them (e.g.
+    // pull the live board into its own practice panel). Moving DOM nodes keeps
+    // their ids and listeners, so everything above stays wired.
+    parts: { readout: $('shellReadout'), board: $('shellBoard'), setter: $('shellSetter') },
+    // Pull the board's content (soroban + coach + sound row) out of its own
+    // panel and into `slotEl`, removing the now-empty panel shell.
+    adoptBoard(slotEl) {
+      const board = $('shellBoard');
+      while (board.firstChild) slotEl.appendChild(board.firstChild);
+      board.remove();
+    },
     // Paint once after a page has attached its own store subscribers.
     start() { store.notify(store); refreshUndo(); setFocus(0); },
   };

@@ -32,3 +32,14 @@ test('keeps at most 20 sessions', () => {
   for (let i = 0; i < 25; i++) svc.saveSession('d', { n: 1, correct: 1, sumMs: 100, floorPass: 1 });
   assert.equal(store.load().d.sessions.length, 20);
 });
+
+test('history returns the saved sessions oldest-first, [] for undrilled decks', () => {
+  const svc = new DrillStatsService(new MemoryStatsStore(), FIXED);
+  assert.deepEqual(svc.history('d'), []);
+  svc.saveSession('d', { n: 10, correct: 8, sumMs: 8000, floorPass: 4 });
+  svc.saveSession('d', { n: 10, correct: 9, sumMs: 7000, floorPass: 6 });
+  const h = svc.history('d');
+  assert.equal(h.length, 2);
+  assert.equal(h[0].floorPct, 40);
+  assert.equal(h[1].floorPct, 60);
+});

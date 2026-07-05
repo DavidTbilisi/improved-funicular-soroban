@@ -13,18 +13,15 @@
   <p class="subtitle">The authentic soroban multiplication &amp; division methods, verified rod by rod.</p>
   <div id="nav"></div>
 
-  <!-- board shell injects: readout + soroban + set-number/presets -->
-  <div id="boardMount"></div>
-
   <div class="panel">
     <h2>Multiplication &amp; division — the real soroban method</h2>
-    <p class="help" style="margin-bottom:12px;">The authentic rod-placement algorithms from the Japan Chamber of Commerce <em>Soroban</em> handbook. Pick a type; the beads above are seeded with the <strong>multiplier / multiplicand</strong> (or <strong>dividend / divisor</strong>). Then work the highlighted rods with the keyboard, one step at a time — each partial product / subtraction lands on a fixed rod, and the trainer advances only when the board reads the right value, so it <strong>verifies your rod placement</strong>, not just the final answer. Stuck on a step? <strong>Do this step</strong> plays it for you.</p>
     <div class="tut-levels" id="rtModes"></div>
     <div class="tut-stage" id="rtStage">
       <div class="rt-head"><span class="rt-title" id="rtTitle"></span></div>
       <div class="tut-teach" id="rtTeach"></div>
       <div class="tut-prompt" id="rtPrompt"></div>
       <div class="rt-setup" id="rtSetup"></div>
+      <div id="rtLayoutFig"></div>
       <div class="tut-meter" id="rtProgress"></div>
       <div class="rt-instr" id="rtInstr"></div>
       <div class="tut-feedback" id="rtFeedback"></div>
@@ -34,6 +31,18 @@
         <button id="rtStop">Stop</button>
       </div>
     </div>
+    <!-- the live board is adopted here, directly under the step instruction -->
+    <div class="board-slot" id="rtBoardSlot"></div>
+    <p class="help" style="margin-top:14px;">The authentic rod-placement algorithms from the Japan Chamber of Commerce <em>Soroban</em> handbook. Pick a type; the beads are seeded with the <strong>multiplier / multiplicand</strong> (or <strong>dividend / divisor</strong>). Then work the highlighted rods with the keyboard, one step at a time — each partial product / subtraction lands on a fixed rod, and the trainer advances only when the board reads the right value, so it <strong>verifies your rod placement</strong>, not just the final answer. Stuck on a step? <strong>Do this step</strong> plays it for you.</p>
+  </div>
+
+  <!-- board shell mounts here; the board panel itself is adopted above -->
+  <div id="boardMount"></div>
+
+  <div class="panel">
+    <h2>The multiplication table</h2>
+    <p class="help" style="margin-bottom:14px;">Every step of soroban multiplication and division reads exactly <strong>one cell</strong> of this table — multiplication adds it onto the board, division subtracts it back off. While a problem runs, the cell the current step reads is <span style="color:var(--shu)">marked in red</span>. The handbook's advice stands: know the table cold and the rods do the rest.</p>
+    <div id="figMult"></div>
   </div>
 </div>
 
