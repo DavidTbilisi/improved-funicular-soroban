@@ -13,6 +13,8 @@
 // never rides on color.
 // ============================================================================
 
+import { MOVE_KEYS } from '../domain/movePlan.js';
+
 const INK = 'var(--ink)';
 const DATA = 'var(--data)';     // indigo — every chart mark
 const VIOLET = 'var(--violet)'; // decimal identity
@@ -99,6 +101,37 @@ export function figComplements(base) {
     body += txt(X(d), cy + 4, String(d), { size: 12, fill: INK, weight: 600 });
   }
   return svg(w, cy + 22, `Pairs of digits that sum to ${base}`, body);
+}
+
+// --- Compound-trade walkthrough ------------------------------------------------
+// One worked example as a film strip of bead frames (tens + ones rod): each
+// arrow is ONE key, each frame the board it leaves behind. `c` is the starting
+// ones digit, `plan` comes from planAdd/planSub — deriving the frames from the
+// real plan keeps figure and engine from ever drifting apart.
+export function figTradeChain(c, plan) {
+  let tens = 0, ones = c;
+  const frames = [{ tens, ones, move: null }];
+  for (const s of plan.steps) {
+    const n = parseInt(s, 10);
+    if (Math.abs(n) === 10) tens += Math.sign(n); else ones += n;
+    frames.push({ tens, ones, move: s });
+  }
+  const FW = 65, GAP = 58, M = 8;
+  const W = M * 2 + frames.length * FW + (frames.length - 1) * GAP;
+  let body = '';
+  frames.forEach((f, i) => {
+    const ox = M + i * (FW + GAP);
+    body += rodGlyph(f.tens, ox, 0) + rodGlyph(f.ones, ox + 33, 0);
+    body += txt(ox + FW / 2, 118, String(f.tens * 10 + f.ones), { size: 13, fill: INK, weight: 600 });
+    if (i > 0) { // the move that produced this frame, over an arrow from the last
+      const x1 = ox - GAP + 6, x2 = ox - 6, ym = 58;
+      body += `<line x1="${x1}" y1="${ym}" x2="${x2}" y2="${ym}" stroke="${LINE2}" stroke-width="1.5"/>`;
+      body += `<path d="M${x2 - 5} ${ym - 3.5} L${x2} ${ym} L${x2 - 5} ${ym + 3.5}" fill="none" stroke="${LINE2}" stroke-width="1.5"/>`;
+      body += txt((x1 + x2) / 2, ym - 8, f.move.replace('-', '−'), { size: 11, fill: DATA, weight: 600 });
+      body += txt((x1 + x2) / 2, ym + 15, MOVE_KEYS[f.move] || '', { size: 9, fill: STONE });
+    }
+  });
+  return svg(W, 128, 'A compound trade walked bead by bead', body);
 }
 
 // --- Place-value contribution chart (live) -----------------------------------

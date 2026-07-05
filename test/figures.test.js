@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
-  multTableHTML, figLayout, figLadder, figDeckBests, figSessions,
+  multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
 } from '../src/view/figures.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
+import { planAdd } from '../src/domain/movePlan.js';
 
 const count = (s, re) => (s.match(re) || []).length;
 
@@ -38,6 +39,14 @@ test('complement figures pair every digit with its friend', () => {
   assert.equal(count(f10, /<path/g), 4, 'arcs 1↔9 … 4↔6');
   assert.equal(count(f10, /<circle/g), 9, 'digit nodes 1–9');
   assert.ok(f10.includes('stroke-dasharray'), '5 is marked as its own complement');
+});
+
+test('figTradeChain walks 6+7 through every intermediate board state', () => {
+  const f = figTradeChain(6, planAdd(6, 7));
+  for (const v of ['6', '16', '11', '13']) assert.ok(f.includes(`>${v}</text>`), `frame value ${v}`);
+  for (const m of ['+10', '−5', '+2']) assert.ok(f.includes(`>${m}</text>`), `move label ${m}`);
+  for (const k of ['I', 'R', 'K']) assert.ok(f.includes(`>${k}</text>`), `key label ${k}`);
+  assert.equal(count(f, /<ellipse/g), 4 * 2 * 5, 'four frames of two rods, five beads each');
 });
 
 test('place-value chart stems only non-zero digits and labels the dominant rod', () => {

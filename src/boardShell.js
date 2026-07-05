@@ -9,7 +9,8 @@
 // ============================================================================
 import { FRAC_COLS, INT_COLS, INT_PLACES, FRAC_PLACES } from './domain/config.js';
 import { rodValue } from './domain/rod.js';
-import { classifyAdd, classifySub, earthMoveLegal, heavenMoveLegal } from './domain/soroban.js';
+import { earthMoveLegal, heavenMoveLegal } from './domain/soroban.js';
+import { planAdd, planSub, stepsText, keysText } from './domain/movePlan.js';
 import { AbacusStore } from './state/abacusStore.js';
 import { CommandBus, SetValueCommand, StepIntCommand, AddAtColumnCommand, ToggleSkyCommand, ClickEarthCommand } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
@@ -131,15 +132,6 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     KeyF: { sign: -1, amount: 1 }, KeyD: { sign: -1, amount: 2 }, KeyS: { sign: -1, amount: 3 }, KeyA: { sign: -1, amount: 4 },
     KeyR: { sign: -1, amount: 5 }, KeyE: { sign: -1, amount: 10 },
   };
-  const MOVE_KEYS = {
-    '+1': 'J', '+2': 'K', '+3': 'L', '+4': ';', '+5': 'U', '+10': 'I',
-    '-1': 'F', '-2': 'D', '-3': 'S', '-4': 'A', '-5': 'R', '-10': 'E',
-  };
-  const keysFor = move => {
-    const toks = move.split(/\s+/);
-    return toks.every(t => MOVE_KEYS[t]) ? toks.map(t => MOVE_KEYS[t]).join(' then ') : null;
-  };
-
   const coachEl = $('coach');
   let focus = 0;
   const MIN_EXP = -FRAC_COLS, MAX_EXP = INT_COLS - 1;
@@ -156,7 +148,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     const place = placeName(focus);
     const nbr = placeName(focus + 1);
     const op = `${sign > 0 ? '+' : '−'}${amount}`;
-    let legal, reason, hint = null;
+    let legal, reason, plan = null;
     if (amount === 10) {
       const hasNext = focus + 1 <= MAX_EXP;
       const next = hasNext ? colDigit(focus + 1) : 0;
@@ -165,14 +157,14 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
         : sign > 0 ? `${nbr} can’t take a carry bead (it’s at ${next})` : `${nbr} has no earth bead to borrow (it’s at ${next})`;
     } else if (amount === 5) {
       legal = heavenMoveLegal(c, sign);
-      if (!legal) { reason = sign > 0 ? 'heaven bead already set' : 'heaven bead not set'; hint = (sign > 0 ? classifyAdd : classifySub)(c, 5).move; }
+      if (!legal) { reason = sign > 0 ? 'heaven bead already set' : 'heaven bead not set'; plan = (sign > 0 ? planAdd : planSub)(c, 5); }
     } else {
       legal = earthMoveLegal(c, amount, sign);
-      if (!legal) { reason = sign > 0 ? 'not enough free earth beads' : 'not enough active earth beads'; hint = (sign > 0 ? classifyAdd : classifySub)(c, amount).move; }
+      if (!legal) { reason = sign > 0 ? 'not enough free earth beads' : 'not enough active earth beads'; plan = (sign > 0 ? planAdd : planSub)(c, amount); }
     }
     if (!legal) {
       let msg = `<span class="warn">⚠ ${op} on ${place} — illegal</span>: ${reason}`;
-      if (hint) { const keys = keysFor(hint); msg += ` · use <span class="move">${hint.replace(/-/g, '−')}</span>${keys ? ` (${keys})` : ''}`; }
+      if (plan) { const keys = keysText(plan.steps); msg += ` · use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''}`; }
       coachEl.innerHTML = msg;
       sound.reject();
       faultHook();

@@ -134,3 +134,14 @@ test('already-unlocked progress is honored on construction', () => {
   assert.equal(session.active, true);
   assert.equal(session.idx, 1);
 });
+
+test('v2 migration: pre-insert unlock counts shift past the compound level', () => {
+  // 'Compound trades' was inserted at ladder index 6; older blobs (no v field)
+  // with unlock counts beyond it must not relock the levels above.
+  const past = new TutorialProgress(new MemoryProgressStore({ unlocked: 7, best: {} }));
+  assert.equal(past.unlockedCount(), 8);
+  const before = new TutorialProgress(new MemoryProgressStore({ unlocked: 3, best: {} }));
+  assert.equal(before.unlockedCount(), 3);           // counts at or below the slot don't move
+  const modern = new TutorialProgress(new MemoryProgressStore({ unlocked: 8, v: 2, best: {} }));
+  assert.equal(modern.unlockedCount(), 8);           // already-migrated blobs pass through
+});
