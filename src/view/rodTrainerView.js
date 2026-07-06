@@ -25,7 +25,7 @@ export class RodTrainerView {
 
   _renderModes(infos) {
     this.el.modesEl.innerHTML = infos.map(m =>
-      `<button class="${m.id === this._activeMode ? 'active' : ''}" data-id="${m.id}">${m.label}</button>`).join('');
+      `<button class="${m.id === this._activeMode ? 'active' : ''}" data-id="${m.id}">${m.label}${m.cleared ? ' ✓' : ''}</button>`).join('');
     this.el.modesEl.querySelectorAll('button').forEach(b =>
       b.addEventListener('click', () => this.session.start(b.dataset.id)));
   }
@@ -57,15 +57,22 @@ export class RodTrainerView {
         el.instrEl.innerHTML = `<span class="rt-kind rt-${evt.kind}">${evt.n}.</span> ${evt.instr}`;
         this.onTargets(evt.targets);
         break;
-      case 'solved':
+      case 'solved': {
         el.progressEl.innerHTML = this._meter(this._total, this._total);
         el.instrEl.innerHTML = '';
+        const secs = (evt.elapsedMs / 1000).toFixed(1);
+        const floorS = evt.timeFloorMs ? ` / ${Math.round(evt.timeFloorMs / 1000)}s floor` : '';
+        const verdict = evt.clean
+          ? `<span class="ok">✓ clean — ${secs}s${floorS} · streak ${evt.streak}/${evt.floor}${evt.cleared ? ' · mode cleared ✓' : ''}</span>`
+          : `<span class="warn">not clean (${{ assisted: 'used “Do this step”', fumbled: 'illegal move or reset', slow: 'over the pace floor' }[evt.verdict]}) — ${secs}s${floorS} · streak reset</span>`;
         el.feedbackEl.innerHTML =
-          `<span class="ok">✓ done — the answer <b>${evt.answer}</b> reads on rods <b>${evt.answerRodSpan}</b></span>`;
+          `<span class="ok">✓ done — the answer <b>${evt.answer}</b> reads on rods <b>${evt.answerRodSpan}</b></span><br>${verdict}`;
         this.onTargets(evt.answerRods);   // light up where the answer sits
+        if (evt.modes) this._renderModes(evt.modes);
         el.nextBtn.disabled = false;
         el.doStepBtn.disabled = true;
         break;
+      }
       case 'stopped':
         el.stageEl.classList.remove('on');
         this.onTargets([]);

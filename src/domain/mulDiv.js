@@ -170,22 +170,22 @@ function rodSpan(places) {
 // divisor × quotient so there is never a remainder).
 const between = (rng, lo, hi) => lo + rng.int(hi - lo + 1);
 export const ROD_MODES = [
-  { id: 'mul-1x1', op: '×', label: '× 1-digit', title: 'Multiply: 1 × 1 digit',
+  { id: 'mul-1x1', floor: 3, timeFloorMs: 25000, op: '×', label: '× 1-digit', title: 'Multiply: 1 × 1 digit',
     teach: 'Multiplier on the left, multiplicand mid-board; each product digit lands two rods to the right of the multiplicand.',
     gen: rng => ({ a: between(rng, 2, 9), b: between(rng, 2, 9) }) },
-  { id: 'mul-2x1', op: '×', label: '× 2×1', title: 'Multiply: 2-digit × 1-digit',
+  { id: 'mul-2x1', floor: 3, timeFloorMs: 45000, op: '×', label: '× 2×1', title: 'Multiply: 2-digit × 1-digit',
     teach: 'Work the multiplicand ones digit first, then its tens; each partial product is placed off its own multiplicand rod, then that digit is cleared.',
     gen: rng => ({ a: between(rng, 12, 98), b: between(rng, 2, 9) }) },
-  { id: 'mul-3x1', op: '×', label: '× 3×1', title: 'Multiply: 3-digit × 1-digit',
+  { id: 'mul-3x1', floor: 3, timeFloorMs: 70000, op: '×', label: '× 3×1', title: 'Multiply: 3-digit × 1-digit',
     teach: 'Same rule across three multiplicand digits — a zero digit means no counters move for that column.',
     gen: rng => ({ a: between(rng, 105, 987), b: between(rng, 2, 9) }) },
-  { id: 'mul-2x2', op: '×', label: '× 2×2', title: 'Multiply: 2-digit × 2-digit',
+  { id: 'mul-2x2', floor: 3, timeFloorMs: 90000, op: '×', label: '× 2×2', title: 'Multiply: 2-digit × 2-digit',
     teach: 'For each multiplicand digit, multiply by the multiplier tens then ones; the ones-digit product shifts one rod further right.',
     gen: rng => ({ a: between(rng, 12, 98), b: between(rng, 12, 98) }) },
-  { id: 'div-1', op: '÷', label: '÷ 1-digit', title: 'Divide: ÷ 1-digit',
+  { id: 'div-1', floor: 3, timeFloorMs: 60000, op: '÷', label: '÷ 1-digit', title: 'Divide: ÷ 1-digit',
     teach: 'Set the quotient just left of the dividend, then subtract quotient × divisor back onto the dividend; repeat down the dividend.',
     gen: rng => { const b = between(rng, 2, 9), q = between(rng, 11, 98); return { a: b * q, b }; } },
-  { id: 'div-2', op: '÷', label: '÷ 2-digit', title: 'Divide: ÷ 2-digit',
+  { id: 'div-2', floor: 3, timeFloorMs: 120000, op: '÷', label: '÷ 2-digit', title: 'Divide: ÷ 2-digit',
     teach: 'Same method with a two-digit divisor: subtract quotient × (each divisor digit), the ones product shifted one rod right.',
     gen: rng => { const b = between(rng, 12, 79), q = between(rng, 12, 79); return { a: b * q, b }; } },
 ];

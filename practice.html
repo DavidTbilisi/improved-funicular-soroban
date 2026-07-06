@@ -16,6 +16,7 @@
   <div class="panel">
     <h2>Guided practice — leveled bead drills</h2>
     <div class="tut-levels" id="tutLevels"></div>
+    <div class="tut-graduate" id="tutGraduate" hidden></div>
     <div class="tut-stage" id="tutStage">
       <div class="tut-teach" id="tutTeach"></div>
       <div class="tut-prompt" id="tutPrompt"></div>
@@ -40,12 +41,16 @@
   <div class="panel-row">
   <div class="panel">
     <h2>Progress across the ladder</h2>
-    <div id="figLadder"></div>
+    <div class="fig-grid">
+      <div id="figLadder"></div>
+      <div id="figTimes"></div>
+      <div id="figFumbles"></div>
+    </div>
   </div>
 
   <div class="panel">
     <h2>Theory — the two complements</h2>
-    <p class="help" style="margin-bottom:14px;">Every bead move beyond the direct ones is one of two exchanges. When the <strong>earth beads</strong> run out but the digit stays under ten, trade through five: <code>+d = +5 −(5−d)</code>. When the digit would <strong>cross ten</strong>, trade through the next rod: <code>+d = +10 −(10−d)</code> (and the mirror images for subtraction). The pairs below are the whole table of trades — and when a trade's payback is itself blocked, the second trade simply opens inside the first (Fig. 4).</p>
+    <p class="help" style="margin-bottom:14px;">Every bead move beyond the direct ones is one of two exchanges. When the <strong>earth beads</strong> run out but the digit stays under ten, trade through five: <code>+d = +5 −(5−d)</code>. When the digit would <strong>cross ten</strong>, trade through the next rod: <code>+d = +10 −(10−d)</code> (and the mirror images for subtraction). The pairs below are the whole table of trades — and when a trade's payback is itself blocked, the second trade simply opens inside the first (Fig. 6).</p>
     <div class="fig-grid">
       <div id="figFive"></div>
       <div id="figTen"></div>

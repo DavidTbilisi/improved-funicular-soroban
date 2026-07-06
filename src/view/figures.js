@@ -277,6 +277,69 @@ export function figDeckBests(rows) {
   return svg(W, H, 'Best drill session per deck: share of reps under the pass-floor', body);
 }
 
+// --- Solve-time trend for one level / trainer mode (live) --------------------
+// The automaticity curve made visible: y = seconds per solve, oldest → newest.
+// The shu rule is the pace floor the gate demands; solid dots are clean solves,
+// hollow dots slow/fumbled/assisted ones (shape, not color, carries identity).
+export function figSolveTimes(solves, floorMs) {
+  const W = 520, H = 168, L = 44, R = 16, T = 16, B = 26;
+  const plotW = W - L - R, plotH = H - T - B;
+  const n = solves.length;
+  if (n === 0) return `<div class="fig-empty">No solves recorded yet — clear a few problems and the pace trend charts here.</div>`;
+  const maxMs = Math.max(floorMs || 0, ...solves.map(s => s.ms)) * 1.15;
+  const xFor = i => n === 1 ? L + plotW / 2 : L + (i / (n - 1)) * plotW;
+  const yFor = ms => T + (1 - ms / maxMs) * plotH;
+  const secs = ms => ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`;
+  let body = hline(L, W - R, yFor(0), LINE2) + txt(L - 5, yFor(0) + 3, '0', { size: 8.5, anchor: 'end', fill: FAINT });
+  if (floorMs) {
+    body += hline(L, W - R, yFor(floorMs), SHU, 1.5);
+    body += txt(L - 5, yFor(floorMs) + 3, secs(floorMs), { size: 8.5, anchor: 'end', fill: SHU });
+  }
+  if (n > 1) {
+    const d = solves.map((s, i) => `${i ? 'L' : 'M'}${xFor(i).toFixed(1)} ${yFor(s.ms).toFixed(1)}`).join(' ');
+    body += `<path d="${d}" fill="none" stroke="${DATA}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  solves.forEach((s, i) => {
+    const last = i === n - 1;
+    body += `<circle cx="${xFor(i)}" cy="${yFor(s.ms)}" r="${last ? 5 : 4}" fill="${s.clean ? DATA : PAPER2}" stroke="${s.clean ? PAPER2 : DATA}" stroke-width="2">` +
+      `<title>${s.t} — ${secs(s.ms)} · ${s.clean ? 'clean' : 'not clean'}</title></circle>`;
+  });
+  const lastS = solves[n - 1];
+  body += txt(xFor(n - 1), yFor(lastS.ms) - 10, secs(lastS.ms), { size: 9.5, fill: INK, weight: 600 });
+  body += txt(L, H - 6, solves[0].t.slice(0, 10), { size: 8.5, fill: FAINT, anchor: 'start' });
+  if (n > 1) body += txt(W - R, H - 6, lastS.t.slice(0, 10), { size: 8.5, fill: FAINT, anchor: 'end' });
+  return svg(W, H, 'Seconds per solve against the pace floor', body);
+}
+
+// --- Fumble diagnosis (live) ---------------------------------------------------
+// Rejected moves counted by the complement pair their trade needed, in fixed
+// pair order (rows = fumbleRows(faultLog.counts())). Counts, not rates — see
+// faultLog.js for why. Resets ride along as a footnote.
+export function figFumbles(rows, resets = 0) {
+  const total = rows.reduce((s, r) => s + r.count, 0) + resets;
+  if (total === 0) return `<div class="fig-empty">No fumbles logged yet — rejected moves chart here by the trade they demanded.</div>`;
+  const rowH = 22, LM = 104, W = 520, T = 8, trackW = W - LM - 46;
+  const H = T + rows.length * rowH + 40;
+  const xmax = Math.max(4, ...rows.map(r => r.count));
+  const xw = v => (v / xmax) * trackW;
+  let body = '';
+  for (const v of [0, Math.ceil(xmax / 2), xmax]) {
+    body += vline(LM + xw(v), T, T + rows.length * rowH - 4, LINE);
+    body += txt(LM + xw(v), T + rows.length * rowH + 10, String(v), { size: 8.5, fill: FAINT });
+  }
+  rows.forEach((r, i) => {
+    const cy = T + i * rowH + rowH / 2;
+    body += txt(LM - 10, cy + 3, r.label, { size: 9.5, fill: INK, anchor: 'end' });
+    body += hline(LM, LM + trackW, cy, LINE2);
+    if (r.count > 0) {
+      body += bar(LM, cy - 4, xw(r.count), 8, DATA);
+      body += txt(LM + xw(r.count) + 7, cy + 3, String(r.count), { size: 8.5, fill: STONE, anchor: 'start' });
+    }
+  });
+  body += txt(LM, H - 8, `resets (Q): ${resets}`, { size: 9, fill: STONE, anchor: 'start' });
+  return svg(W, H, 'Rejected moves by the complement pair their trade needed', body);
+}
+
 // --- Drill session trend for one deck (live) ---------------------------------
 // sessions = the persisted history (oldest→newest), y = % of reps under floor.
 export function figSessions(sessions) {

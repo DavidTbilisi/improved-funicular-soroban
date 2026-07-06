@@ -140,7 +140,8 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); };
 
   // A page (e.g. the tutorial) can register a fault sink; a rejected move or a
-  // reset is reported to it so the page can spoil a "clean" solve.
+  // reset is reported to it so the page can spoil a "clean" solve — and with
+  // enough context ({kind, rule, amount}) to diagnose WHICH trade was missed.
   let faultHook = () => {};
 
   function applyMove(sign, amount) {
@@ -167,7 +168,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
       if (plan) { const keys = keysText(plan.steps); msg += ` · use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''}`; }
       coachEl.innerHTML = msg;
       sound.reject();
-      faultHook();
+      faultHook({ kind: 'illegal', rule: plan ? plan.rule : null, amount, sign });
       return;
     }
     dispatch(new AddAtColumnCommand(store, focus, amount, sign));
@@ -188,7 +189,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     }
     if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
     if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
-    if (e.code === 'KeyQ') { e.preventDefault(); faultHook(); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
+    if (e.code === 'KeyQ') { e.preventDefault(); faultHook({ kind: 'reset' }); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
     const mv = KEYMAP[e.code];
     if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
   });

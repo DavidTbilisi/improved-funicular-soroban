@@ -89,3 +89,98 @@ test('seeding a new problem is not mistaken for a solve', () => {
   session.next();
   assert.equal(events.filter(e => e.type === 'solved').length, 0);
 });
+
+// --- The automaticity gate (bridge from guided practice) ---------------------
+import { SolveLog } from '../src/tutorial/solveLog.js';
+import { MemoryProgressStore } from '../src/tutorial/progressStore.js';
+
+const GATED = [{
+  id: 'mul', op: '×', label: '×', title: 'Multiply', teach: 't',
+  floor: 2, timeFloorMs: 1000, gen: () => ({ a: 6, b: 3 }),
+}];
+
+function makeGated() {
+  const store = new AbacusStore(0, '');
+  const clock = { t: 0, now() { return this.t; } };
+  const log = new SolveLog(new MemoryProgressStore({}), () => 'T1');
+  const events = [];
+  const session = new RodTrainerSession({ modes: GATED, rng: {}, store, clock, log });
+  session.subscribe(e => events.push(e));
+  return { store, clock, log, session, events };
+}
+const solvedOf = events => events.filter(e => e.type === 'solved').pop();
+const finish = store => setBoard(store, P.steps[P.steps.length - 1].expected);
+
+test('a fast, unassisted, fumble-free solve is clean and persists', () => {
+  const { store, clock, log, session, events } = makeGated();
+  session.start('mul');
+  clock.t = 600;
+  finish(store);
+  const s = solvedOf(events);
+  assert.equal(s.clean, true);
+  assert.equal(s.verdict, 'clean');
+  assert.equal(s.elapsedMs, 600);
+  assert.equal(s.streak, 1);
+  assert.equal(s.floor, 2);
+  assert.equal(s.cleared, false);
+  assert.deepEqual(log.solves('mul'), [{ t: 'T1', ms: 600, clean: true }]);
+});
+
+test('a streak of clean solves at the floor marks the mode cleared', () => {
+  const { store, clock, session, events } = makeGated();
+  session.start('mul');
+  clock.t = 400; finish(store);
+  session.next();
+  clock.t = 900; finish(store);
+  const s = solvedOf(events);
+  assert.equal(s.streak, 2);
+  assert.equal(s.cleared, true);
+  assert.ok(s.modes.find(m => m.id === 'mul').cleared, 'mode snapshot carries the seal');
+});
+
+test('"Do this step" makes the solve assisted, resetting the streak', () => {
+  const { store, clock, session, events } = makeGated();
+  session.start('mul');
+  clock.t = 300; finish(store);                       // clean → streak 1
+  session.next();
+  session.doStep();                                    // step 1 played for us
+  session.doStep();                                    // step 2 → solves
+  const s = solvedOf(events);
+  assert.equal(s.verdict, 'assisted');
+  assert.equal(s.clean, false);
+  assert.equal(s.streak, 0);
+});
+
+test('a fault makes the solve fumbled; over the floor makes it slow', () => {
+  const { store, clock, session, events } = makeGated();
+  session.start('mul');
+  session.fault();
+  clock.t = 500; finish(store);
+  assert.equal(solvedOf(events).verdict, 'fumbled');
+  session.next();
+  clock.t = 500 + 5000; finish(store);
+  assert.equal(solvedOf(events).verdict, 'slow');
+});
+
+test('best streak survives a reset and feeds modeInfos', () => {
+  const { store, clock, log, session } = makeGated();
+  session.start('mul');
+  clock.t = 100; finish(store);                       // streak 1
+  session.next();
+  session.fault(); clock.t = 200; finish(store);      // streak reset
+  assert.equal(log.best('mul'), 1);
+  const info = session.modeInfos().find(m => m.id === 'mul');
+  assert.equal(info.best, 1);
+  assert.equal(info.cleared, false);
+  assert.equal(info.timeFloorMs, 1000);
+});
+
+test('modes without gate fields still solve (defaults: floor 3, no time bound)', () => {
+  const { store, session, events } = make();          // the ungated MODES
+  session.start('mul');
+  finish(store);
+  const s = solvedOf(events);
+  assert.equal(s.clean, true, 'no time floor → never slow');
+  assert.equal(s.floor, 3);
+  assert.equal(s.timeFloorMs, null);
+});
