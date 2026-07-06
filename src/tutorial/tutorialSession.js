@@ -23,13 +23,14 @@
 import { Observable } from '../state/observable.js';
 
 export class TutorialSession extends Observable {
-  constructor({ levels, progress, rng, store, clock = { now: () => 0 } }) {
+  constructor({ levels, progress, rng, store, clock = { now: () => 0 }, history = null }) {
     super();
     this.levels = levels;
     this.progress = progress;
     this.rng = rng;
     this.store = store;
     this.clock = clock;
+    this.history = history; // optional SolveLog — records every solve for the trend chart
     this.idx = null;
     this.problem = null;
     this.streak = 0;
@@ -101,6 +102,7 @@ export class TutorialSession extends Observable {
     if (clean) { this.streak++; verdict = 'clean'; }
     else { this.streak = 0; verdict = this.faults > 0 ? 'fumbled' : 'slow'; }
 
+    if (this.history) this.history.record(lv.id, { ms: elapsedMs, clean });
     this.progress.setBest(lv.id, this.streak);
     let justPassed = false, unlockedIdx = null;
     if (clean && this.streak >= floor) {

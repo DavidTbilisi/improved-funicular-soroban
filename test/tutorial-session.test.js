@@ -20,12 +20,12 @@ const LEVELS = [
   },
 ];
 
-function makeSession(initialProgress = {}) {
+function makeSession(initialProgress = {}, history = null) {
   const store = new AbacusStore(0, '');
   const progress = new TutorialProgress(new MemoryProgressStore(initialProgress));
   const clock = { t: 0, now() { return this.t; } };
   const events = [];
-  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store, clock });
+  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store, clock, history });
   session.subscribe(e => events.push(e));
   return { store, progress, clock, session, events };
 }
@@ -144,4 +144,18 @@ test('v2 migration: pre-insert unlock counts shift past the compound level', () 
   assert.equal(before.unlockedCount(), 3);           // counts at or below the slot don't move
   const modern = new TutorialProgress(new MemoryProgressStore({ unlocked: 8, v: 2, best: {} }));
   assert.equal(modern.unlockedCount(), 8);           // already-migrated blobs pass through
+});
+
+test('every solve — clean or not — is recorded to the injected history log', async () => {
+  const { SolveLog } = await import('../src/tutorial/solveLog.js');
+  const history = new SolveLog(new MemoryProgressStore({}), () => 'T1');
+  const { store, clock, session } = makeSession({}, history);
+  session.startLevel(0);
+  clock.t = 500; store.setScaled(50000);             // clean solve at 500ms
+  session.next();
+  clock.t = 500 + 2000; store.setScaled(50000);      // slow solve (floor 1000ms)
+  assert.deepEqual(history.solves('l0'), [
+    { t: 'T1', ms: 500, clean: true },
+    { t: 'T1', ms: 2000, clean: false },
+  ]);
 });

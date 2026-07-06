@@ -231,6 +231,8 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .tut-levels button.active { background: var(--data); border-color: var(--data); color: var(--paper-2); }
 .tut-levels button.locked { opacity: 0.5; }
 .tut-clear { color: var(--green); font-weight: 700; }
+.tut-graduate { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; background: var(--paper-2); font-size: 0.86rem; color: var(--stone); }
+.tut-graduate a { color: var(--data); font-weight: 600; }
 .tut-stage { display: none; background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px; padding: 22px; text-align: center; }
 .tut-stage.on { display: block; }
 .tut-teach { font-size: 0.86rem; color: var(--stone); line-height: 1.65; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); max-width: 70ch; margin-left: auto; margin-right: auto; }

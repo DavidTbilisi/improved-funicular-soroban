@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
+  figSolveTimes, figFumbles,
 } from '../src/view/figures.js';
+import { fumbleRows } from '../src/tutorial/faultLog.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
 import { planAdd } from '../src/domain/movePlan.js';
 
@@ -39,6 +41,32 @@ test('complement figures pair every digit with its friend', () => {
   assert.equal(count(f10, /<path/g), 4, 'arcs 1↔9 … 4↔6');
   assert.equal(count(f10, /<circle/g), 9, 'digit nodes 1–9');
   assert.ok(f10.includes('stroke-dasharray'), '5 is marked as its own complement');
+});
+
+test('figSolveTimes: empty state, floor rule, and clean/hollow dot encoding', () => {
+  assert.ok(figSolveTimes([], 1000).includes('fig-empty'));
+  const solves = [
+    { t: '2026-01-01T09:00', ms: 2000, clean: true },
+    { t: '2026-01-02T09:00', ms: 1500, clean: false },
+    { t: '2026-01-03T09:00', ms: 900, clean: true },
+  ];
+  const f = figSolveTimes(solves, 1000);
+  assert.ok(f.includes('stroke="var(--shu)"'), 'the pace floor is a shu rule');
+  assert.equal(count(f, /fill="var\(--data\)" stroke="var\(--paper-2\)"/g), 2, 'clean solves are solid dots');
+  assert.equal(count(f, /fill="var\(--paper-2\)" stroke="var\(--data\)"/g), 1, 'a non-clean solve is hollow');
+  assert.ok(f.includes('>0.9s</text>'), 'the latest time is labelled');
+  assert.ok(f.includes('2026-01-01'), 'x-axis anchored by first date');
+});
+
+test('figFumbles: empty state, bars per pair, and the reset footnote', () => {
+  const zero = fumbleRows({ pairs: {}, resets: 0 });
+  assert.ok(figFumbles(zero, 0).includes('fig-empty'));
+  const rows = fumbleRows({ pairs: { 'small:2-3': 5, 'big:4-6': 2 }, resets: 0 });
+  const f = figFumbles(rows, 2);
+  assert.equal(count(f, /<path d="M/g), 2, 'one bar per fumbled pair');
+  assert.ok(f.includes('2 ↔ 3 · five'));
+  assert.ok(f.includes('>5</text>'), 'count labelled at the bar end');
+  assert.ok(f.includes('resets (Q): 2'));
 });
 
 test('figTradeChain walks 6+7 through every intermediate board state', () => {
