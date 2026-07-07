@@ -25,6 +25,7 @@ export class GameSave {
     const num = (x, min) => Number.isFinite(x) && x >= min ? Math.floor(x) : null;
     if (num(raw.sp, 0) !== null) v.sp = num(raw.sp, 0);
     if (num(raw.day, 1) !== null) v.day = num(raw.day, 1);
+    if (num(raw.festival, 0) !== null) v.festival = num(raw.festival, 0);
     for (const k of ['food', 'wood', 'coin']) {
       const n = raw.res ? num(raw.res[k], 0) : null;
       if (n !== null) v.res[k] = n;
@@ -38,7 +39,7 @@ export class GameSave {
       }
     }
     if (raw.stats && typeof raw.stats === 'object') {
-      for (const k of ['solves', 'clean', 'spEarned', 'bestPayout', 'streak', 'bestStreak']) {
+      for (const k of ['solves', 'clean', 'spEarned', 'bestPayout', 'streak', 'bestStreak', 'festivals']) {
         const n = num(raw.stats[k], 0);
         if (n !== null) v.stats[k] = n;
       }

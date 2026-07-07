@@ -4,6 +4,7 @@ import { buildingById, GRID_CELLS } from '../src/game/buildings.js';
 import {
   newVillage, counts, isUnlocked, canAfford, spend, refund, shortfall,
   canPlace, place, dailyYield, advanceDay, shrineBonus, upgradeCost,
+  festivalBonus, FESTIVAL_COST, FESTIVAL_SOLVES, FESTIVAL_BONUS,
 } from '../src/game/economy.js';
 
 const put = (v, id, cellIdx, level = 1) => { v.grid[cellIdx] = { id, level }; };
@@ -15,7 +16,8 @@ test('a new village: 20 sp, day 1, empty 54-cell grid, zeroed stats', () => {
   assert.deepEqual(v.res, { food: 0, wood: 0, coin: 0 });
   assert.equal(v.grid.length, GRID_CELLS);
   assert.ok(v.grid.every(c => c === null));
-  assert.deepEqual(v.stats, { solves: 0, clean: 0, spEarned: 0, bestPayout: 0, streak: 0, bestStreak: 0, founded: false });
+  assert.equal(v.festival, 0);
+  assert.deepEqual(v.stats, { solves: 0, clean: 0, spEarned: 0, bestPayout: 0, streak: 0, bestStreak: 0, festivals: 0, founded: false });
 });
 
 test('counts tallies buildings regardless of level', () => {
@@ -90,6 +92,22 @@ test('advanceDay banks the yields, advances the calendar, and reports them', () 
   assert.equal(v.day, 2);
   assert.equal(v.sp, 21);
   assert.deepEqual(v.res, { food: 2, wood: 0, coin: 3 });
+});
+
+test('festival: bonus while lit, one day burned per advanceDay, never below 0', () => {
+  const v = newVillage();
+  assert.equal(festivalBonus(v), 0);
+  v.festival = FESTIVAL_SOLVES;
+  assert.equal(festivalBonus(v), FESTIVAL_BONUS);
+  advanceDay(v);
+  assert.equal(v.festival, FESTIVAL_SOLVES - 1);
+  v.festival = 1;
+  advanceDay(v);           // last boosted day burns out…
+  assert.equal(v.festival, 0);
+  assert.equal(festivalBonus(v), 0);
+  advanceDay(v);           // …and stays at zero
+  assert.equal(v.festival, 0);
+  assert.ok(Object.isFrozen(FESTIVAL_COST));
 });
 
 test('shrineBonus: +10% per shrine level, capped at +30%', () => {

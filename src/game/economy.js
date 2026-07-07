@@ -1,10 +1,15 @@
 // ============================================================================
 // Village economy — pure functions over a plain village object, no DOM, no
 // globals. The village is the single save blob (see saveStore.js):
-//   { v, sp, res: {food, wood, coin}, day, grid: [null | {id, level}] × 54,
-//     stats: {solves, clean, spEarned, bestPayout, streak, bestStreak, founded} }
+//   { v, sp, res: {food, wood, coin}, day, festival,
+//     grid: [null | {id, level}] × 54,
+//     stats: {solves, clean, spEarned, bestPayout, streak, bestStreak,
+//             festivals, founded} }
 // stats.streak = consecutive clean solves right now (any contract kind);
 // stats.bestStreak = the best it has ever been (feeds the goal ladder).
+// festival = village days of festival remaining (the late-game resource sink:
+// a lit festival multiplies contract payouts and burns down one day per
+// solve); stats.festivals counts how many were ever lit.
 // Costs and yields are plain {sp?, food?, wood?, coin?} bags; sp lives on the
 // village root (it's the primary currency), the rest under res.
 //
@@ -20,10 +25,19 @@ export function newVillage() {
     sp: 20,
     res: { food: 0, wood: 0, coin: 0 },
     day: 1,
+    festival: 0,
     grid: Array(GRID_CELLS).fill(null),
-    stats: { solves: 0, clean: 0, spEarned: 0, bestPayout: 0, streak: 0, bestStreak: 0, founded: false },
+    stats: { solves: 0, clean: 0, spEarned: 0, bestPayout: 0, streak: 0, bestStreak: 0, festivals: 0, founded: false },
   };
 }
+
+// The festival — the standing resource sink. Lighting one costs a feast's
+// worth of everything and multiplies contract payouts (+50%, on top of the
+// shrine blessing) for the next FESTIVAL_SOLVES village days.
+export const FESTIVAL_COST = Object.freeze({ food: 150, wood: 50, coin: 100 });
+export const FESTIVAL_SOLVES = 10;
+export const FESTIVAL_BONUS = 0.5;
+export const festivalBonus = village => village.festival > 0 ? FESTIVAL_BONUS : 0;
 
 // How many of each building stand, regardless of level.
 export function counts(village) {
@@ -94,8 +108,8 @@ export function dailyYield(village) {
   return y;
 }
 
-// Apply a day: bank the yields, advance the calendar. Returns the yields so
-// the caller can narrate/animate them.
+// Apply a day: bank the yields, advance the calendar, burn a festival day.
+// Returns the yields so the caller can narrate/animate them.
 export function advanceDay(village) {
   const y = dailyYield(village);
   village.res.food += y.food;
@@ -103,6 +117,7 @@ export function advanceDay(village) {
   village.res.coin += y.coin;
   village.sp += y.sp;
   village.day++;
+  if (village.festival > 0) village.festival--;
   return y;
 }
 

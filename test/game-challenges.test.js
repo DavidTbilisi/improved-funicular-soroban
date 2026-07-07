@@ -9,12 +9,12 @@ import { FRAC_COLS } from '../src/domain/config.js';
 const SCALE = Math.pow(10, FRAC_COLS);
 
 test('the tier ladder pays strictly more for harder arithmetic', () => {
-  assert.deepEqual(CHALLENGE_TIERS.map(t => t.id), ['errand', 'delivery', 'ledger', 'caravan', 'guild', 'tax']);
+  assert.deepEqual(CHALLENGE_TIERS.map(t => t.id), ['errand', 'delivery', 'ledger', 'caravan', 'magnate', 'guild', 'tax']);
   for (let i = 1; i < CHALLENGE_TIERS.length; i++) {
     assert.ok(CHALLENGE_TIERS[i].baseSp > CHALLENGE_TIERS[i - 1].baseSp);
     assert.ok(CHALLENGE_TIERS[i].timeFloorMs > CHALLENGE_TIERS[i - 1].timeFloorMs);
   }
-  assert.equal(tierById('guild'), CHALLENGE_TIERS[4]);
+  assert.equal(tierById('guild'), CHALLENGE_TIERS[5]);
   assert.equal(tierById('nope'), null);
 });
 
@@ -51,6 +51,14 @@ test('fuzz: every generated contract is well-formed and matches its tier', () =>
         const plan = p.op === '+' ? planAdd(p.a % 10, p.b) : planSub(p.a % 10, p.b);
         assert.ok(plan.story.length > 1);
       }
+    },
+    magnate(p) {
+      const M = 100000;
+      assert.ok(p.a % M === 0 && p.b % M === 0, 'both operands sit on the 10^5+ rods');
+      assert.ok(p.b >= M && p.a <= 99e7 && p.b <= 99e7);
+      assert.ok(p.prompt.includes(','), 'thousands separators keep it readable');
+      if (p.op === '+') assert.equal(p.targetScaled, (p.a + p.b) * SCALE);
+      else { assert.ok(p.a - p.b >= 0); assert.equal(p.targetScaled, (p.a - p.b) * SCALE); }
     },
     guild(p) {
       assert.equal(p.op, '×');

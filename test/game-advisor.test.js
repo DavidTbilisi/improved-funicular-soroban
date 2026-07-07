@@ -10,7 +10,7 @@ function thrivingVillage() {
   const v = newVillage();
   ['hut', 'farm', 'well', 'woodcutter', 'workshop', 'market', 'shrine']
     .forEach((id, i) => put(v, id, i, id === 'shrine' ? 3 : 2));
-  v.stats = { ...v.stats, solves: 60, clean: 30, spEarned: 500, bestStreak: 7, founded: true };
+  v.stats = { ...v.stats, solves: 60, clean: 30, spEarned: 500, bestStreak: 7, festivals: 1, founded: true };
   return v;
 }
 
@@ -70,9 +70,18 @@ test('the founding rung names what is missing for the shrine upgrade', () => {
   assert.match(hint.msg, /once you have 50 🌾 \+ 50 🪵 \+ 25 🪙 more/); // shrine t5 L2→3
 });
 
-test('after the ladder, the advisor drives endless upgrades', () => {
+test('after the ladder: a rich, unlit village is told to feast first', () => {
   const v = thrivingVillage();
   v.res = { food: 1000, wood: 1000, coin: 1000 };
+  const hint = nextHint(v);
+  assert.equal(hint.id, 'festival');
+  assert.match(hint.msg, /150 🌾 \+ 50 🪵 \+ 100 🪙/);
+});
+
+test('with the festival burning (or unaffordable), the advisor drives endless upgrades', () => {
+  const v = thrivingVillage();
+  v.res = { food: 1000, wood: 1000, coin: 1000 };
+  v.festival = 6;
   const hint = nextHint(v);
   assert.equal(hint.id, 'endless');
   assert.match(hint.msg, /🛖 Hut \(L2→L3\)/); // cheapest: tier 1 level 2 → 10/10/5
@@ -80,6 +89,20 @@ test('after the ladder, the advisor drives endless upgrades', () => {
   const up = cheapestUpgrade(v);
   assert.equal(up.def.id, 'hut');
   assert.deepEqual(up.cost, { food: 10, wood: 10, coin: 5 });
+  v.festival = 0;
+  v.res = { food: 100, wood: 100, coin: 50 }; // feast out of reach → upgrades again
+  assert.equal(nextHint(v).id, 'endless');
+});
+
+test('the festival goal rung coaches saving up, then lighting', () => {
+  const v = thrivingVillage();
+  v.stats.festivals = 0; // 'festival' is now the next rung
+  v.res = { food: 20, wood: 0, coin: 0 };
+  const saving = nextHint(v);
+  assert.equal(saving.id, 'festival-save');
+  assert.match(saving.msg, /short 130 🌾 \+ 50 🪵 \+ 100 🪙/);
+  v.res = { food: 200, wood: 60, coin: 120 };
+  assert.equal(nextHint(v).id, 'festival');
 });
 
 test('an empty grid in endless mode asks for rebuilding, never throws', () => {

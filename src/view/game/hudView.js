@@ -6,7 +6,7 @@
 // ============================================================================
 import { BUILDINGS, buildingById, RES_EMOJI } from '../../game/buildings.js';
 import { CHALLENGE_TIERS, tierById, payout } from '../../game/challenges.js';
-import { isUnlocked, canAfford, shrineBonus, upgradeCost } from '../../game/economy.js';
+import { isUnlocked, canAfford, shrineBonus, upgradeCost, festivalBonus, FESTIVAL_COST } from '../../game/economy.js';
 import { nextGoal } from '../../game/goals.js';
 import { nextHint, costText } from '../../game/advisor.js';
 
@@ -17,11 +17,12 @@ const REFUSED = {
   cost: 'Not enough on hand for that.',
   range: 'That plot is outside the village.',
   empty: 'Nothing there to upgrade.',
+  festival: 'A festival is already underway.',
 };
 
 export class GameHudView {
   constructor(els, session, { onPickBuilding, onTakeContract, isChaining = () => false }) {
-    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl?, hintEl? }
+    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl?, hintEl?, festivalBtn? }
     this.session = session;
     this.onPickBuilding = onPickBuilding;
     this.onTakeContract = onTakeContract;
@@ -73,6 +74,7 @@ export class GameHudView {
     this._paintContracts();
     this._paintGoal();
     this._paintHint();
+    this._paintFestival();
   }
 
   // The idle strip's "do this next" line, re-derived from the live village.
@@ -91,7 +93,18 @@ export class GameHudView {
       chip(RES_EMOJI.coin, v.res.coin) +
       chip('📅', `day ${v.day}`) +
       (v.stats.streak >= 2 ? chip('🔥', `×${v.stats.streak}`, 'streak') : '') +
+      (v.festival > 0 ? chip('🏮', `${v.festival} left`, 'festival') : '') +
       (v.stats.founded ? chip('⛩️', 'founded', 'founded') : '');
+  }
+
+  _paintFestival() {
+    const btn = this.els.festivalBtn;
+    if (!btn) return;
+    const v = this._v();
+    btn.disabled = v.festival > 0 || !canAfford(v, FESTIVAL_COST);
+    btn.title = v.festival > 0
+      ? `The festival burns for ${v.festival} more solve${v.festival > 1 ? 's' : ''}.`
+      : 'Feast the village: +50% sp on every contract payout for the next 10 solves.';
   }
 
   _paintGoal() {
@@ -118,7 +131,7 @@ export class GameHudView {
   _paintContracts() {
     const busy = this.session.active;
     const v = this._v();
-    const bonus = shrineBonus(v);
+    const bonus = shrineBonus(v) + festivalBonus(v);
     for (const tier of CHALLENGE_TIERS) {
       this.takeBtns.get(tier.id).disabled = busy;
       const best = payout(tier, { faults: 0, elapsedMs: 0 }, bonus, v.stats.streak);
@@ -146,7 +159,7 @@ export class GameHudView {
           const def = buildingById(cell.id);
           els.payEl.innerHTML = `solve to raise the ${def.name} ${def.emoji} to level ${cell.level + 1} · cost held: ${costText(upgradeCost(def, cell.level))}`;
         } else {
-          const best = payout({ baseSp: evt.baseSp, timeFloorMs: evt.timeFloorMs }, { faults: 0, elapsedMs: 0 }, shrineBonus(this._v()), this._v().stats.streak);
+          const best = payout({ baseSp: evt.baseSp, timeFloorMs: evt.timeFloorMs }, { faults: 0, elapsedMs: 0 }, shrineBonus(this._v()) + festivalBonus(this._v()), this._v().stats.streak);
           els.payEl.innerHTML = `worth up to <b>${best} sp</b> — no fumbles for the clean bonus, under ${Math.round(evt.timeFloorMs / 1000)}s for the speed bonus`;
         }
         this._paintContracts();
@@ -177,6 +190,10 @@ export class GameHudView {
         this._paintAll();
         break;
       }
+      case 'festival':
+        this._notice('🏮 The festival is lit — +50% sp on every payout for the next 10 solves!');
+        this._paintAll();
+        break;
       case 'refused':
         this._notice(`<span class="bad">${REFUSED[evt.reason] || evt.reason}</span>`);
         break;
