@@ -10,7 +10,7 @@
 // future migrations (the pattern TutorialProgress._data uses).
 // ============================================================================
 import { newVillage } from './economy.js';
-import { buildingById, GRID_CELLS, MAX_LEVEL } from './buildings.js';
+import { buildingById, GRID_CELLS } from './buildings.js';
 
 export class GameSave {
   constructor(store) { this.store = store; }
@@ -32,7 +32,7 @@ export class GameSave {
     if (Array.isArray(raw.grid)) {
       for (let i = 0; i < GRID_CELLS; i++) {
         const c = raw.grid[i];
-        if (c && buildingById(c.id) && Number.isInteger(c.level) && c.level >= 1 && c.level <= MAX_LEVEL) {
+        if (c && buildingById(c.id) && Number.isInteger(c.level) && c.level >= 1) {
           v.grid[i] = { id: c.id, level: c.level };
         }
       }

@@ -9,11 +9,19 @@
 //   tier   — drives upgrade costs and which contract tier an upgrade demands
 // The well's farm aura and the shrine's payout bonus are behaviors, so they
 // live in economy.js — the table only carries data.
+//
+// Levels are ENDLESS: yields scale ×level forever and upgradeCost (economy.js)
+// grows linearly, so there is no MAX_LEVEL. FOUNDING_LEVEL only marks the
+// shrine level that fires the one-time "founded" milestone.
 // ============================================================================
 export const GRID_COLS = 9;
 export const GRID_ROWS = 6;
 export const GRID_CELLS = GRID_COLS * GRID_ROWS; // cellIdx = row * GRID_COLS + col
-export const MAX_LEVEL = 3;
+export const FOUNDING_LEVEL = 3;
+
+// Resource glyphs — load-bearing data like the peg tables, shared by every
+// layer that names a resource (HUD chips, canvas pulses, advisor hints).
+export const RES_EMOJI = Object.freeze({ sp: '🧮', food: '🌾', wood: '🪵', coin: '🪙' });
 
 export const BUILDINGS = Object.freeze([
   Object.freeze({
@@ -52,7 +60,7 @@ export const BUILDINGS = Object.freeze([
     id: 'shrine', emoji: '⛩️', name: 'Shrine', tier: 5,
     cost: Object.freeze({ sp: 100, coin: 20 }), yield: Object.freeze({}),
     unlock: Object.freeze({ building: 'market' }),
-    desc: 'Each shrine level blesses contracts: +10% sp payout (village cap +30%). Level 3 founds the village.',
+    desc: 'Each shrine level blesses contracts: +10% sp payout (village cap +30%). Level 3 founds the village — and levels never stop.',
   }),
 ]);
 

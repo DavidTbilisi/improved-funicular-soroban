@@ -80,7 +80,7 @@ const hud = new GameHudView({
   resEl: $('gameRes'), paletteEl: $('gamePalette'), contractsEl: $('gameContracts'),
   noticeEl: $('gameNotice'), stageEl: $('gameStage'), promptEl: $('gamePrompt'),
   subEl: $('gameSub'), payEl: $('gamePay'), feedbackEl: $('gameFeedback'),
-  abandonBtn: $('gameAbandon'), resetBtn: $('gameReset'), goalEl: $('gameGoal'),
+  abandonBtn: $('gameAbandon'), resetBtn: $('gameReset'), goalEl: $('gameGoal'), hintEl: $('gameHint'),
 }, session, {
   onPickBuilding: id => setPlacement(placementId === id ? null : id),
   onTakeContract: id => session.startChallenge(id),

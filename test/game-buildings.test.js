@@ -1,12 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUILDINGS, buildingById, GRID_COLS, GRID_ROWS, GRID_CELLS, MAX_LEVEL } from '../src/game/buildings.js';
+import { BUILDINGS, buildingById, GRID_COLS, GRID_ROWS, GRID_CELLS, FOUNDING_LEVEL, RES_EMOJI } from '../src/game/buildings.js';
 
 test('grid geometry constants', () => {
   assert.equal(GRID_COLS, 9);
   assert.equal(GRID_ROWS, 6);
   assert.equal(GRID_CELLS, 54);
-  assert.equal(MAX_LEVEL, 3);
+  assert.equal(FOUNDING_LEVEL, 3);
+});
+
+test('the resource glyph table is frozen and covers every resource key', () => {
+  assert.ok(Object.isFrozen(RES_EMOJI));
+  assert.deepEqual(Object.keys(RES_EMOJI).sort(), ['coin', 'food', 'sp', 'wood']);
+  for (const k of Object.keys(RES_EMOJI)) assert.ok(RES_EMOJI[k]);
 });
 
 test('building ids are unique', () => {

@@ -12,7 +12,7 @@
 // called by GameSession._solve), so the whole economy is deterministic and
 // testable — no wall clock, no idle accrual.
 // ============================================================================
-import { buildingById, GRID_CELLS, MAX_LEVEL } from './buildings.js';
+import { buildingById, GRID_CELLS } from './buildings.js';
 
 export function newVillage() {
   return {
@@ -40,6 +40,16 @@ export function canAfford(village, cost) {
   if ((cost.sp || 0) > village.sp) return false;
   for (const k of ['food', 'wood', 'coin']) if ((cost[k] || 0) > village.res[k]) return false;
   return true;
+}
+
+// What is still missing to afford a cost — {} when affordable. Feeds hints.
+export function shortfall(village, cost) {
+  const s = {};
+  if ((cost.sp || 0) > village.sp) s.sp = cost.sp - village.sp;
+  for (const k of ['food', 'wood', 'coin']) {
+    if ((cost[k] || 0) > village.res[k]) s[k] = cost[k] - village.res[k];
+  }
+  return s;
 }
 
 export function spend(village, cost) {
@@ -104,11 +114,13 @@ export function shrineBonus(village) {
 }
 
 // Upgrading costs resources (not sp — sp buys new ground; growth is fed by the
-// village itself) and scales with the building's tier. null when maxed.
+// village itself) and scales with the building's tier and level, forever:
+// yields grow ×level and the cost grows linearly with it, so every upgrade
+// pays back in about the same number of village days. Level 1→2 and 2→3 are
+// exactly the pre-endless values, so old saves feel no seam.
 export function upgradeCost(def, level) {
-  if (level >= MAX_LEVEL) return null;
   const t = def.tier;
-  return level === 1
-    ? { food: 5 * t, wood: 5 * t }
-    : { food: 10 * t, wood: 10 * t, coin: 5 * t };
+  const cost = { food: 5 * t * level, wood: 5 * t * level };
+  if (level >= 2) cost.coin = 5 * t * (level - 1);
+  return cost;
 }

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildingById, GRID_CELLS, MAX_LEVEL } from '../src/game/buildings.js';
+import { buildingById, GRID_CELLS } from '../src/game/buildings.js';
 import {
-  newVillage, counts, isUnlocked, canAfford, spend, refund,
+  newVillage, counts, isUnlocked, canAfford, spend, refund, shortfall,
   canPlace, place, dailyYield, advanceDay, shrineBonus, upgradeCost,
 } from '../src/game/economy.js';
 
@@ -103,11 +103,23 @@ test('shrineBonus: +10% per shrine level, capped at +30%', () => {
   assert.equal(shrineBonus(v), 0.3);
 });
 
-test('upgradeCost scales with tier and step, and is null at max level', () => {
+test('upgradeCost scales with tier and level, and never caps', () => {
   const farm = buildingById('farm'), workshop = buildingById('workshop');
   assert.deepEqual(upgradeCost(farm, 1), { food: 5, wood: 5 });
   assert.deepEqual(upgradeCost(farm, 2), { food: 10, wood: 10, coin: 5 });
   assert.deepEqual(upgradeCost(workshop, 1), { food: 15, wood: 15 });
   assert.deepEqual(upgradeCost(workshop, 2), { food: 30, wood: 30, coin: 15 });
-  assert.equal(upgradeCost(farm, MAX_LEVEL), null);
+  // Endless: the pre-endless values above are the first rungs of a linear
+  // curve that keeps going.
+  assert.deepEqual(upgradeCost(farm, 3), { food: 15, wood: 15, coin: 10 });
+  assert.deepEqual(upgradeCost(farm, 10), { food: 50, wood: 50, coin: 45 });
+  assert.deepEqual(upgradeCost(workshop, 100), { food: 1500, wood: 1500, coin: 1485 });
+});
+
+test('shortfall reports exactly what is missing, {} when affordable', () => {
+  const v = newVillage(); // 20 sp, no resources
+  assert.deepEqual(shortfall(v, { sp: 15 }), {});
+  assert.deepEqual(shortfall(v, { sp: 60, wood: 15, food: 10 }), { sp: 40, food: 10, wood: 15 });
+  v.res.wood = 9;
+  assert.deepEqual(shortfall(v, { wood: 15 }), { wood: 6 });
 });

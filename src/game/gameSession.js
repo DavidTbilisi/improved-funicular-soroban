@@ -8,8 +8,8 @@
 //   earn    — pick any tier, solve it, get paid (payout × shrine blessing)
 //   upgrade — click a building; its resource cost is DEDUCTED UP FRONT
 //             (refunded on abandon) and the solve raises the building a level
-//             instead of paying sp. The contract tier escalates with the
-//             building: min(top, def.tier - 1 + current level).
+//             instead of paying sp. Levels are endless; the contract tier
+//             escalates with the building, min(top, def.tier - 1 + level).
 // Either kind, solved, advances the village exactly ONE day (advanceDay) —
 // arithmetic is the game's clock as well as its mint.
 //
@@ -19,12 +19,12 @@
 //   solved    { kind, tierId, clean, verdict, elapsedMs, timeFloorMs, faults,
 //               payout, parts, yields, day, village, cell, milestone, streak }
 //   placed    { cellIdx, buildingId, village }
-//   refused   { reason: 'busy'|'locked'|'occupied'|'cost'|'range'|'empty'|'maxlevel' }
+//   refused   { reason: 'busy'|'locked'|'occupied'|'cost'|'range'|'empty' }
 //   abandoned { village }
 //   reset     { village }
 // ============================================================================
 import { Observable } from '../state/observable.js';
-import { BUILDINGS, buildingById, GRID_CELLS, MAX_LEVEL } from './buildings.js';
+import { BUILDINGS, buildingById, GRID_CELLS, FOUNDING_LEVEL } from './buildings.js';
 import { CHALLENGE_TIERS, payout, payoutParts } from './challenges.js';
 import { canPlace, place, canAfford, spend, refund, advanceDay, shrineBonus, upgradeCost } from './economy.js';
 
@@ -61,7 +61,6 @@ export class GameSession extends Observable {
     if (!Number.isInteger(cellIdx) || cellIdx < 0 || cellIdx >= GRID_CELLS) return this._refuse('range');
     const cell = this.village.grid[cellIdx];
     if (!cell) return this._refuse('empty');
-    if (cell.level >= MAX_LEVEL) return this._refuse('maxlevel');
     const def = buildingById(cell.id);
     const cost = upgradeCost(def, cell.level);
     if (!canAfford(this.village, cost)) return this._refuse('cost');
@@ -145,7 +144,7 @@ export class GameSession extends Observable {
     } else {
       const cell = v.grid[ch.cell];
       cell.level++;
-      if (cell.id === 'shrine' && cell.level >= MAX_LEVEL && !v.stats.founded) {
+      if (cell.id === 'shrine' && cell.level >= FOUNDING_LEVEL && !v.stats.founded) {
         v.stats.founded = true;
         milestone = 'founded';
       }
