@@ -136,6 +136,8 @@ test('deck-bests chart draws bars only for drilled decks', () => {
   assert.equal(count(f, /<path d="M/g), 1, 'one bar');
   assert.ok(f.includes('80%'));
   assert.ok(f.includes('>—</text>'), 'undrilled deck shows an em-dash');
+  assert.ok(figDeckBests([{ label: 'Face → digit', best: null }]).includes('fig-empty'),
+    'all-undrilled decks collapse to the empty message, not an empty chart');
 });
 
 test('session trend: empty message, single dot, and a 2px line for a history', () => {

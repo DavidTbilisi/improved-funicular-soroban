@@ -23,13 +23,13 @@
   --data-wash:#eceffb;  /* indigo-tinted fill */
 
   --violet:  #7c5cd6;   /* decimal identity */
-  --violet-soft:#ded8f1;/* frac bead at rest */
+  --violet-soft:#d4cbee;/* frac bead at rest */
 
   --shu:     #d0442e;   /* vermilion — attention / hanko seal */
   --green:   #178a4c;   /* clean / cleared */
   --amber:   #c77414;   /* slow / metronome accent */
 
-  --bead:    #d7d8dd;   /* bead at rest (uncounted) */
+  --bead:    #c8cad3;   /* bead at rest (uncounted) */
   --bead-on: #23242b;   /* bead at the bar (counted) */
 
   --shadow: 0 1px 2px rgba(23, 25, 45, 0.05), 0 3px 10px rgba(23, 25, 45, 0.05);
@@ -45,12 +45,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 ::selection { background: var(--data-wash); }
-.app { width: 100%; margin: 0 auto; }
+/* The textbook column: generous but bounded, so wide monitors don't stretch
+   panels into empty plains. (The game cockpit doesn't use .app — it owns the
+   whole viewport.) */
+.app { width: 100%; max-width: 1240px; margin: 0 auto; }
+/* The page title is the spine — a real display size so the mono voice anchors
+   the page instead of whispering. (The game cockpit's .ck-title overrides.) */
 h1 {
-  font-family: var(--mono); font-size: 1.3rem; font-weight: 600; margin: 0 0 5px;
-  letter-spacing: 0.01em; color: var(--ink);
+  font-family: var(--mono); font-size: 2rem; font-weight: 600; margin: 0 0 6px;
+  letter-spacing: -0.015em; color: var(--ink);
 }
-.subtitle { color: var(--stone); margin: 0 0 18px; font-size: 0.92rem; max-width: 64ch; }
+.subtitle { color: var(--stone); margin: 0 0 20px; font-size: 0.95rem; max-width: 64ch; }
 h2 {
   font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.8px;
   color: var(--ink); margin: 0 0 14px; font-weight: 600;
@@ -114,17 +119,20 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 
 /* Soroban — the instrument keeps its ink line-drawing, on a soft card. */
 .soroban-wrap { display: flex; justify-content: flex-start; padding: 14px 2px 8px; overflow-x: auto; }
-.soroban { display: flex; gap: 6px; margin: 0 auto; padding: 16px 18px; background: var(--paper-2); border: 1.5px solid #2b2c33; border-radius: 14px; }
+.soroban { display: flex; gap: 6px; margin: 0 auto; padding: 16px 18px; background: var(--paper-2); border: 1.5px solid #2b2c33; border-radius: 14px; box-shadow: var(--shadow); }
 .rod { display: flex; flex-direction: column; align-items: center; width: 50px; }
 .rod.frac .rod-letter, .rod.frac .rod-place { color: var(--violet); }
 .rod-frame { height: 340px; width: 100%; position: relative; cursor: pointer; border-radius: 8px; }
-.rod-frame::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line-2); transform: translateX(-0.5px); }
-.bar { position: absolute; left: -10px; right: -10px; top: 96px; height: 2px; background: var(--ink); z-index: 5; }
+.rod-frame::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #c3c6cf; transform: translateX(-1px); border-radius: 1px; }
+.bar { position: absolute; left: -10px; right: -10px; top: 96px; height: 3px; background: var(--ink); z-index: 5; border-radius: 1px; }
 .bead {
   width: 34px; height: 19px; background: var(--bead); border-radius: 50% / 38%;
   position: absolute; left: 50%; transform: translateX(-50%);
   transition: top 0.26s cubic-bezier(0.5,0.8,0.4,1.05), background 0.15s ease;
   z-index: 2;
+  /* a soft top light + seat shadow so the bead reads as a physical piece */
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 58%);
+  box-shadow: 0 1px 1.5px rgba(23, 25, 45, 0.22);
 }
 /* A bead reads tonally: light at rest, saturated when counted. Decimal beads
    carry the violet of their fractional identity. */
@@ -151,6 +159,11 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .coach .rule.big { color: var(--violet); }
 .coach .move { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
 .coach .warn { color: var(--shu); font-weight: 700; }
+/* The coach's idle state is the key chart: labeled clusters that wrap between
+   groups, never inside one. */
+.coach .kbg { display: inline-block; white-space: nowrap; margin: 0 9px 2px; }
+.coach .kbg kbd { margin: 0 1px; }
+.coach .kbl { font-family: var(--mono); font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--faint); margin-right: 4px; }
 .sound-row { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; margin-top: 12px; }
 .sound-toggle { padding: 5px 12px; font-size: 0.78rem; }
 .metro { display: inline-flex; align-items: center; gap: 9px; }
@@ -193,15 +206,22 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .presets button { padding: 6px 11px; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 
 .help { font-size: 0.9rem; line-height: 1.7; color: var(--stone); max-width: 74ch; }
+/* Long manual paragraphs on full-width panels set in two textbook columns,
+   so they fill the measure instead of hugging the left edge. */
+@media (min-width: 1000px) {
+  .help.help-cols { columns: 2; column-gap: 36px; max-width: none; }
+}
 .help code { font-family: var(--mono); background: var(--paper); padding: 1px 5px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); }
 .help strong { color: var(--ink); }
 .help .fr { color: var(--violet); }
-.peg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
-.peg-chip { display: flex; align-items: center; gap: 9px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; }
+.peg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 7px; }
+/* flex-wrap: a long role tag drops to its own right-aligned line instead of
+   overflowing under the neighboring card. */
+.peg-chip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; }
 .peg-chip .letter { font-family: var(--mono); font-weight: 700; color: var(--data); width: 14px; text-align: center; }
 .peg-chip .emoji { font-size: 1.2rem; line-height: 1; }
 .peg-chip .pword { font-size: 0.84rem; color: var(--ink); }
-.peg-chip .ppl { font-family: var(--mono); margin-left: auto; font-size: 0.6rem; color: var(--faint); text-align: right; }
+.peg-chip .ppl { font-family: var(--mono); margin-left: auto; font-size: 0.6rem; color: var(--faint); text-align: right; max-width: 100%; line-height: 1.45; }
 
 /* Drill mode */
 .drill-decks { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -298,8 +318,8 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .pack-digits-line code { background: var(--paper); padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); letter-spacing: 2px; }
 
 /* Cube digit faces reference */
-.cube-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 7px; }
-.cube-chip { display: flex; align-items: center; gap: 9px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; }
+.cube-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 7px; }
+.cube-chip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; }
 .cube-chip .digit { font-family: var(--mono); font-weight: 700; color: var(--data); width: 14px; text-align: center; font-variant-numeric: tabular-nums; }
 .cube-chip .faces { font-size: 1.2rem; line-height: 1; letter-spacing: 2px; min-width: 44px; }
 .cube-chip .faces.bare { color: var(--faint); font-size: 0.85rem; }
@@ -317,7 +337,7 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .fig figcaption { margin-top: 8px; font-size: 0.8rem; line-height: 1.55; color: var(--stone); max-width: 70ch; }
 .fig-no { font-family: var(--mono); font-weight: 700; color: var(--data); margin-right: 4px; }
 .fig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 26px; align-items: end; }
-.fig-empty { font-size: 0.85rem; color: var(--faint); font-style: italic; padding: 14px 4px; text-align: center; }
+.fig-empty { font-size: 0.85rem; color: var(--stone); font-style: italic; padding: 26px 16px; text-align: center; }
 
 /* The multiplication table — a single-hue indigo ramp; .hot = the cell the
    current trainer step reads. */
@@ -352,7 +372,8 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-canvas { height: 100%; min-height: 0; background: linear-gradient(180deg, #f0f5e8, #e7efdb); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .game-canvas canvas { display: block; }
 .ck-side { display: flex; flex-direction: column; gap: 9px; min-height: 0; overflow-y: auto; padding-right: 2px; }
-.game-h { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--stone); margin: 0 0 4px; }
+.game-h { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--stone); margin: 0 0 4px; }
+.game-h .h-tail { text-transform: none; letter-spacing: 0.3px; color: var(--faint); }
 
 /* Resource chips (shared look with the rest of the app). */
 .game-res { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -375,15 +396,24 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-chain { display: block; margin-top: 5px; font-size: 0.7rem; color: var(--stone); cursor: pointer; user-select: none; }
 .game-chain input { accent-color: var(--data); vertical-align: -1px; }
 
-/* Build palette — two-up; the full cost/yield story lives in the tooltip. */
+/* Build palette — two-up; the full cost/yield story lives in the tooltip.
+   flex-wrap: a long cost drops to its own right-aligned line — the cost is
+   gameplay-critical and must never truncate. */
 .game-palette { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.game-build { display: flex; align-items: center; gap: 6px; text-align: left; padding: 4px 8px; min-width: 0; }
+.game-build { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; text-align: left; padding: 4px 8px; min-width: 0; }
 .game-build .b-emoji { font-size: 1.05rem; line-height: 1; }
 .game-build .b-name { font-size: 0.72rem; white-space: nowrap; }
-.game-build .b-cost { font-family: var(--mono); margin-left: auto; font-size: 0.58rem; color: var(--stone); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-build .b-cost { font-family: var(--mono); margin-left: auto; font-size: 0.58rem; color: var(--stone); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
 .game-build.locked { opacity: 0.45; }
 .game-build.armed { background: var(--data); border-color: var(--data); color: var(--paper-2); }
 .game-build.armed .b-cost { color: var(--paper-2); }
+
+/* Festival — the resource sink. Same rule as builds: the cost never truncates. */
+.game-festival { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; text-align: left; padding: 6px 11px; flex: none; }
+.game-festival b { font-weight: 600; white-space: nowrap; }
+.game-festival .f-cost { font-family: var(--mono); margin-left: auto; font-size: 0.6rem; color: var(--stone); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
+.game-chip.festival { border-color: var(--violet); }
+.game-chip.festival b { color: var(--violet); }
 
 /* Goal + notice lines under the side panel. */
 .game-goal { font-size: 0.74rem; color: var(--stone); padding: 5px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; }
@@ -426,7 +456,11 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* Board strip: the adopted live board, scaled to fit; the coach line rides
    below it and the sound/metronome controls float over the top-right corner. */
-.ck-board { height: clamp(150px, 26vh, 330px); position: relative; }
+.ck-board {
+  height: clamp(150px, 26vh, 330px); position: relative;
+  background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px;
+  padding: 4px 12px 2px;
+}
 .page-game .board-slot { border-top: none; margin: 0; height: 100%; display: flex; flex-direction: column; }
 .page-game .soroban-wrap { flex: 1; min-height: 0; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: flex-start; }
 .page-game .soroban { margin: 0; transform-origin: top center; padding: 10px 14px; }
@@ -445,6 +479,13 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-goals { display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem; color: var(--stone); }
 .ck-goals .done { color: var(--green); }
 .ck-goals .g-next { color: var(--ink); font-weight: 600; }
+
+/* The sidebar's own copy of the ladder rides the bottom of the side panel,
+   turning its dead space into the scoreboard. Hidden on short viewports so
+   the cockpit never scrolls. */
+.ck-goals-side { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line); }
+.ck-goals-side .ck-goals { font-size: 0.74rem; gap: 3px; }
+@media (max-height: 760px) { .ck-goals-side { display: none; } }
 
 /* Short viewports: tighten the side panel before it has to scroll. */
 @media (max-height: 720px) {
@@ -478,6 +519,9 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-focused .soroban { transform-origin: center center; }
 .ck-focused .tut-prompt { font-size: 1.9rem; }
 .ck-focused .tut-sub, .ck-focused .game-pay { font-size: 0.8rem; }
+/* The popup has room — the payout story and feedback wrap instead of ellipsizing. */
+.ck-focused .tut-sub, .ck-focused .game-pay,
+.ck-focused .tut-feedback, .ck-focused .coach { white-space: normal; overflow: visible; text-overflow: clip; }
 .ck-focused .ck-value b { font-size: 1.6rem; }
 .ck-focused .tut-feedback { font-size: 0.88rem; }
 .ck-focused .coach { font-size: 0.84rem; }

@@ -254,6 +254,7 @@ export function figLadder(infos) {
 // --- Drill results: best session per deck (live) -----------------------------
 // rows = [{ label, best: {floorPct, meanMs, t} | null }] in deck (tier) order.
 export function figDeckBests(rows) {
+  if (rows.every(r => !r.best)) return `<div class="fig-empty">No decks drilled yet — each deck's best session lands here, in tier order.</div>`;
   const rowH = 22, LM = 176, W = 520, T = 8, trackW = W - LM - 46;
   const H = T + rows.length * rowH + 24;
   const xw = pct => (pct / 100) * trackW;

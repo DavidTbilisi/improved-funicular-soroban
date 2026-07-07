@@ -53,8 +53,10 @@ export class VillageScene extends Phaser.Scene {
     for (let i = 0; i < GRID_CELLS; i++) {
       const { x, y } = this.cellXY(i);
       const c = i % GRID_COLS, r = Math.floor(i / GRID_COLS);
+      // A dark sliver under each plate so the plot reads raised off the grass.
+      this.add.rectangle(x, y + 3, TILE - 4, TILE - 4, 0x44523a, 0.10);
       const tile = this.add.rectangle(x, y, TILE - 4, TILE - 4, 0xffffff, (c + r) % 2 ? 0.28 : 0.44)
-        .setStrokeStyle(1, 0xdde4d0);
+        .setStrokeStyle(1, 0xd9e0ca);
       tile.baseAlpha = tile.fillAlpha;
       tile.setInteractive({ useHandCursor: true });
       tile.on('pointerover', () => this._hover(i, true));
@@ -68,24 +70,27 @@ export class VillageScene extends Phaser.Scene {
   }
 
   // A ring of greenery just outside the plots — seeded, so the same forest
-  // greets the player every session.
+  // greets the player every session. The side flanks are proper woods now:
+  // they scatter across the whole band between world edge and grid, so a wide
+  // canvas reads as countryside instead of empty green.
   _plantDecor() {
     const rnd = seededRng(0x50f0ba);
     const jitter = k => (rnd() - 0.5) * k;
     const spots = [];
-    const left = this.ox - 30, right = this.ox + GRID_COLS * TILE + 30;
-    const top = this.oy - 26, bottom = this.oy + GRID_ROWS * TILE + 26;
+    const top = this.oy - 12, bottom = this.oy + GRID_ROWS * TILE + 16;
     for (let k = 0; k < 9; k++) {
-      spots.push({ x: this.ox + 20 + (k / 8) * (GRID_COLS * TILE - 40) + jitter(26), y: top + jitter(14) });
-      spots.push({ x: this.ox + 20 + ((k + 0.5) / 8) * (GRID_COLS * TILE - 40) + jitter(26), y: bottom + jitter(14) });
+      spots.push({ x: this.ox + 20 + (k / 8) * (GRID_COLS * TILE - 40) + jitter(26), y: top + jitter(10) });
+      spots.push({ x: this.ox + 20 + ((k + 0.5) / 8) * (GRID_COLS * TILE - 40) + jitter(26), y: bottom + jitter(10) });
     }
-    for (let k = 0; k < 5; k++) {
-      spots.push({ x: left + jitter(16), y: this.oy + 20 + (k / 4) * (GRID_ROWS * TILE - 40) + jitter(20) });
-      spots.push({ x: right + jitter(16), y: this.oy + 20 + ((k + 0.5) / 4) * (GRID_ROWS * TILE - 40) + jitter(20) });
+    const bandW = Math.max(this.ox - 24, 24);
+    const rightX = this.ox + GRID_COLS * TILE;
+    for (let k = 0; k < 12; k++) {
+      spots.push({ x: 12 + rnd() * bandW, y: this.oy + rnd() * GRID_ROWS * TILE });
+      spots.push({ x: rightX + 12 + rnd() * bandW, y: this.oy + rnd() * GRID_ROWS * TILE });
     }
     for (const s of spots) {
       const glyph = DECOR_GLYPHS[Math.floor(rnd() * DECOR_GLYPHS.length)];
-      this.add.text(s.x, s.y, glyph, { fontSize: `${16 + Math.floor(rnd() * 8)}px`, padding: { x: 4, y: 4 } })
+      this.add.text(s.x, s.y, glyph, { fontSize: `${16 + Math.floor(rnd() * 10)}px`, padding: { x: 4, y: 4 } })
         .setOrigin(0.5).setResolution(DPR()).setAlpha(0.9).setDepth(1);
     }
   }
@@ -245,6 +250,19 @@ export class VillageScene extends Phaser.Scene {
         });
         n++;
       }
+    }
+  }
+
+  // A lit festival: lanterns rise from the plots with a few sparkles between.
+  festivalBurst() {
+    for (let k = 0; k < 14; k++) {
+      const { x, y } = this._randomSpot();
+      const glyph = k % 3 === 2 ? '✨' : '🏮';
+      const t = this._emojiText(x, y + 20, glyph, 16 + Math.floor(Math.random() * 10)).setAlpha(0).setDepth(10);
+      this.tweens.add({
+        targets: t, alpha: 0.95, y: y - 40 - Math.random() * 60, delay: 90 * k, duration: 500, ease: 'Cubic.easeOut',
+        onComplete: () => this.tweens.add({ targets: t, alpha: 0, y: '-=40', duration: 700, onComplete: () => t.destroy() }),
+      });
     }
   }
 
