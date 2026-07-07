@@ -8,8 +8,9 @@
 </head>
 <body class="page-game">
 
-<!-- One-screen cockpit: header / village + side panel / contract strip / board.
-     The grid fills 100dvh; nothing on this page should ever need scrolling. -->
+<!-- One-screen cockpit: header / village + side panel / contract strip.
+     The grid fills 100dvh; nothing on this page should ever need scrolling.
+     The live board hides while idle and appears inside the focus popup. -->
 <div class="cockpit">
 
   <header class="ck-top">
@@ -44,11 +45,11 @@
     </aside>
   </main>
 
-  <!-- The dock holds the contract strip + live board. Normally its children
-       are two bottom bands of the cockpit grid (display: contents); while a
-       contract is live the page sets .ck-focused on <body> and the same nodes
-       become a centered popup over the dimmed village — no DOM moves, so the
-       board's listeners and fit-scaling carry over untouched. -->
+  <!-- The dock holds the contract strip + live board. Normally the strip is
+       the cockpit grid's bottom band (display: contents) and the board stays
+       hidden; while a contract is live the page sets .ck-focused on <body>
+       and the same nodes become a centered popup over the dimmed village —
+       no DOM moves, so the board's listeners and fit-scaling carry over. -->
   <div class="ck-dock">
     <section class="ck-strip">
       <div class="ck-idle" id="gameIdle">💡 <span id="gameHint"></span> <span class="ck-idle-tail">· <kbd>?</kbd> for the rules</span></div>

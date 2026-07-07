@@ -377,13 +377,14 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .multab td.hot { outline: 2.5px solid var(--shu); outline-offset: -1.5px; }
 
 /* Soroban Village — the resource game, laid out as a one-screen cockpit:
-   header / canvas + side panel / contract strip / live board. The page fills
-   the viewport (100dvh) and never scrolls; the board is scaled to fit its
-   strip by the page (see fitBoard in src/pages/game.js). */
+   header / canvas + side panel / contract strip. The page fills the viewport
+   (100dvh) and never scrolls. The live board stays hidden while idle — it
+   appears only inside the focus popup while a contract is live, scaled to fit
+   its box by the page (see fitBoard in src/pages/game.js). */
 body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .cockpit {
   display: grid; height: 100%; min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   row-gap: 8px; padding: 8px 16px 8px;
 }
 
@@ -451,9 +452,10 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-notice { min-height: 1.2em; font-size: 0.74rem; color: var(--stone); flex: none; }
 .game-notice .bad { color: var(--shu); font-weight: 600; }
 
-/* The dock is invisible in normal mode: its strip + board children lay out as
-   the cockpit's two bottom grid rows. See the focus-mode block below. */
+/* The dock is invisible in normal mode: its strip lays out as the cockpit's
+   bottom grid row while the board waits unseen. See the focus-mode block. */
 .ck-dock { display: contents; }
+.page-game:not(.ck-focused) .ck-board { display: none; }
 
 /* Contract strip — a fixed-height band so the layout never jumps. */
 .ck-strip {
@@ -484,8 +486,9 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-stage .tut-feedback .streak { color: var(--amber); font-weight: 600; }
 .game-stage .tut-feedback b { color: var(--ink); }
 
-/* Board strip: the adopted live board, scaled to fit; the coach line rides
-   below it and the sound/metronome controls float over the top-right corner. */
+/* Board box: the adopted live board, scaled to fit; the coach line rides
+   below it and the sound/metronome controls float over the top-right corner.
+   Hidden while idle (rule above) — it exists to be the focus popup's stage. */
 .ck-board {
   height: clamp(150px, 26vh, 330px); position: relative;
   background: var(--well); border: 1px solid var(--line); border-radius: 12px;

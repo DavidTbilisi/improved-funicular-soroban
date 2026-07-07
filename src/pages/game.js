@@ -22,18 +22,22 @@ import { GameHudView } from '../view/game/hudView.js';
 const $ = id => document.getElementById(id);
 mountNav('game');
 const shell = mountBoardShell($('boardMount'), { intVal: 0, fracStr: '' });
-// Merge the cockpit: the live board sits in the bottom strip. The readout and
+// Merge the cockpit: the live board is adopted into the dock, where it stays
+// hidden until a contract lifts it into the focus popup. The readout and
 // setter panels stay behind in the hidden #boardMount — on this page beads
 // only move by being worked; the strip shows the value instead.
 shell.adoptBoard($('gameBoardSlot'));
 shell.store.subscribe(s => { $('gameValue').textContent = displayString(s.int, s.frac); });
 
-// Scale the board to fit its strip — the whole page must fit one screen. The
+// Scale the board to fit its box — the whole page must fit one screen. The
 // soroban's internal geometry is fixed px (bead travel is JS-positioned), so
 // fitting is a pure transform; offset* report the untransformed layout size.
+// While idle the board is display:none (zero-sized) — skip those calls; the
+// ResizeObserver fires again when focus mode reveals it with a real box.
 const soroEl = $('soroban');
 const wrapEl = soroEl.parentElement; // .soroban-wrap
 const fitBoard = () => {
+  if (!wrapEl.clientWidth || !soroEl.offsetWidth) return;
   const s = Math.min(wrapEl.clientWidth / soroEl.offsetWidth, wrapEl.clientHeight / soroEl.offsetHeight, 1);
   soroEl.style.transform = `scale(${s})`;
 };
