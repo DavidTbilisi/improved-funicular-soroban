@@ -1,0 +1,113 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildingById, GRID_CELLS, MAX_LEVEL } from '../src/game/buildings.js';
+import {
+  newVillage, counts, isUnlocked, canAfford, spend, refund,
+  canPlace, place, dailyYield, advanceDay, shrineBonus, upgradeCost,
+} from '../src/game/economy.js';
+
+const put = (v, id, cellIdx, level = 1) => { v.grid[cellIdx] = { id, level }; };
+
+test('a new village: 20 sp, day 1, empty 54-cell grid, zeroed stats', () => {
+  const v = newVillage();
+  assert.equal(v.sp, 20);
+  assert.equal(v.day, 1);
+  assert.deepEqual(v.res, { food: 0, wood: 0, coin: 0 });
+  assert.equal(v.grid.length, GRID_CELLS);
+  assert.ok(v.grid.every(c => c === null));
+  assert.deepEqual(v.stats, { solves: 0, clean: 0, spEarned: 0, bestPayout: 0, streak: 0, bestStreak: 0, founded: false });
+});
+
+test('counts tallies buildings regardless of level', () => {
+  const v = newVillage();
+  put(v, 'farm', 0); put(v, 'farm', 1, 3); put(v, 'hut', 2);
+  assert.deepEqual(counts(v), { farm: 2, hut: 1 });
+});
+
+test('unlocks: workshop needs a woodcutter; farm is always open', () => {
+  const v = newVillage();
+  assert.equal(isUnlocked(v, buildingById('farm')), true);
+  assert.equal(isUnlocked(v, buildingById('workshop')), false);
+  put(v, 'woodcutter', 0);
+  assert.equal(isUnlocked(v, buildingById('workshop')), true);
+});
+
+test('spend and refund round-trip a mixed cost', () => {
+  const v = newVillage();
+  v.res = { food: 10, wood: 8, coin: 3 };
+  const cost = { sp: 12, food: 4, wood: 8 };
+  assert.equal(canAfford(v, cost), true);
+  spend(v, cost);
+  assert.equal(v.sp, 8);
+  assert.deepEqual(v.res, { food: 6, wood: 0, coin: 3 });
+  refund(v, cost);
+  assert.equal(v.sp, 20);
+  assert.deepEqual(v.res, { food: 10, wood: 8, coin: 3 });
+});
+
+test('canPlace refuses in order: range, occupied, locked, cost', () => {
+  const v = newVillage();
+  const farm = buildingById('farm'), workshop = buildingById('workshop');
+  assert.deepEqual(canPlace(v, farm, -1), { ok: false, reason: 'range' });
+  assert.deepEqual(canPlace(v, farm, GRID_CELLS), { ok: false, reason: 'range' });
+  put(v, 'hut', 5);
+  assert.deepEqual(canPlace(v, farm, 5), { ok: false, reason: 'occupied' });
+  v.sp = 1000;
+  assert.deepEqual(canPlace(v, workshop, 6), { ok: false, reason: 'locked' });
+  v.sp = 5;
+  assert.deepEqual(canPlace(v, farm, 6), { ok: false, reason: 'cost' });
+  v.sp = 15;
+  assert.deepEqual(canPlace(v, farm, 6), { ok: true });
+});
+
+test('place pays the cost and occupies the cell at level 1', () => {
+  const v = newVillage();
+  place(v, buildingById('farm'), 7);
+  assert.equal(v.sp, 5);
+  assert.deepEqual(v.grid[7], { id: 'farm', level: 1 });
+});
+
+test('dailyYield: a lone farm grows 2 food; a well makes it 4', () => {
+  const v = newVillage();
+  put(v, 'farm', 0);
+  assert.deepEqual(dailyYield(v), { sp: 0, food: 2, wood: 0, coin: 0 });
+  put(v, 'well', 1); // well: +1 food, aura: the farm +1
+  assert.deepEqual(dailyYield(v), { sp: 0, food: 4, wood: 0, coin: 0 });
+});
+
+test('dailyYield scales with level and the market trickles sp', () => {
+  const v = newVillage();
+  put(v, 'farm', 0, 2);   // 2 food × L2
+  put(v, 'market', 1);    // +2 coin +1 sp
+  assert.deepEqual(dailyYield(v), { sp: 1, food: 4, wood: 0, coin: 2 });
+});
+
+test('advanceDay banks the yields, advances the calendar, and reports them', () => {
+  const v = newVillage();
+  put(v, 'farm', 0); put(v, 'hut', 1); put(v, 'market', 2);
+  const y = advanceDay(v);
+  assert.deepEqual(y, { sp: 1, food: 2, wood: 0, coin: 3 });
+  assert.equal(v.day, 2);
+  assert.equal(v.sp, 21);
+  assert.deepEqual(v.res, { food: 2, wood: 0, coin: 3 });
+});
+
+test('shrineBonus: +10% per shrine level, capped at +30%', () => {
+  const v = newVillage();
+  assert.equal(shrineBonus(v), 0);
+  put(v, 'shrine', 0);
+  assert.equal(shrineBonus(v), 0.1);
+  v.grid[0].level = 3;
+  assert.equal(shrineBonus(v), 0.3);
+  put(v, 'shrine', 1, 2); // levels total 5 → still capped
+  assert.equal(shrineBonus(v), 0.3);
+});
+
+test('upgradeCost scales with tier and step, and is null at max level', () => {
+  const farm = buildingById('farm'), workshop = buildingById('workshop');
+  assert.deepEqual(upgradeCost(farm, 1), { food: 5, wood: 5 });
+  assert.deepEqual(upgradeCost(farm, 2), { food: 10, wood: 10, coin: 5 });
+  assert.deepEqual(upgradeCost(workshop, 1), { food: 15, wood: 15 });
+  assert.deepEqual(upgradeCost(workshop, 2), { food: 30, wood: 30, coin: 15 });
+  assert.equal(upgradeCost(farm, MAX_LEVEL), null);
+});
