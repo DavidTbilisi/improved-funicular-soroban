@@ -4,12 +4,12 @@
 // GameSession and forwards intent through injected callbacks; never mutates
 // game state directly (same contract as every other view).
 // ============================================================================
-import { BUILDINGS, buildingById } from '../../game/buildings.js';
+import { BUILDINGS, buildingById, RES_EMOJI } from '../../game/buildings.js';
 import { CHALLENGE_TIERS, tierById, payout } from '../../game/challenges.js';
 import { isUnlocked, canAfford, shrineBonus, upgradeCost } from '../../game/economy.js';
 import { nextGoal } from '../../game/goals.js';
+import { nextHint, costText } from '../../game/advisor.js';
 
-const RES_EMOJI = { sp: '🧮', food: '🌾', wood: '🪵', coin: '🪙' };
 const REFUSED = {
   busy: 'Finish or abandon the current contract first.',
   locked: 'That building isn’t unlocked yet.',
@@ -17,17 +17,11 @@ const REFUSED = {
   cost: 'Not enough on hand for that.',
   range: 'That plot is outside the village.',
   empty: 'Nothing there to upgrade.',
-  maxlevel: 'That building is already at level 3.',
 };
-
-const costText = cost => Object.entries(cost)
-  .filter(([, n]) => n)
-  .map(([k, n]) => k === 'sp' ? `${n} sp` : `${n} ${RES_EMOJI[k]}`)
-  .join(' + ');
 
 export class GameHudView {
   constructor(els, session, { onPickBuilding, onTakeContract, isChaining = () => false }) {
-    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl? }
+    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl?, hintEl? }
     this.session = session;
     this.onPickBuilding = onPickBuilding;
     this.onTakeContract = onTakeContract;
@@ -78,6 +72,13 @@ export class GameHudView {
     this._paintPalette();
     this._paintContracts();
     this._paintGoal();
+    this._paintHint();
+  }
+
+  // The idle strip's "do this next" line, re-derived from the live village.
+  _paintHint() {
+    if (!this.els.hintEl) return;
+    this.els.hintEl.textContent = nextHint(this._v()).msg;
   }
 
   _paintRes() {
@@ -143,7 +144,7 @@ export class GameHudView {
         if (evt.kind === 'upgrade') {
           const cell = this._v().grid[evt.cell];
           const def = buildingById(cell.id);
-          els.payEl.innerHTML = `solve to raise the ${def.name} ${def.emoji} to level ${cell.level + 1} · cost held: ${costText(upgradeCost(def, cell.level) || {})}`;
+          els.payEl.innerHTML = `solve to raise the ${def.name} ${def.emoji} to level ${cell.level + 1} · cost held: ${costText(upgradeCost(def, cell.level))}`;
         } else {
           const best = payout({ baseSp: evt.baseSp, timeFloorMs: evt.timeFloorMs }, { faults: 0, elapsedMs: 0 }, shrineBonus(this._v()), this._v().stats.streak);
           els.payEl.innerHTML = `worth up to <b>${best} sp</b> — no fumbles for the clean bonus, under ${Math.round(evt.timeFloorMs / 1000)}s for the speed bonus`;

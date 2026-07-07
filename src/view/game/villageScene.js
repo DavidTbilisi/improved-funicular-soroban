@@ -11,10 +11,9 @@
 // the .game-canvas gradient.
 // ============================================================================
 import * as Phaser from '../../../vendor/phaser.esm.js';
-import { GRID_COLS, GRID_ROWS, GRID_CELLS, buildingById } from '../../game/buildings.js';
+import { GRID_COLS, GRID_ROWS, GRID_CELLS, buildingById, RES_EMOJI } from '../../game/buildings.js';
 
 const TILE = 88;
-const RES_EMOJI = { food: '🌾', wood: '🪵', coin: '🪙', sp: '🧮' };
 const DPR = () => window.devicePixelRatio || 1;
 const VILLAGER_GLYPHS = ['🧑‍🌾', '👩‍🌾', '🧒', '👴', '🧑‍🍳', '👧', '🧑‍🔧', '👵'];
 const DECOR_GLYPHS = ['🌲', '🌳', '🌳', '🌲', '🌾', '🌸', '🪨'];

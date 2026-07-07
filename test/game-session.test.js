@@ -163,13 +163,10 @@ test('abandoning an upgrade refunds the held cost and leaves the level alone', (
   assert.ok(last(events, 'abandoned'));
 });
 
-test('upgrade refusals: empty, maxlevel, cost — and the tier index is capped', () => {
+test('upgrade refusals: empty, cost — and the tier index is capped', () => {
   const { session, events } = makeSession();
   session.startUpgrade(3);
   assert.equal(last(events, 'refused').reason, 'empty');
-  session.village.grid[0] = { id: 'farm', level: 3 };
-  session.startUpgrade(0);
-  assert.equal(last(events, 'refused').reason, 'maxlevel');
   session.village.grid[1] = { id: 'farm', level: 1 }; // no resources on hand
   session.startUpgrade(1);
   assert.equal(last(events, 'refused').reason, 'cost');
@@ -178,6 +175,18 @@ test('upgrade refusals: empty, maxlevel, cost — and the tier index is capped',
   session.village.res = { food: 50, wood: 50, coin: 25 };
   session.startUpgrade(2);
   assert.equal(last(events, 'challenge').tierId, 't2');
+});
+
+test('levels are endless: level 3 keeps upgrading and the top tier judges it', () => {
+  const { store, clock, session, events } = makeSession();
+  session.village.grid[0] = { id: 'farm', level: 3 };
+  session.village.res = { food: 15, wood: 15, coin: 10 }; // farm 3→4 costs 15/15/10
+  session.startUpgrade(0);
+  assert.equal(last(events, 'challenge').tierId, 't2'); // tiers[min(2, 1-1+3)]
+  assert.deepEqual(session.village.res, { food: 0, wood: 0, coin: 0 });
+  clock.t = 100;
+  store.setScaled(90000);
+  assert.equal(session.village.grid[0].level, 4);
 });
 
 test('upgrading the shrine to level 3 founds the village', () => {
@@ -230,7 +239,7 @@ test('GameSave._fix heals corrupt and legacy blobs', () => {
   const bad = new GameSave(new MemoryProgressStore({
     sp: -50, day: 'nope',
     res: { food: 3.7, wood: -1 },
-    grid: [{ id: 'farm', level: 2 }, { id: 'castle', level: 1 }, { id: 'hut', level: 99 }, 'junk'],
+    grid: [{ id: 'farm', level: 2 }, { id: 'castle', level: 1 }, { id: 'hut', level: 99 }, { id: 'hut', level: 0.5 }, 'junk'],
     stats: { solves: 4, clean: 'x' },
   })).load();
   assert.equal(bad.sp, 20);                                // invalid → default
@@ -239,8 +248,9 @@ test('GameSave._fix heals corrupt and legacy blobs', () => {
   assert.equal(bad.res.wood, 0);                           // negative → default
   assert.deepEqual(bad.grid[0], { id: 'farm', level: 2 }); // valid cell kept
   assert.equal(bad.grid[1], null);                         // unknown building dropped
-  assert.equal(bad.grid[2], null);                         // impossible level dropped
-  assert.equal(bad.grid[3], null);
+  assert.deepEqual(bad.grid[2], { id: 'hut', level: 99 }); // levels are endless — high is fine
+  assert.equal(bad.grid[3], null);                         // non-integer level dropped
+  assert.equal(bad.grid[4], null);
   assert.equal(bad.grid.length, GRID_CELLS);
   assert.equal(bad.stats.solves, 4);
   assert.equal(bad.stats.clean, 0);

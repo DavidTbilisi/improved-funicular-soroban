@@ -403,6 +403,8 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-strip:has(.game-stage.on) .ck-idle { display: none; }
 .ck-idle { font-size: 0.82rem; color: var(--stone); }
 .ck-idle em { color: var(--ink); font-style: normal; font-weight: 600; }
+.ck-idle #gameHint { color: var(--ink); }
+.ck-idle .ck-idle-tail { color: var(--faint); white-space: nowrap; }
 .game-stage { display: none; min-width: 0; flex: 1; }
 .game-stage.on { display: flex; flex-direction: column; gap: 2px; }
 .ck-strip-row { display: flex; align-items: center; gap: 16px; min-width: 0; }

@@ -46,7 +46,7 @@
        board's listeners and fit-scaling carry over untouched. -->
   <div class="ck-dock">
     <section class="ck-strip">
-      <div class="ck-idle" id="gameIdle">Take a contract → the beads are seeded to its start → reaching the answer on the board <em>is</em> the solve. Clean hands, speed, and a streak all pay extra. Press <kbd>?</kbd> above for the full rules.</div>
+      <div class="ck-idle" id="gameIdle">💡 <span id="gameHint"></span> <span class="ck-idle-tail">· <kbd>?</kbd> for the rules</span></div>
       <div class="game-stage" id="gameStage">
         <div class="ck-strip-row">
           <div class="tut-prompt" id="gamePrompt"></div>
@@ -76,7 +76,7 @@
     <button class="ck-help-close" id="helpClose" aria-label="Close help">✕</button>
     <h2>How the village works</h2>
     <p class="help">Every <strong>soroban point (sp)</strong> is minted by your own bead work: take a contract, the beads are seeded to its start value, and reaching the answer on the board <em>is</em> the solve — the keyboard's move-legality means a correct final value proves correct technique. A fumble-free solve earns the <strong>clean bonus</strong>, beating the contract's pace floor earns the <strong>speed bonus</strong>, and every clean solve already on your <strong>🔥 streak</strong> adds +1 sp (up to +10) — one fumble breaks it. Harder arithmetic simply pays more.</p>
-    <p class="help">Spend sp on buildings (click a palette button, then an empty plot); each solved contract also advances the village <strong>one day</strong>, and every building pays its daily yield. Click a placed building to <strong>upgrade</strong> it — the resource cost is held up front and the level is earned by solving a harder contract. A level-3 shrine founds the village.</p>
+    <p class="help">Spend sp on buildings (click a palette button, then an empty plot); each solved contract also advances the village <strong>one day</strong>, and every building pays its daily yield. Click a placed building to <strong>upgrade</strong> it — the resource cost is held up front and the level is earned by solving a harder contract. <strong>Levels never cap</strong>: yields scale with level forever and the cost grows with it. A level-3 shrine founds the village; after the goal ladder, the 💡 hint keeps pointing at the cheapest next upgrade.</p>
     <h2 style="margin-top:16px;">The goal ladder</h2>
     <div class="ck-goals" id="helpGoals"></div>
   </div>
