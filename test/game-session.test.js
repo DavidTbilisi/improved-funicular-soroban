@@ -50,7 +50,7 @@ test('a clean, fast solve pays base + both bonuses and advances one day', () => 
   assert.deepEqual(s.parts, { base: 10, cleanBonus: 5, fastBonus: 3, streakBonus: 0 });
   assert.equal(s.day, 2);
   assert.equal(session.village.sp, 38); // 20 start + 18
-  assert.deepEqual(session.village.stats, { solves: 1, clean: 1, spEarned: 18, bestPayout: 18, streak: 1, bestStreak: 1, founded: false });
+  assert.deepEqual(session.village.stats, { solves: 1, clean: 1, spEarned: 18, bestPayout: 18, streak: 1, bestStreak: 1, festivals: 0, founded: false });
   assert.equal(session.active, false);
 });
 
@@ -199,6 +199,30 @@ test('upgrading the shrine to level 3 founds the village', () => {
   const s = last(events, 'solved');
   assert.equal(s.milestone, 'founded');
   assert.equal(session.village.stats.founded, true);
+});
+
+test('festival: costs the feast, boosts payouts, burns down, and refuses twice', () => {
+  const { memory, store, clock, session, events } = makeSession();
+  session.lightFestival();
+  assert.equal(last(events, 'refused').reason, 'cost'); // fresh village can't feast
+  session.village.res = { food: 150, wood: 50, coin: 100 };
+  session.lightFestival();
+  assert.deepEqual(session.village.res, { food: 0, wood: 0, coin: 0 });
+  assert.equal(session.village.festival, 10);
+  assert.equal(session.village.stats.festivals, 1);
+  assert.ok(last(events, 'festival'));
+  session.village.res = { food: 150, wood: 50, coin: 100 };
+  session.lightFestival();
+  assert.equal(last(events, 'refused').reason, 'festival'); // one at a time
+  // A clean, fast solve pays ×1.5: floor((10 + 5 + 3) × 1.5) = 27, then burns a day.
+  session.startChallenge('t0');
+  clock.t = 500;
+  store.setScaled(50000);
+  assert.equal(last(events, 'solved').payout, 27);
+  assert.equal(session.village.festival, 9);
+  const reloaded = new GameSave(memory).load();
+  assert.equal(reloaded.festival, 9); // survives a reload
+  assert.equal(reloaded.stats.festivals, 1);
 });
 
 test('a solve banks the daily yields — arithmetic is the calendar', () => {

@@ -19,14 +19,18 @@
 //   solved    { kind, tierId, clean, verdict, elapsedMs, timeFloorMs, faults,
 //               payout, parts, yields, day, village, cell, milestone, streak }
 //   placed    { cellIdx, buildingId, village }
-//   refused   { reason: 'busy'|'locked'|'occupied'|'cost'|'range'|'empty' }
+//   festival  { village }
+//   refused   { reason: 'busy'|'locked'|'occupied'|'cost'|'range'|'empty'|'festival' }
 //   abandoned { village }
 //   reset     { village }
 // ============================================================================
 import { Observable } from '../state/observable.js';
 import { BUILDINGS, buildingById, GRID_CELLS, FOUNDING_LEVEL } from './buildings.js';
 import { CHALLENGE_TIERS, payout, payoutParts } from './challenges.js';
-import { canPlace, place, canAfford, spend, refund, advanceDay, shrineBonus, upgradeCost } from './economy.js';
+import {
+  canPlace, place, canAfford, spend, refund, advanceDay, shrineBonus, upgradeCost,
+  FESTIVAL_COST, FESTIVAL_SOLVES, festivalBonus,
+} from './economy.js';
 
 export class GameSession extends Observable {
   constructor({ buildings = BUILDINGS, tiers = CHALLENGE_TIERS, save, rng, store, clock = { now: () => 0 } }) {
@@ -99,6 +103,20 @@ export class GameSession extends Observable {
     if (this.active) this.challenge.faults++;
   }
 
+  // Light a festival: burn the feast, boost payouts for the next
+  // FESTIVAL_SOLVES days. Like placing, it never touches the board, so it is
+  // allowed mid-contract (the boost then applies to the contract in play).
+  lightFestival() {
+    const v = this.village;
+    if (v.festival > 0) return this._refuse('festival');
+    if (!canAfford(v, FESTIVAL_COST)) return this._refuse('cost');
+    spend(v, FESTIVAL_COST);
+    v.festival = FESTIVAL_SOLVES;
+    v.stats.festivals++;
+    this.save.save(v);
+    this.notify({ type: 'festival', village: v });
+  }
+
   // Placing costs only resources on hand and never touches the board, so it is
   // allowed mid-contract.
   placeBuilding(buildingId, cellIdx) {
@@ -137,7 +155,7 @@ export class GameSession extends Observable {
     if (ch.kind === 'earn') {
       const judge = { faults: ch.faults, elapsedMs };
       parts = payoutParts(ch.tier, judge, v.stats.streak);
-      pay = payout(ch.tier, judge, shrineBonus(v), v.stats.streak);
+      pay = payout(ch.tier, judge, shrineBonus(v) + festivalBonus(v), v.stats.streak);
       v.sp += pay;
       v.stats.spEarned += pay;
       if (pay > v.stats.bestPayout) v.stats.bestPayout = pay;

@@ -47,7 +47,7 @@ test('practice rungs read the stats: streak5 uses bestStreak, sp250 spEarned', (
   assert.equal(goalStates(v).find(g => g.id === 'sp250').done, true);
 });
 
-test('a fully built, founded village completes the ladder', () => {
+test('a fully built, founded, feasted village completes the ladder', () => {
   const v = newVillage();
   ['hut', 'farm', 'well', 'woodcutter', 'workshop', 'market', 'shrine']
     .forEach((id, i) => put(v, id, i, id === 'shrine' ? 3 : 2));
@@ -55,6 +55,8 @@ test('a fully built, founded village completes the ladder', () => {
   v.stats.bestStreak = 6;
   v.stats.spEarned = 400;
   v.stats.founded = true;
+  assert.equal(nextGoal(v).id, 'festival'); // founding is not the end any more
+  v.stats.festivals = 1;
   assert.ok(goalStates(v).every(g => g.done));
   assert.equal(nextGoal(v), null);
 });

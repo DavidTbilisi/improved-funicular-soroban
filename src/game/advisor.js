@@ -9,7 +9,7 @@
 // from the frozen tables (emoji are data, as everywhere else).
 // ============================================================================
 import { buildingById, RES_EMOJI } from './buildings.js';
-import { isUnlocked, canAfford, shortfall, upgradeCost } from './economy.js';
+import { isUnlocked, canAfford, shortfall, upgradeCost, FESTIVAL_COST, FESTIVAL_SOLVES } from './economy.js';
 import { nextGoal } from './goals.js';
 
 export const costText = cost => Object.entries(cost)
@@ -63,10 +63,22 @@ export function nextHint(village) {
             (Object.keys(miss).length ? ` once you have ${costText(miss)} more.` : ` (${costText(cost)} on hand ✓).`),
         };
       }
+      case 'festival':
+        return festivalHint(v) ||
+          { id: 'festival-save', msg: `Feast the village: a festival costs ${costText(FESTIVAL_COST)} — short ${costText(shortfall(v, FESTIVAL_COST))}.` };
     }
     // A goal this advisor doesn't know yet — fall through to endless advice.
   }
-  return upgradeHint(v, 'endless', 'The ladder is complete — levels never stop, and yields scale with them.');
+  // Endless mode: a festival is the best sp-per-solve move whenever the
+  // feast is on hand; otherwise grow the cheapest building.
+  return festivalHint(v) ||
+    upgradeHint(v, 'endless', 'The ladder is complete — levels never stop, and yields scale with them.');
+}
+
+// "Light it now" — only when none is burning and the feast is affordable.
+function festivalHint(v) {
+  if (v.festival > 0 || !canAfford(v, FESTIVAL_COST)) return null;
+  return { id: 'festival', msg: `Light a festival (${costText(FESTIVAL_COST)} on hand ✓) — +50% sp on every payout for the next ${FESTIVAL_SOLVES} solves.` };
 }
 
 // "Which building should I grow?" — shared by the level-2 rung and the

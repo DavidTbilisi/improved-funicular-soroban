@@ -27,17 +27,22 @@ const FLAVORS = Object.freeze({
   delivery: Object.freeze(['🌾 Grain delivery', '💧 Water rounds', '🍞 Bread run']),
   ledger:   Object.freeze(['📜 Ledger entry', '🪙 Till count', '⚖️ Weigh-in']),
   caravan:  Object.freeze(['🐫 Caravan load', '🛶 River freight', '📦 Crate tally']),
+  magnate:  Object.freeze(['🏯 Castle levy', '🚢 Harbor manifest', '🌾 Granary census']),
   guild:    Object.freeze(['🏭 Guild order', '🪓 Timber order', '🧵 Cloth order']),
   tax:      Object.freeze(['⛩️ Tax season', '🏪 Market share-out', '🪙 Split the purse']),
 });
+
+// Thousands separators keep million-scale prompts readable; numbers under
+// 1,000 come out unchanged.
+const fmt = n => n.toLocaleString('en-US');
 
 function mk(rng, tierId, a, b, op) {
   const target = op === '+' ? a + b : a - b;
   const sym = op === '+' ? '+' : '−';
   return {
     a, b, op,
-    prompt: `${pick(rng, FLAVORS[tierId])}: <b>${a}</b> ${sym} <b>${b}</b>`,
-    sub: `beads start at ${a} — reach the answer`,
+    prompt: `${pick(rng, FLAVORS[tierId])}: <b>${fmt(a)}</b> ${sym} <b>${fmt(b)}</b>`,
+    sub: `beads start at ${fmt(a)} — reach the answer`,
     startScaled: scaled(a),
     targetScaled: scaled(target),
   };
@@ -128,6 +133,30 @@ export const CHALLENGE_TIERS = Object.freeze([
         }
       }
       return mk(rng, this.id, 6, 7, '+');
+    },
+  },
+  {
+    id: 'magnate', title: 'Magnate', math: 'add / subtract in the millions', baseSp: 22, timeFloorMs: 11000,
+    // The ones-rod skills lifted to the top of the board: identical friend
+    // trades and carries, played on the 10^5 / 10^6 / 10^7 rods — proof that
+    // technique is magnitude-invariant.
+    gen(rng) {
+      const M = Math.pow(10, 5 + rng.int(3));
+      for (let k = 0; k < 200; k++) {
+        const add = rng.int(2) === 0;
+        if (rng.int(2) === 0) {
+          // A single-rod friend trade, a million high.
+          const a = rng.int(10), b = 1 + rng.int(9);
+          if (add && classifyAdd(a, b).rule !== 'direct') return mk(rng, this.id, a * M, b * M, '+');
+          if (!add && a >= b && classifySub(a, b).rule !== 'direct') return mk(rng, this.id, a * M, b * M, '-');
+        } else {
+          // Caravan's forced two-digit carry / borrow, at scale.
+          const a = 10 + rng.int(90), b = 10 + rng.int(90);
+          if (add) { if ((a % 10) + (b % 10) >= 10) return mk(rng, this.id, a * M, b * M, '+'); }
+          else { const hi = Math.max(a, b), lo = Math.min(a, b); if ((hi % 10) < (lo % 10)) return mk(rng, this.id, hi * M, lo * M, '-'); }
+        }
+      }
+      return mk(rng, this.id, 7 * M, 8 * M, '+');
     },
   },
   {

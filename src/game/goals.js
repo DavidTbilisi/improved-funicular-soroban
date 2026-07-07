@@ -22,6 +22,7 @@ export const GOALS = Object.freeze([
   { id: 'sp250', emoji: '🧮', label: 'Mint 250 sp all-time', done: v => v.stats.spEarned >= 250 },
   { id: 'shrine', emoji: '⛩️', label: 'Raise a shrine', done: has('shrine') },
   { id: 'found', emoji: '🎌', label: 'Shrine to level 3 — found the village', done: v => v.stats.founded },
+  { id: 'festival', emoji: '🏮', label: 'Light a festival', done: v => v.stats.festivals >= 1 },
 ].map(Object.freeze));
 
 // Every rung with its done flag, in ladder order.
