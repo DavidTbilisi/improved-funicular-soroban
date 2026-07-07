@@ -25,7 +25,7 @@ const SHELL_HTML = `
   </div>
   <div class="panel" id="shellBoard">
     <div class="soroban-wrap"><div class="soroban" id="soroban"></div></div>
-    <div class="coach" id="coach">Keyboard: <kbd>←</kbd> <kbd>→</kbd> or <kbd>G</kbd> <kbd>H</kbd> pick a column (integer or decimal) · add <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>=+1..4 <kbd>U</kbd>=+5 <kbd>I</kbd>=+10 · sub <kbd>F</kbd><kbd>D</kbd><kbd>S</kbd><kbd>A</kbd>=−1..4 <kbd>R</kbd>=−5 <kbd>E</kbd>=−10 · <kbd>Q</kbd>=reset · type <kbd>0</kbd>–<kbd>9</kbd> to enter a number</div>
+    <div class="coach" id="coach"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add</b> <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> +1..4 · <kbd>U</kbd> +5 · <kbd>I</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>F</kbd><kbd>D</kbd><kbd>S</kbd><kbd>A</kbd> −1..4 · <kbd>R</kbd> −5 · <kbd>E</kbd> −10</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
     <div class="sound-row">
       <button id="soundBtn" class="sound-toggle">🔊 Sound on</button>
       <span class="metro">

@@ -26,16 +26,21 @@
     <div class="game-canvas" id="gameMount"></div>
     <aside class="ck-side">
       <div>
-        <div class="game-h">Contracts — solve on the beads to earn sp</div>
+        <div class="game-h">Contracts <span class="h-tail">· solve on the beads to earn sp</span></div>
         <div class="game-contracts" id="gameContracts"></div>
         <label class="game-chain"><input type="checkbox" id="gameChain" checked> keep contracts coming · <kbd>N</kbd> deals the next</label>
       </div>
       <div>
-        <div class="game-h">Build — spend sp on new ground</div>
+        <div class="game-h">Build <span class="h-tail">· spend sp on new ground</span></div>
         <div class="game-palette" id="gamePalette"></div>
       </div>
+      <button class="game-festival" id="gameFestival">🏮 <b>Light a festival</b><span class="f-cost">150 🌾 + 50 🪵 + 100 🪙 → ×1.5 sp, 10 solves</span></button>
       <div class="game-goal" id="gameGoal"></div>
       <div class="game-notice" id="gameNotice"></div>
+      <div class="ck-goals-side">
+        <div class="game-h">The goal ladder</div>
+        <div class="ck-goals" id="sideGoals"></div>
+      </div>
     </aside>
   </main>
 
@@ -76,7 +81,7 @@
     <button class="ck-help-close" id="helpClose" aria-label="Close help">✕</button>
     <h2>How the village works</h2>
     <p class="help">Every <strong>soroban point (sp)</strong> is minted by your own bead work: take a contract, the beads are seeded to its start value, and reaching the answer on the board <em>is</em> the solve — the keyboard's move-legality means a correct final value proves correct technique. A fumble-free solve earns the <strong>clean bonus</strong>, beating the contract's pace floor earns the <strong>speed bonus</strong>, and every clean solve already on your <strong>🔥 streak</strong> adds +1 sp (up to +10) — one fumble breaks it. Harder arithmetic simply pays more.</p>
-    <p class="help">Spend sp on buildings (click a palette button, then an empty plot); each solved contract also advances the village <strong>one day</strong>, and every building pays its daily yield. Click a placed building to <strong>upgrade</strong> it — the resource cost is held up front and the level is earned by solving a harder contract. <strong>Levels never cap</strong>: yields scale with level forever and the cost grows with it. A level-3 shrine founds the village; after the goal ladder, the 💡 hint keeps pointing at the cheapest next upgrade.</p>
+    <p class="help">Spend sp on buildings (click a palette button, then an empty plot); each solved contract also advances the village <strong>one day</strong>, and every building pays its daily yield. Click a placed building to <strong>upgrade</strong> it — the resource cost is held up front and the level is earned by solving a harder contract. <strong>Levels never cap</strong>: yields scale with level forever and the cost grows with it. A level-3 shrine founds the village; after the goal ladder, the 💡 hint keeps pointing at the cheapest next upgrade. When the stores overflow, <strong>🏮 light a festival</strong> (150 🌾 + 50 🪵 + 100 🪙): every payout is ×1.5 for the next 10 solves — the feast is how a rich village turns grain and coin back into sp.</p>
     <h2 style="margin-top:16px;">The goal ladder</h2>
     <div class="ck-goals" id="helpGoals"></div>
   </div>

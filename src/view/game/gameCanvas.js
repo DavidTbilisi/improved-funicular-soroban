@@ -21,8 +21,10 @@ export function mountGameCanvas(parentEl, { onCellTap }) {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: parentEl,
-    width: 960,
-    height: 640,
+    /* World aspect ≈ the cockpit's wide canvas panel, so Scale.FIT letterboxes
+       less and the grid displays larger; the flanks hold the decor forest. */
+    width: 1160,
+    height: 588,
     transparent: true,
     banner: false,
     audio: { noAudio: true },
@@ -36,6 +38,7 @@ export function mountGameCanvas(parentEl, { onCellTap }) {
     flashPayout: (text, ok) => call(() => scene.flashPayout(text, ok)),
     pulseDay: () => call(() => scene.pulseDay()),
     celebrate: () => call(() => scene.celebrate()),
+    festival: () => call(() => scene.festivalBurst()),
     destroy: () => game.destroy(true),
   };
 }

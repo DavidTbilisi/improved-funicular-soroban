@@ -81,25 +81,40 @@ const hud = new GameHudView({
   noticeEl: $('gameNotice'), stageEl: $('gameStage'), promptEl: $('gamePrompt'),
   subEl: $('gameSub'), payEl: $('gamePay'), feedbackEl: $('gameFeedback'),
   abandonBtn: $('gameAbandon'), resetBtn: $('gameReset'), goalEl: $('gameGoal'), hintEl: $('gameHint'),
+  festivalBtn: $('gameFestival'),
 }, session, {
   onPickBuilding: id => setPlacement(placementId === id ? null : id),
   onTakeContract: id => session.startChallenge(id),
   isChaining: () => $('gameChain').checked,
 }).build();
 $('gameAbandon').addEventListener('click', () => session.abandonChallenge());
+$('gameFestival').addEventListener('click', () => session.lightFestival());
 $('gameReset').addEventListener('click', () => {
   if (window.confirm('Raze the village and start over? Your sp and buildings will be lost.')) session.resetSave();
 });
 
-// Help overlay: the textbook paragraph plus the full goal ladder, repainted
-// each time it opens so the checkmarks are current.
-const helpCard = $('helpCard');
-const paintHelpGoals = () => {
+// The goal ladder renders in two places: the sidebar checklist (repainted on
+// every session event) and the help overlay (repainted each time it opens).
+const goalLadderHtml = () => {
   const states = goalStates(session.village);
   const next = states.find(g => !g.done);
-  $('helpGoals').innerHTML = states.map(g =>
+  return states.map(g =>
     `<div class="${g.done ? 'done' : (next && g.id === next.id ? 'g-next' : '')}">${g.done ? '✓' : '○'} ${g.emoji} ${g.label}</div>`).join('');
 };
+const helpCard = $('helpCard');
+const paintHelpGoals = () => { $('helpGoals').innerHTML = goalLadderHtml(); };
+// The sidebar copy stays compact: finished milestones fold into one tally line
+// and only the next few rungs show, so it always fits without scrolling.
+const paintSideGoals = () => {
+  const states = goalStates(session.village);
+  const done = states.filter(g => g.done).length;
+  const todo = states.filter(g => !g.done).slice(0, 4);
+  $('sideGoals').innerHTML =
+    (done ? `<div class="done">✓ ${done} of ${states.length} milestones reached</div>` : '') +
+    todo.map((g, i) => `<div class="${i === 0 ? 'g-next' : ''}">○ ${g.emoji} ${g.label}</div>`).join('');
+};
+session.subscribe(() => paintSideGoals());
+paintSideGoals();
 const toggleHelp = show => {
   helpCard.hidden = show === undefined ? !helpCard.hidden : !show;
   if (!helpCard.hidden) paintHelpGoals();
@@ -156,6 +171,9 @@ session.subscribe(evt => {
     if (evt.milestone === 'founded') { canvas.celebrate(); shell.sound.levelUp(); }
     else if (evt.clean) shell.sound.solve();
     else shell.sound.reject();
+  } else if (evt.type === 'festival') {
+    canvas.festival();
+    shell.sound.levelUp();
   } else if (evt.type === 'abandoned') {
     cancelChain();
     cancelFocusClose();
