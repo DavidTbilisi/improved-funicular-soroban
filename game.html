@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soroban Village — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-game">
+
+<!-- One-screen cockpit: header / village + side panel / contract strip / board.
+     The grid fills 100dvh; nothing on this page should ever need scrolling. -->
+<div class="cockpit">
+
+  <header class="ck-top">
+    <h1 class="ck-title">⛩️ Soroban Village</h1>
+    <div id="nav"></div>
+    <div class="game-res" id="gameRes"></div>
+    <div class="ck-actions">
+      <button id="helpBtn" title="How the village works">?</button>
+      <button id="gameReset" title="Raze the village and start over">Reset</button>
+    </div>
+  </header>
+
+  <main class="ck-main">
+    <div class="game-canvas" id="gameMount"></div>
+    <aside class="ck-side">
+      <div>
+        <div class="game-h">Contracts — solve on the beads to earn sp</div>
+        <div class="game-contracts" id="gameContracts"></div>
+        <label class="game-chain"><input type="checkbox" id="gameChain" checked> keep contracts coming · <kbd>N</kbd> deals the next</label>
+      </div>
+      <div>
+        <div class="game-h">Build — spend sp on new ground</div>
+        <div class="game-palette" id="gamePalette"></div>
+      </div>
+      <div class="game-goal" id="gameGoal"></div>
+      <div class="game-notice" id="gameNotice"></div>
+    </aside>
+  </main>
+
+  <!-- The dock holds the contract strip + live board. Normally its children
+       are two bottom bands of the cockpit grid (display: contents); while a
+       contract is live the page sets .ck-focused on <body> and the same nodes
+       become a centered popup over the dimmed village — no DOM moves, so the
+       board's listeners and fit-scaling carry over untouched. -->
+  <div class="ck-dock">
+    <section class="ck-strip">
+      <div class="ck-idle" id="gameIdle">Take a contract → the beads are seeded to its start → reaching the answer on the board <em>is</em> the solve. Clean hands, speed, and a streak all pay extra. Press <kbd>?</kbd> above for the full rules.</div>
+      <div class="game-stage" id="gameStage">
+        <div class="ck-strip-row">
+          <div class="tut-prompt" id="gamePrompt"></div>
+          <div class="ck-strip-mid">
+            <div class="tut-sub" id="gameSub"></div>
+            <div class="game-pay" id="gamePay"></div>
+          </div>
+          <div class="ck-value"><span>beads</span><b id="gameValue">0</b></div>
+          <div class="tut-controls"><button id="gameAbandon" hidden>Abandon</button></div>
+        </div>
+        <div class="tut-feedback" id="gameFeedback"></div>
+      </div>
+    </section>
+
+    <!-- the live board is adopted here, scaled by the page to fit its box -->
+    <footer class="ck-board">
+      <div class="board-slot" id="gameBoardSlot"></div>
+    </footer>
+  </div>
+
+  <!-- board shell mounts here; the board panel itself is adopted above. The
+       readout/setter panels stay in this hidden mount — on this page the only
+       way to move beads is to work them. -->
+  <div id="boardMount" hidden></div>
+
+  <div class="ck-help panel" id="helpCard" hidden>
+    <button class="ck-help-close" id="helpClose" aria-label="Close help">✕</button>
+    <h2>How the village works</h2>
+    <p class="help">Every <strong>soroban point (sp)</strong> is minted by your own bead work: take a contract, the beads are seeded to its start value, and reaching the answer on the board <em>is</em> the solve — the keyboard's move-legality means a correct final value proves correct technique. A fumble-free solve earns the <strong>clean bonus</strong>, beating the contract's pace floor earns the <strong>speed bonus</strong>, and every clean solve already on your <strong>🔥 streak</strong> adds +1 sp (up to +10) — one fumble breaks it. Harder arithmetic simply pays more.</p>
+    <p class="help">Spend sp on buildings (click a palette button, then an empty plot); each solved contract also advances the village <strong>one day</strong>, and every building pays its daily yield. Click a placed building to <strong>upgrade</strong> it — the resource cost is held up front and the level is earned by solving a harder contract. A level-3 shrine founds the village.</p>
+    <h2 style="margin-top:16px;">The goal ladder</h2>
+    <div class="ck-goals" id="helpGoals"></div>
+  </div>
+
+</div>
+
+<script type="module" src="src/pages/game.js"></script>
+
+</body>
+</html>
