@@ -1,0 +1,144 @@
+# ============================================================================
+# Soroban Village — hardness model
+# Time: 1 t = 1 solved contract = 1 village day (the game has no wall clock,
+# so the whole economy really is a discrete dynamical system in "solves").
+# A continuous mean-field approximation of src/game/{economy,challenges,
+# buildings}.js — constants below are copied from those files.
+#
+# Questions:
+#  Q1 pacing    — solves-to-found (shrine L3) across player ability
+#  Q2 incentive — does pushing the hardest manageable tier beat grinding an
+#                 easy tier clean, per solve AND per wall-clock second?
+#  Q3 late game — does the festival sink keep up with yield growth, or do
+#                 the stores diverge once the village matures?
+#
+# The `tuned` switch selects the economy: tuned=1 (default) is the game AS
+# SHIPPED — the retune this model justified (baseSp 5,8,12,22,28,38,50;
+# streak step ceil(base/20); feast priced at 10 days of production). tuned=0
+# replays the pre-retune economy (flat 5,8,12,18,22,25,30 ladder, flat +1
+# streak, fixed 300-unit feast) that motivated the change.
+#
+# Verified findings (flowloom run/sweep, see design/hardness.md):
+#  Q1 founding lands at solve 35-43 across a 7x range of learner speed, and
+#     the retune leaves it (and the day the grid fills, ~83) untouched.
+#  Q2 pre-retune, grinding easy tiers beat pushing: 1.16x per solve, and per
+#     wall-clock SECOND pushing paid only 0.54-0.81 of grinding. Tuned:
+#     1.4-1.9x per solve, ~0.85-1.0 per second (near-parity).
+#  Q3 pre-retune, the fixed feast saturated (coverage pinned at 1) and the
+#     stores diverged (65k units by solve 400); tuned, coverage settles ~0.86
+#     and the stores hold a working balance (~5k, proportional to income).
+# ============================================================================
+
+# --- The player --------------------------------------------------------------
+stock Skill = 0.25                    # bead fluency 0..1 — a tutorial graduate
+param learnRate = 0.008               # fluency gained per solve toward mastery
+change(Skill) = learnRate * (1 - Skill)
+
+# Flow-channel policy: play the highest tier you can keep mostly clean.
+# baseSp by skill — the 7 tiers pay 5, 8, 12, 18, 22, 25, 30 (challenges.js);
+# their time floors are 4, 5, 6, 9, 11, 14, 16 seconds.
+table tierBase  = (0.15,5) (0.30,8) (0.45,12) (0.60,18) (0.72,22) (0.82,25) (0.95,30)
+# Shipped ladder: same floors, but base/floor RISES with tier
+# (rates 1.25, 1.6, 2.0, 2.44, 2.55, 2.71, 3.13 sp/s) so harder arithmetic
+# always pays more per wall-clock second too.
+table tierBase2 = (0.15,5) (0.30,8) (0.45,12) (0.60,22) (0.72,28) (0.82,38) (0.95,50)
+table tierFloor = (0.15,4) (0.30,5) (0.45,6)  (0.60,9)  (0.72,11) (0.82,14) (0.95,16)
+param tuned = 1                       # 1 = shipped (retuned); 0 = pre-retune
+aux base = (1 - tuned) * tierBase(Skill) + tuned * tierBase2(Skill)
+
+# Solve quality at a matched tier. cleanBonus needs zero faults; fastBonus
+# needs beating the floor; the STREAK needs both (gameSession's clean verdict).
+aux cleanP = clamp(0.45 + 0.45 * Skill, 0, 0.95)   # P(no fault)
+aux fastP  = clamp(0.30 + 0.55 * Skill, 0, 0.95)   # P(under the time floor)
+aux strictClean = cleanP * fastP
+# Streak: +1 sp per clean solve banked, cap 10 (pre-retune). Shipped: the step
+# scales with the tier — ceil(base/20) sp per step — identical for base<=20,
+# so the early game feels no change; only the top tiers stop being farmable.
+aux streakRun = min(10, strictClean / max(1 - strictClean, 0.05))
+aux streakStep = (1 - tuned) + tuned * ceil(base / 20)
+aux streakVal = streakRun * streakStep
+
+# --- Payout (challenges.js payout()) -----------------------------------------
+aux shrineB = min(0.3, 0.1 * ShrineL)              # +10%/shrine level, cap +30%
+aux payMult = 1 + shrineB + 0.5 * festCov          # festival: +50% while lit
+aux payoutE = (base * (1 + 0.5 * cleanP + 0.25 * fastP) + streakVal) * payMult
+
+# Q2: the SAME player grinding two tiers down instead (easier -> cleaner+faster).
+aux gSkill  = max(Skill - 0.3, 0)
+aux gBase   = (1 - tuned) * tierBase(gSkill) + tuned * tierBase2(gSkill)
+aux gClean  = clamp(cleanP + 0.25, 0, 0.97)
+aux gFast   = clamp(fastP + 0.30, 0, 0.97)
+aux gStrict = gClean * gFast
+aux gRun    = min(10, gStrict / max(1 - gStrict, 0.05))
+aux gStreak = gRun * ((1 - tuned) + tuned * ceil(gBase / 20))
+aux grindPayout = (gBase * (1 + 0.5 * gClean + 0.25 * gFast) + gStreak) * payMult
+aux pushPremium = payoutE / max(grindPayout, 1)    # per SOLVE
+
+# Wall-clock: a solve takes ~its floor when fast, up to ~1.5x floor when not.
+aux durS  = tierFloor(Skill) * (1.5 - 0.5 * fastP)
+aux gDurS = tierFloor(gSkill) * (1.5 - 0.5 * gFast)
+aux wallPremium = (payoutE / durS) / max(grindPayout / gDurS, 0.01)  # per SECOND
+
+# --- Placements: sp's only sink (buildings.js costs) -------------------------
+# Build plan = the goal ladder: hut,farm,well,woodcutter,workshop,market,shrine,
+# then in-fill (more farms/huts, ~30 sp each) until the 54-cell grid is full.
+stock SP = 20
+stock Placed = 0
+table placeCost = (0,10) (1,15) (2,20) (3,25) (4,40) (5,60) (6,100) (7,30) (54,30)
+aux buildRate = if(Placed < 54, 0.8 * SP / max(placeCost(Placed), 1), 0)
+change(Placed) = buildRate
+change(SP) = spIn - buildRate * placeCost(Placed)
+
+# --- Production levels (placements enter at L1; upgrades add levels) ---------
+# Pooled resources (food+wood+coin as one stock): the player's build mix keeps
+# them roughly in the spending ratio. Per-level pooled yield ~1.9/day and a
+# market sp trickle ~0.06/level (mix-weighted from buildings.js yields).
+stock ProdLevels = 0
+param yPerLevel = 1.9
+param spPerLevel = 0.06
+aux avgLevel = ProdLevels / max(Placed, 1)
+aux resIn = yPerLevel * ProdLevels
+
+# --- Upgrades: cost resources AND a whole solve each (no payout that day) ----
+# economy.js upgradeCost: pooled ~15 * tier * level per step; production mix
+# averages tier ~2. Policy: at most uCap of solves go to upgrades; shrine
+# upgrades take priority until L3 (founding).
+param uCap = 0.35
+param tierAvg = 2
+aux prodUpgCost = 15 * tierAvg * max(avgLevel, 1)
+aux shrineUpgCost = max(75 * ShrineL - 25, 50)     # tier 5: L1->2 50u, L2->3 125u
+stock ShrineL = 0
+aux shrineUpg = if(Placed >= 6.99, if(ShrineL < 1, 1, if(ShrineL < 3, min(0.25, 0.5 * Res / shrineUpgCost), 0)), 0)
+aux prodUpg = clamp(0.5 * Res / prodUpgCost, 0, uCap - min(shrineUpg, uCap))
+change(ShrineL) = shrineUpg
+change(ProdLevels) = buildRate + prodUpg
+
+# --- Festival: the resource sink (economy.js FESTIVAL_*) ---------------------
+# Pre-retune: fixed 300 pooled (150 food + 50 wood + 100 coin) per 10 solves
+# of +50%, no stacking -> at full coverage it burns exactly 30 units/solve,
+# a ceiling the growing yields overwhelm. Shipped: the feast costs ~10 days
+# of village production (floored at 300), so the sink scales forever.
+param festScale = 0                    # extra knob; tuned=1 implies scale 1
+aux festUnit = max(30, max(festScale, tuned) * resIn)  # burn per covered solve
+aux festCov = if(ShrineL >= 3, clamp((Res - 5 * festUnit) / (10 * festUnit), 0, 1), 0)
+aux festSpend = festUnit * festCov
+
+# --- Resources ---------------------------------------------------------------
+stock Res = 0
+aux upgSpend = shrineUpg * shrineUpgCost + prodUpg * prodUpgCost
+change(Res) = resIn - upgSpend - festSpend
+
+# --- Earning: only non-upgrade solves mint sp --------------------------------
+aux earnShare = 1 - min(shrineUpg + prodUpg, uCap)
+flow spIn = earnShare * payoutE + spPerLevel * ProdLevels
+
+# --- Diagnostics -------------------------------------------------------------
+stock DaysToFound = 0                  # final value = the founding day
+change(DaysToFound) = if(ShrineL < 3, 1, 0)
+stock DaysToGridFull = 0               # final value = when sp loses its sink
+change(DaysToGridFull) = if(Placed < 54, 1, 0)
+stock SpMinted = 0                     # lifetime score
+change(SpMinted) = spIn
+
+sim dt=0.25 to=400 method=rk4
+plot ShrineL Res payoutE pushPremium wallPremium festCov

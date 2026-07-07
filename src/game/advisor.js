@@ -9,7 +9,7 @@
 // from the frozen tables (emoji are data, as everywhere else).
 // ============================================================================
 import { buildingById, RES_EMOJI } from './buildings.js';
-import { isUnlocked, canAfford, shortfall, upgradeCost, FESTIVAL_COST, FESTIVAL_SOLVES } from './economy.js';
+import { isUnlocked, canAfford, shortfall, upgradeCost, festivalCost, FESTIVAL_SOLVES } from './economy.js';
 import { nextGoal } from './goals.js';
 
 export const costText = cost => Object.entries(cost)
@@ -52,7 +52,7 @@ export function nextHint(village) {
       case 'streak5':
         return { id: 'streak5', msg: `Best streak so far: ${v.stats.bestStreak}. Chain clean solves to 5 in a row — leave "keep contracts coming" on, and remember a fumble resets it.` };
       case 'sp250':
-        return { id: 'sp250', msg: `Mint ${250 - v.stats.spEarned} more sp — harder tiers pay more, and a live streak adds up to +10 per solve.` };
+        return { id: 'sp250', msg: `Mint ${250 - v.stats.spEarned} more sp — harder tiers pay more, and a live streak adds a bonus on every solve.` };
       case 'found': {
         const shrine = v.grid.find(c => c && c.id === 'shrine');
         const cost = upgradeCost(buildingById('shrine'), shrine.level);
@@ -65,7 +65,7 @@ export function nextHint(village) {
       }
       case 'festival':
         return festivalHint(v) ||
-          { id: 'festival-save', msg: `Feast the village: a festival costs ${costText(FESTIVAL_COST)} — short ${costText(shortfall(v, FESTIVAL_COST))}.` };
+          { id: 'festival-save', msg: `Feast the village: a festival costs ${costText(festivalCost(v))} — short ${costText(shortfall(v, festivalCost(v)))}.` };
     }
     // A goal this advisor doesn't know yet — fall through to endless advice.
   }
@@ -77,8 +77,9 @@ export function nextHint(village) {
 
 // "Light it now" — only when none is burning and the feast is affordable.
 function festivalHint(v) {
-  if (v.festival > 0 || !canAfford(v, FESTIVAL_COST)) return null;
-  return { id: 'festival', msg: `Light a festival (${costText(FESTIVAL_COST)} on hand ✓) — +50% sp on every payout for the next ${FESTIVAL_SOLVES} solves.` };
+  const cost = festivalCost(v);
+  if (v.festival > 0 || !canAfford(v, cost)) return null;
+  return { id: 'festival', msg: `Light a festival (${costText(cost)} on hand ✓) — +50% sp on every payout for the next ${FESTIVAL_SOLVES} solves.` };
 }
 
 // "Which building should I grow?" — shared by the level-2 rung and the

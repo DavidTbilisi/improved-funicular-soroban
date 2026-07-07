@@ -95,7 +95,17 @@ test('payout: base, +half for fumble-free, +quarter for beating the floor', () =
   assert.equal(payout(ledger, { faults: 2, elapsedMs: 9000 }), 12); // just the base
 });
 
-test('the streak bonus adds +1 sp per banked clean solve, capped at +10', () => {
+test('the streak step scales with the tier: ceil(base/20) sp per banked solve', () => {
+  const tax = tierById('tax'); // baseSp 50 -> 3 sp per streak step
+  assert.equal(payoutParts(tax, { faults: 0, elapsedMs: 3000 }, 4).streakBonus, 12);
+  assert.equal(payoutParts(tax, { faults: 0, elapsedMs: 3000 }, 25).streakBonus, 30); // 10 count
+  // 50 base + 25 clean + 13 fast + 30 streak = 118
+  assert.equal(payout(tax, { faults: 0, elapsedMs: 3000 }, 0, 25), 118);
+  const caravan = tierById('caravan'); // baseSp 22 -> 2 sp per step
+  assert.equal(payoutParts(caravan, { faults: 0, elapsedMs: 3000 }, 3).streakBonus, 6);
+});
+
+test('the streak bonus adds +1 sp per banked clean solve on the low tiers, capped at +10', () => {
   const ledger = tierById('ledger');
   assert.equal(payoutParts(ledger, { faults: 0, elapsedMs: 3000 }, 4).streakBonus, 4);
   assert.equal(payoutParts(ledger, { faults: 0, elapsedMs: 3000 }, 25).streakBonus, 10);

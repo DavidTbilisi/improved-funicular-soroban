@@ -6,7 +6,7 @@
 // ============================================================================
 import { BUILDINGS, buildingById, RES_EMOJI } from '../../game/buildings.js';
 import { CHALLENGE_TIERS, tierById, payout } from '../../game/challenges.js';
-import { isUnlocked, canAfford, shrineBonus, upgradeCost, festivalBonus, FESTIVAL_COST } from '../../game/economy.js';
+import { isUnlocked, canAfford, shrineBonus, upgradeCost, festivalBonus, festivalCost, FESTIVAL_SOLVES } from '../../game/economy.js';
 import { nextGoal } from '../../game/goals.js';
 import { nextHint, costText } from '../../game/advisor.js';
 
@@ -101,7 +101,12 @@ export class GameHudView {
     const btn = this.els.festivalBtn;
     if (!btn) return;
     const v = this._v();
-    btn.disabled = v.festival > 0 || !canAfford(v, FESTIVAL_COST);
+    // The feast is priced to the village (ten days of production, floored) —
+    // repaint the cost so the button always quotes today's price.
+    const cost = festivalCost(v);
+    const costEl = btn.querySelector('.f-cost');
+    if (costEl) costEl.textContent = `${costText(cost)} → ×1.5 sp, ${FESTIVAL_SOLVES} solves`;
+    btn.disabled = v.festival > 0 || !canAfford(v, cost);
     btn.title = v.festival > 0
       ? `The festival burns for ${v.festival} more solve${v.festival > 1 ? 's' : ''}.`
       : 'Feast the village: +50% sp on every contract payout for the next 10 solves.';

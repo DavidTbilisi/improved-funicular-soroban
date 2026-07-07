@@ -10,8 +10,15 @@
 // would self-solve on seeding.
 //
 // Payout = baseSp, +½ base for a fumble-free solve, +¼ base for beating the
-// tier's time floor, +1 sp per clean solve already on the streak (capped at
-// +10), all × (1 + shrine blessing), floored to whole sp.
+// tier's time floor, +⌈base/20⌉ sp per clean solve already on the streak
+// (at most 10 count), all × (1 + shrine blessing), floored to whole sp.
+//
+// The baseSp ladder is tuned so sp per SECOND rises with tier (base/floor:
+// 1.25, 1.6, 2.0, 2.4, 2.5, 2.7, 3.1) — with a flat ladder, grinding the easy
+// tiers out-earned hard ones per wall-clock second, since a village day also
+// passes per solve. Same for the streak step scaling with base: a flat +1/sp
+// streak is harvested fastest on 4-second errands. The stock-and-flow model
+// behind these numbers lives in design/hardness.flow (Q2).
 // ============================================================================
 import { FRAC_COLS } from '../domain/config.js';
 import { classifyAdd, classifySub } from '../domain/soroban.js';
@@ -110,7 +117,7 @@ export const CHALLENGE_TIERS = Object.freeze([
     },
   },
   {
-    id: 'caravan', title: 'Caravan', math: 'compound trade / two-digit carry', baseSp: 18, timeFloorMs: 9000,
+    id: 'caravan', title: 'Caravan', math: 'compound trade / two-digit carry', baseSp: 22, timeFloorMs: 9000,
     gen(rng) {
       for (let k = 0; k < 200; k++) {
         const kind = rng.int(2);
@@ -136,7 +143,7 @@ export const CHALLENGE_TIERS = Object.freeze([
     },
   },
   {
-    id: 'magnate', title: 'Magnate', math: 'add / subtract in the millions', baseSp: 22, timeFloorMs: 11000,
+    id: 'magnate', title: 'Magnate', math: 'add / subtract in the millions', baseSp: 28, timeFloorMs: 11000,
     // The ones-rod skills lifted to the top of the board: identical friend
     // trades and carries, played on the 10^5 / 10^6 / 10^7 rods — proof that
     // technique is magnitude-invariant.
@@ -160,7 +167,7 @@ export const CHALLENGE_TIERS = Object.freeze([
     },
   },
   {
-    id: 'guild', title: 'Guild order', math: 'multiply by repeated addition', baseSp: 25, timeFloorMs: 14000,
+    id: 'guild', title: 'Guild order', math: 'multiply by repeated addition', baseSp: 38, timeFloorMs: 14000,
     gen(rng) {
       const a = 12 + rng.int(38); // 12..49
       const m = 2 + rng.int(2);   // ×2..×3
@@ -168,7 +175,7 @@ export const CHALLENGE_TIERS = Object.freeze([
     },
   },
   {
-    id: 'tax', title: 'Tax season', math: 'divide by repeated subtraction', baseSp: 30, timeFloorMs: 16000,
+    id: 'tax', title: 'Tax season', math: 'divide by repeated subtraction', baseSp: 50, timeFloorMs: 16000,
     gen(rng) {
       const b = 2 + rng.int(8); // divisor 2..9
       const q = 3 + rng.int(5); // quotient 3..7
@@ -188,7 +195,7 @@ export function payoutParts(tier, { faults, elapsedMs }, streak = 0) {
     base,
     cleanBonus: faults === 0 ? Math.ceil(base / 2) : 0,
     fastBonus: elapsedMs <= tier.timeFloorMs ? Math.ceil(base / 4) : 0,
-    streakBonus: Math.min(streak, 10),
+    streakBonus: Math.min(streak, 10) * Math.ceil(base / 20),
   };
 }
 

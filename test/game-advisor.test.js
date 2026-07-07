@@ -75,7 +75,9 @@ test('after the ladder: a rich, unlit village is told to feast first', () => {
   v.res = { food: 1000, wood: 1000, coin: 1000 };
   const hint = nextHint(v);
   assert.equal(hint.id, 'festival');
-  assert.match(hint.msg, /150 🌾 \+ 50 🪵 \+ 100 🪙/);
+  // The feast is priced to the village: this one yields 12 coin/day, so the
+  // coin line scales to 120 while food and wood stay at their floors.
+  assert.match(hint.msg, /150 🌾 \+ 50 🪵 \+ 120 🪙/);
 });
 
 test('with the festival burning (or unaffordable), the advisor drives endless upgrades', () => {
@@ -100,7 +102,7 @@ test('the festival goal rung coaches saving up, then lighting', () => {
   v.res = { food: 20, wood: 0, coin: 0 };
   const saving = nextHint(v);
   assert.equal(saving.id, 'festival-save');
-  assert.match(saving.msg, /short 130 🌾 \+ 50 🪵 \+ 100 🪙/);
+  assert.match(saving.msg, /short 130 🌾 \+ 50 🪵 \+ 120 🪙/); // coin scaled to 120
   v.res = { food: 200, wood: 60, coin: 120 };
   assert.equal(nextHint(v).id, 'festival');
 });

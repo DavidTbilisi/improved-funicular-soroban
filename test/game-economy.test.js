@@ -4,7 +4,7 @@ import { buildingById, GRID_CELLS } from '../src/game/buildings.js';
 import {
   newVillage, counts, isUnlocked, canAfford, spend, refund, shortfall,
   canPlace, place, dailyYield, advanceDay, shrineBonus, upgradeCost,
-  festivalBonus, FESTIVAL_COST, FESTIVAL_SOLVES, FESTIVAL_BONUS,
+  festivalBonus, festivalCost, FESTIVAL_COST, FESTIVAL_SOLVES, FESTIVAL_BONUS, FESTIVAL_YIELD_DAYS,
 } from '../src/game/economy.js';
 
 const put = (v, id, cellIdx, level = 1) => { v.grid[cellIdx] = { id, level }; };
@@ -108,6 +108,24 @@ test('festival: bonus while lit, one day burned per advanceDay, never below 0', 
   advanceDay(v);           // …and stays at zero
   assert.equal(v.festival, 0);
   assert.ok(Object.isFrozen(FESTIVAL_COST));
+});
+
+test('festivalCost: floored at the founding feast, scaled to ten days of production', () => {
+  const v = newVillage();
+  // A young village pays exactly the floor.
+  assert.deepEqual(festivalCost(v), { food: 150, wood: 50, coin: 100 });
+  // A mature village pays FESTIVAL_YIELD_DAYS days of its own yields, per
+  // resource independently — here only coin has outgrown its floor.
+  put(v, 'farm', 0, 2);        // 4 food
+  put(v, 'well', 1, 2);        // 2 food + aura (+1 for the one farm) -> 7 food
+  put(v, 'workshop', 2, 4);    // 12 coin
+  const y = dailyYield(v);
+  assert.deepEqual(y, { sp: 0, food: 7, wood: 0, coin: 12 });
+  assert.deepEqual(festivalCost(v), {
+    food: 150,                              // 70 < floor
+    wood: 50,                               // 0 < floor
+    coin: FESTIVAL_YIELD_DAYS * y.coin,     // 120 > floor
+  });
 });
 
 test('shrineBonus: +10% per shrine level, capped at +30%', () => {

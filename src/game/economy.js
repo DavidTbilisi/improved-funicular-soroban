@@ -31,13 +31,27 @@ export function newVillage() {
   };
 }
 
-// The festival — the standing resource sink. Lighting one costs a feast's
-// worth of everything and multiplies contract payouts (+50%, on top of the
-// shrine blessing) for the next FESTIVAL_SOLVES village days.
+// The festival — the standing resource sink. Lighting one costs a feast and
+// multiplies contract payouts (+50%, on top of the shrine blessing) for the
+// next FESTIVAL_SOLVES village days. The feast is priced to the village:
+// FESTIVAL_YIELD_DAYS days of its own production per resource, never less
+// than the FESTIVAL_COST floor — a fixed feast saturates once yields outgrow
+// it and the stores diverge, while a scaled feast keeps the sink (and the
+// light-it-now decision) meaningful forever (see design/hardness.flow, Q3).
 export const FESTIVAL_COST = Object.freeze({ food: 150, wood: 50, coin: 100 });
 export const FESTIVAL_SOLVES = 10;
 export const FESTIVAL_BONUS = 0.5;
+export const FESTIVAL_YIELD_DAYS = 10;
 export const festivalBonus = village => village.festival > 0 ? FESTIVAL_BONUS : 0;
+
+export function festivalCost(village) {
+  const y = dailyYield(village);
+  return {
+    food: Math.max(FESTIVAL_COST.food, FESTIVAL_YIELD_DAYS * y.food),
+    wood: Math.max(FESTIVAL_COST.wood, FESTIVAL_YIELD_DAYS * y.wood),
+    coin: Math.max(FESTIVAL_COST.coin, FESTIVAL_YIELD_DAYS * y.coin),
+  };
+}
 
 // How many of each building stand, regardless of level.
 export function counts(village) {

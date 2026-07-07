@@ -29,7 +29,7 @@ import { BUILDINGS, buildingById, GRID_CELLS, FOUNDING_LEVEL } from './buildings
 import { CHALLENGE_TIERS, payout, payoutParts } from './challenges.js';
 import {
   canPlace, place, canAfford, spend, refund, advanceDay, shrineBonus, upgradeCost,
-  FESTIVAL_COST, FESTIVAL_SOLVES, festivalBonus,
+  festivalCost, FESTIVAL_SOLVES, festivalBonus,
 } from './economy.js';
 
 export class GameSession extends Observable {
@@ -109,8 +109,9 @@ export class GameSession extends Observable {
   lightFestival() {
     const v = this.village;
     if (v.festival > 0) return this._refuse('festival');
-    if (!canAfford(v, FESTIVAL_COST)) return this._refuse('cost');
-    spend(v, FESTIVAL_COST);
+    const cost = festivalCost(v);
+    if (!canAfford(v, cost)) return this._refuse('cost');
+    spend(v, cost);
     v.festival = FESTIVAL_SOLVES;
     v.stats.festivals++;
     this.save.save(v);
