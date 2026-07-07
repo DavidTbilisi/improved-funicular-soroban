@@ -6,9 +6,9 @@
 // zero image assets); all tweens here are cosmetic, real time only.
 // Ambience is cosmetic too and derives from the same snapshots: a seeded decor
 // ring (stable across loads), drifting clouds, and one wandering villager per
-// hut (plus a founder). Colors mirror styles.css tokens: --line hairlines,
-// --data-wash hover, --green/--amber payout text; the grass checker matches
-// the .game-canvas gradient.
+// hut (plus a founder). Colors mirror styles.css tokens: gold (--gold) marks
+// the hovered/armed plot, --green/--amber tint payout text; the dusk-grass
+// checker matches the .game-canvas gradient.
 // ============================================================================
 import * as Phaser from '../../../vendor/phaser.esm.js';
 import { GRID_COLS, GRID_ROWS, GRID_CELLS, buildingById, RES_EMOJI } from '../../game/buildings.js';
@@ -54,9 +54,9 @@ export class VillageScene extends Phaser.Scene {
       const { x, y } = this.cellXY(i);
       const c = i % GRID_COLS, r = Math.floor(i / GRID_COLS);
       // A dark sliver under each plate so the plot reads raised off the grass.
-      this.add.rectangle(x, y + 3, TILE - 4, TILE - 4, 0x44523a, 0.10);
-      const tile = this.add.rectangle(x, y, TILE - 4, TILE - 4, 0xffffff, (c + r) % 2 ? 0.28 : 0.44)
-        .setStrokeStyle(1, 0xd9e0ca);
+      this.add.rectangle(x, y + 3, TILE - 4, TILE - 4, 0x000000, 0.22);
+      const tile = this.add.rectangle(x, y, TILE - 4, TILE - 4, 0xffe9c0, (c + r) % 2 ? 0.05 : 0.10)
+        .setStrokeStyle(1, 0x3f4a33);
       tile.baseAlpha = tile.fillAlpha;
       tile.setInteractive({ useHandCursor: true });
       tile.on('pointerover', () => this._hover(i, true));
@@ -114,8 +114,8 @@ export class VillageScene extends Phaser.Scene {
 
   _hover(i, on) {
     this.hoverIdx = on ? i : -1;
-    this.tiles[i].setFillStyle(on ? 0xeceffb : 0xffffff, on ? 0.95 : this.tiles[i].baseAlpha);
-    this.tiles[i].setStrokeStyle(on ? 1.5 : 1, on ? 0x4353cc : 0xdde4d0);
+    this.tiles[i].setFillStyle(on ? 0xf2bd4e : 0xffe9c0, on ? 0.22 : this.tiles[i].baseAlpha);
+    this.tiles[i].setStrokeStyle(on ? 1.5 : 1, on ? 0xf2bd4e : 0x3f4a33);
     if (this.ghost) {
       if (on) { const { x, y } = this.cellXY(i); this.ghost.setPosition(x, y).setVisible(true); }
       else this.ghost.setVisible(false);
@@ -150,7 +150,7 @@ export class VillageScene extends Phaser.Scene {
         const { x, y } = this.cellXY(i);
         const emoji = this._emojiText(x, y - 2, def.emoji, 42).setDepth(4);
         const badge = this.add.text(x + 27, y + 25, badgeText, {
-          fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#4353cc',
+          fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffd984',
         }).setOrigin(0.5).setResolution(DPR()).setDepth(4);
         this.sprites.set(i, { id: cell.id, level: cell.level, emoji, badge });
         this._pop(emoji);
@@ -217,7 +217,7 @@ export class VillageScene extends Phaser.Scene {
   flashPayout(text, ok = true) {
     const t = this.add.text(this.scale.width / 2, this.oy + 70, text, {
       fontSize: '32px', fontFamily: 'monospace', fontStyle: 'bold',
-      color: ok ? '#178a4c' : '#c77414', padding: { x: 8, y: 8 },
+      color: ok ? '#6fd394' : '#eda14e', padding: { x: 8, y: 8 },
     }).setOrigin(0.5).setResolution(DPR()).setAlpha(0).setDepth(10);
     this.tweens.add({
       targets: t, alpha: 1, y: '-=36', duration: 420, ease: 'Cubic.easeOut',

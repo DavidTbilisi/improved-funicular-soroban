@@ -48,8 +48,8 @@ export class DeepPackView {
     const plural = unitCount > 1 ? 's' : '';
     const codeLabel = hex ? `0x${code}` : code;
     let note = '';
-    if (hex && fractionIgnored) note = ` <span style="color:#8a929e">(fraction ignored in hex mode)</span>`;
-    else if (!hex && fs) note = ` <span style="color:#8a929e">(integer + fraction digits; the point rides the flipped pegs, not the pack)</span>`;
+    if (hex && fractionIgnored) note = ` <span style="color:var(--faint)">(fraction ignored in hex mode)</span>`;
+    else if (!hex && fs) note = ` <span style="color:var(--faint)">(integer + fraction digits; the point rides the flipped pegs, not the pack)</span>`;
     const noun = hex ? 'Hex string' : 'Digit string';
     this.lineEl.innerHTML = `${noun}: <code>${codeLabel}</code> · ${unitCount} ${unitNoun}${plural}${note}`;
 

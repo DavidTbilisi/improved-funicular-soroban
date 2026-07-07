@@ -1,38 +1,50 @@
 /* ============================================================================
-   "Reckoning II" — the textbook, set in a modern shell.
-   The academic bones stay (mono numerals, numbered figures, hairline chart
-   grids); the shell becomes card-based and quietly colorful. Color is semantic,
-   never decorative:
-     indigo   = interactive + data (buttons, nav, focus, every chart mark)
+   "Yomatsuri" — the trainer as a night festival.
+   The textbook bones stay (mono numerals, numbered figures, hairline chart
+   grids); the shell becomes the app's own game world after dark: lacquer +
+   indigo-cloth ground, panels lit like paper lanterns, keycap buttons you
+   press like the home row, and the soroban as the lamplit stage of every
+   page — a counted bead is a lit lantern. Color is semantic, never decorative:
+     gold     = action + reward (buttons, active tabs, focused rod, lit beads, sp)
+     asagi    = data (chart marks, hints, hover accents) — the old indigo, relit
      violet   = decimal identity (frac beads, the point, frac labels)
      vermilion= attention only (targets, floors, the hot cell, errors, seals)
-     green    = success · amber = warnings/tempo
+     green    = success · amber = warnings/tempo + the streak flame
    ============================================================================ */
 :root {
-  --paper:   #f6f6f3;   /* page */
-  --paper-2: #ffffff;   /* cards & plates */
-  --ink:     #1d1e24;   /* text, the instrument */
-  --stone:   #626879;   /* secondary text */
-  --faint:   #959ba9;   /* tertiary text / captions */
-  --line:    #e7e8ec;   /* hairlines */
-  --line-2:  #d6d8de;   /* stronger hairline: inputs, tracks */
+  color-scheme: dark;
+  --paper:   #16141f;   /* page — lacquer black with an indigo cast */
+  --paper-2: #211f2d;   /* cards & plates — a lit panel */
+  --well:    #1a1826;   /* recessed stages, strips, figure plates */
+  --ink:     #f0e9d8;   /* text — washi by lamplight */
+  --stone:   #a89f92;   /* secondary text */
+  --faint:   #78716a;   /* tertiary text / captions */
+  --line:    #35323f;   /* hairlines */
+  --line-2:  #494455;   /* stronger hairline: inputs, tracks */
 
-  --data:    #4353cc;   /* indigo — interactive + chart marks */
-  --data-2:  #3743ba;   /* pressed / dark end of the sequential ramp */
-  --wash:    #f1f2f7;   /* quiet hover fill */
-  --data-wash:#eceffb;  /* indigo-tinted fill */
+  --gold:    #f2bd4e;   /* lantern — action & reward */
+  --gold-2:  #d9a134;   /* pressed / dark end of gold */
+  --gold-edge:#8a6a1d;  /* the keycap edge under a gold key */
+  --on-gold: #241c07;   /* ink on a gold key */
 
-  --violet:  #7c5cd6;   /* decimal identity */
-  --violet-soft:#d4cbee;/* frac bead at rest */
+  --data:    #8fa0ff;   /* asagi — every chart mark, hints, secondary accents */
+  --data-2:  #aab8ff;   /* bright end of the sequential ramp */
+  --wash:    #2a2739;   /* quiet raised fill (buttons at rest) */
+  --data-wash:#272a44;  /* asagi-tinted fill */
+  --key-edge:#100e18;   /* the dark mold line + bottom edge of every keycap */
 
-  --shu:     #d0442e;   /* vermilion — attention / hanko seal */
-  --green:   #178a4c;   /* clean / cleared */
-  --amber:   #c77414;   /* slow / metronome accent */
+  --violet:  #ab8df2;   /* decimal identity */
+  --violet-soft:#4a3f6b;/* frac bead at rest */
 
-  --bead:    #c8cad3;   /* bead at rest (uncounted) */
-  --bead-on: #23242b;   /* bead at the bar (counted) */
+  --shu:     #ef5b3e;   /* vermilion — attention / hanko seal */
+  --green:   #4cc57e;   /* clean / cleared */
+  --amber:   #e0913c;   /* slow / metronome / the streak flame */
 
-  --shadow: 0 1px 2px rgba(23, 25, 45, 0.05), 0 3px 10px rgba(23, 25, 45, 0.05);
+  --bead:    #4c4658;   /* bead at rest (uncounted) — dim wood */
+  --bead-on: #f2bd4e;   /* bead at the bar (counted) — a lit lantern */
+  --frame:   #6b5637;   /* the soroban's wooden frame */
+
+  --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 22px rgba(0, 0, 0, 0.35);
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -40,11 +52,12 @@
 html { scroll-behavior: smooth; }
 body {
   font-family: var(--sans);
-  background: var(--paper); color: var(--ink);
+  background: radial-gradient(1200px 520px at 50% -120px, #23202f, rgba(35, 32, 47, 0)) var(--paper);
+  color: var(--ink);
   margin: 0; padding: 30px 28px 80px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-::selection { background: var(--data-wash); }
+::selection { background: #3a3560; }
 /* The textbook column: generous but bounded, so wide monitors don't stretch
    panels into empty plains. (The game cockpit doesn't use .app — it owns the
    whole viewport.) */
@@ -52,7 +65,7 @@ body {
 /* The page title is the spine — a real display size so the mono voice anchors
    the page instead of whispering. (The game cockpit's .ck-title overrides.) */
 h1 {
-  font-family: var(--mono); font-size: 2rem; font-weight: 600; margin: 0 0 6px;
+  font-family: var(--mono); font-size: 2rem; font-weight: 700; margin: 0 0 6px;
   letter-spacing: -0.015em; color: var(--ink);
 }
 .subtitle { color: var(--stone); margin: 0 0 20px; font-size: 0.95rem; max-width: 64ch; }
@@ -60,17 +73,18 @@ h2 {
   font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.8px;
   color: var(--ink); margin: 0 0 14px; font-weight: 600;
 }
-h2::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--data); border-radius: 1.5px; margin-right: 9px; vertical-align: 1px; }
+/* The quest-marker diamond. */
+h2::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--gold); border-radius: 1px; transform: rotate(45deg); margin-right: 9px; vertical-align: 1px; }
 
-/* Sections are cards now. */
-.panel { background: var(--paper-2); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 22px 24px; margin: 0 0 18px; }
+/* Sections are lantern-lit cards. */
+.panel { background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 22px 24px; margin: 0 0 18px; }
 
 /* Peer panels sit side by side once the viewport can afford it. */
 .panel-row { display: grid; gap: 18px; align-items: start; margin: 0 0 18px; }
 .panel-row > .panel { margin: 0; }
 @media (min-width: 1100px) { .panel-row { grid-template-columns: 1fr 1fr; } }
 
-/* Top navigation — sticky pill bar. */
+/* Top navigation — sticky pill bar; the active tab is the lit lantern. */
 .topnav {
   position: sticky; top: 10px; z-index: 30;
   display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
@@ -86,12 +100,12 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
   transition: background 0.14s ease, color 0.14s ease;
 }
 .topnav a:hover { color: var(--ink); background: var(--wash); }
-.topnav a.active { color: var(--paper-2); background: var(--data); }
+.topnav a.active { color: var(--on-gold); background: var(--gold); font-weight: 600; }
 
 /* Readout + decode */
 .readout {
   display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap;
-  background: var(--paper-2); border: 1px solid var(--line); border-radius: 14px;
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px;
   box-shadow: var(--shadow); padding: 18px 22px; margin: 0 0 18px;
 }
 .readout .num-box { min-width: 150px; }
@@ -102,7 +116,7 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
   display: flex; flex-direction: column; align-items: center; gap: 1px;
   padding: 6px 9px 7px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; min-width: 60px;
 }
-.decode-chip.frac { border-color: var(--violet-soft); background: #fbfaff; }
+.decode-chip.frac { border-color: var(--violet-soft); background: #221e33; }
 .decode-chip.zero { opacity: 0.42; }
 .decode-chip .c-emoji { font-size: 1.45rem; line-height: 1.1; display: inline-block; }
 .decode-chip.frac .c-emoji { transform: rotate(180deg); }
@@ -117,28 +131,33 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .decode-story strong { color: var(--ink); font-weight: 600; }
 .decode-story .fr { color: var(--violet); }
 
-/* Soroban — the instrument keeps its ink line-drawing, on a soft card. */
+/* Soroban — the instrument is the stage: a wooden frame around a plate washed
+   in lamplight, the brightest, warmest object on every page. */
 .soroban-wrap { display: flex; justify-content: flex-start; padding: 14px 2px 8px; overflow-x: auto; }
-.soroban { display: flex; gap: 6px; margin: 0 auto; padding: 16px 18px; background: var(--paper-2); border: 1.5px solid #2b2c33; border-radius: 14px; box-shadow: var(--shadow); }
+.soroban {
+  display: flex; gap: 6px; margin: 0 auto; padding: 16px 18px;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(242, 189, 78, 0.08), rgba(242, 189, 78, 0) 62%) var(--paper-2);
+  border: 2px solid var(--frame); border-radius: 14px; box-shadow: var(--shadow);
+}
 .rod { display: flex; flex-direction: column; align-items: center; width: 50px; }
 .rod.frac .rod-letter, .rod.frac .rod-place { color: var(--violet); }
 .rod-frame { height: 340px; width: 100%; position: relative; cursor: pointer; border-radius: 8px; }
-.rod-frame::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #c3c6cf; transform: translateX(-1px); border-radius: 1px; }
+.rod-frame::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #57503f; transform: translateX(-1px); border-radius: 1px; }
 .bar { position: absolute; left: -10px; right: -10px; top: 96px; height: 3px; background: var(--ink); z-index: 5; border-radius: 1px; }
 .bead {
-  width: 34px; height: 19px; background: var(--bead); border-radius: 50% / 38%;
+  width: 34px; height: 19px; background-color: var(--bead); border-radius: 50% / 38%;
   position: absolute; left: 50%; transform: translateX(-50%);
-  transition: top 0.26s cubic-bezier(0.5,0.8,0.4,1.05), background 0.15s ease;
+  transition: top 0.26s cubic-bezier(0.5,0.8,0.4,1.05), background-color 0.15s ease, box-shadow 0.2s ease;
   z-index: 2;
   /* a soft top light + seat shadow so the bead reads as a physical piece */
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 58%);
-  box-shadow: 0 1px 1.5px rgba(23, 25, 45, 0.22);
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 58%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
 }
-/* A bead reads tonally: light at rest, saturated when counted. Decimal beads
-   carry the violet of their fractional identity. */
-.bead.active { background: var(--bead-on); }
-.rod.frac .bead { background: var(--violet-soft); }
-.rod.frac .bead.active { background: var(--violet); }
+/* A bead reads by light: dim at rest, lit when counted — a counted bead is a
+   lit lantern. Decimal beads glow the violet of their fractional identity. */
+.bead.active { background-color: var(--bead-on); box-shadow: 0 0 10px rgba(242, 189, 78, 0.42), 0 2px 3px rgba(0, 0, 0, 0.45); }
+.rod.frac .bead { background-color: var(--violet-soft); }
+.rod.frac .bead.active { background-color: var(--violet); box-shadow: 0 0 10px rgba(171, 141, 242, 0.45), 0 2px 3px rgba(0, 0, 0, 0.45); }
 .rod-value { font-family: var(--mono); margin-top: 10px; font-size: 1.1rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; width: 26px; text-align: center; }
 .rod-cube { margin-top: 4px; font-size: 0.98rem; line-height: 1.1; text-align: center; min-height: 1.2em; letter-spacing: 1px; }
 .rod-cube.bare { color: var(--faint); font-size: 0.8rem; }
@@ -148,8 +167,9 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .rod-word { font-family: var(--mono); margin-top: 2px; font-size: 0.54rem; color: var(--faint); text-align: center; line-height: 1.15; min-height: 2.1em; }
 .rod-place { font-family: var(--mono); margin-top: 1px; font-size: 0.54rem; color: var(--faint); text-align: center; }
 
-.rod.focused .rod-frame { background: var(--data-wash); box-shadow: inset 0 0 0 2px var(--data); }
-.rod.focused .rod-letter { color: var(--data); }
+/* The focused rod wears the lantern ring: this is where your keys land. */
+.rod.focused .rod-frame { background: rgba(242, 189, 78, 0.09); box-shadow: inset 0 0 0 2px var(--gold); }
+.rod.focused .rod-letter { color: var(--gold); }
 
 /* Keyboard-arithmetic coach line — the three move families wear their colors. */
 .coach { margin-top: 14px; text-align: center; font-size: 0.88rem; color: var(--stone); min-height: 1.4em; }
@@ -177,7 +197,8 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .metro input[type="range"] { width: 96px; accent-color: var(--amber); }
 .metro-bpm { font-family: var(--mono); font-size: 0.78rem; color: var(--stone); font-variant-numeric: tabular-nums; min-width: 58px; }
 .metro-bpm span { color: var(--ink); font-weight: 700; }
-kbd { font-family: var(--mono); display: inline-block; padding: 1px 6px; background: var(--paper); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; font-size: 0.82em; color: var(--ink); }
+/* kbd chips share the keycap mold with the buttons — the app is played on keys. */
+kbd { font-family: var(--mono); display: inline-block; padding: 1px 6px; background: var(--wash); border: 1px solid var(--key-edge); border-bottom-width: 2px; border-radius: 5px; font-size: 0.82em; color: var(--ink); }
 
 /* In-soroban decimal point column — violet: the identity of the fractional side. */
 .dp-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 22px; }
@@ -189,19 +210,23 @@ kbd { font-family: var(--mono); display: inline-block; padding: 1px 6px; backgro
 /* Controls */
 .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .input-row label { font-family: var(--mono); color: var(--stone); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-input[type="text"] { font-family: var(--mono); padding: 9px 12px; background: var(--paper-2); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); width: 180px; font-size: 1rem; font-variant-numeric: tabular-nums; letter-spacing: 1px; transition: border-color 0.14s ease, box-shadow 0.14s ease; }
-input[type="text"]:focus { outline: none; border-color: var(--data); box-shadow: 0 0 0 3px var(--data-wash); }
+input[type="text"] { font-family: var(--mono); padding: 9px 12px; background: var(--paper); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); width: 180px; font-size: 1rem; font-variant-numeric: tabular-nums; letter-spacing: 1px; transition: border-color 0.14s ease, box-shadow 0.14s ease; }
+input[type="text"]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242, 189, 78, 0.16); }
+/* Buttons are keycaps: a raised cap on a hard dark edge; pressing sinks it.
+   The UI's buttons and the keyboard you play share one look. */
 button {
-  font-family: var(--mono); padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 9px;
-  background: var(--paper-2); color: var(--ink); cursor: pointer; font-size: 0.82rem;
-  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  font-family: var(--mono); padding: 8px 14px; border: 1px solid var(--key-edge); border-radius: 10px;
+  background: var(--wash); color: var(--ink); cursor: pointer; font-size: 0.82rem;
+  box-shadow: 0 3px 0 var(--key-edge), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, box-shadow 0.08s ease, transform 0.08s ease;
 }
-button:hover:not(:disabled) { border-color: var(--data); color: var(--data); background: var(--data-wash); }
-button:active:not(:disabled) { transform: translateY(1px); }
+button:hover:not(:disabled) { background: #332f47; color: var(--gold); }
+button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-edge), inset 0 1px 0 rgba(255, 255, 255, 0.07); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
-button.primary { background: var(--data); border-color: var(--data); color: var(--paper-2); }
-button.primary:hover:not(:disabled) { background: var(--data-2); border-color: var(--data-2); color: var(--paper-2); }
-:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+button.primary { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+button.primary:hover:not(:disabled) { background: #ffd06a; border-color: var(--gold-2); color: var(--on-gold); }
+button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
 .presets button { padding: 6px 11px; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 
@@ -226,8 +251,8 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 /* Drill mode */
 .drill-decks { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .drill-decks button { padding: 6px 10px; font-size: 0.78rem; }
-.drill-decks button.active { background: var(--data); border-color: var(--data); color: var(--paper-2); }
-.drill-stage { display: none; background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px; padding: 22px; text-align: center; }
+.drill-decks button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.drill-stage { display: none; background: var(--well); border: 1px solid var(--line); border-radius: 12px; padding: 22px; text-align: center; }
 .drill-stage.on { display: block; }
 .drill-floor { font-family: var(--mono); font-size: 0.68rem; color: var(--stone); text-transform: uppercase; letter-spacing: 1.5px; }
 .drill-prompt { font-size: 2.6rem; line-height: 1.3; margin: 12px 0 4px; min-height: 1.4em; }
@@ -241,6 +266,9 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .drill-feedback .bad { color: var(--shu); font-weight: 600; }
 .drill-feedback .slow { color: var(--amber); font-weight: 600; }
 .drill-feedback .detail { color: var(--stone); }
+/* A correct answer lands with a little pop — quiet, but felt. */
+.drill-feedback .ok, .tut-feedback .ok { display: inline-block; animation: okPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes okPop { from { transform: scale(0.7); opacity: 0; } }
 .drill-stats { font-family: var(--mono); display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 16px; font-size: 0.8rem; color: var(--stone); }
 .drill-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .drill-best { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); margin-top: 6px; }
@@ -248,12 +276,12 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 /* Guided practice (leveled tutorial) */
 .tut-levels { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .tut-levels button { padding: 6px 11px; font-size: 0.78rem; }
-.tut-levels button.active { background: var(--data); border-color: var(--data); color: var(--paper-2); }
+.tut-levels button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 .tut-levels button.locked { opacity: 0.5; }
 .tut-clear { color: var(--green); font-weight: 700; }
 .tut-graduate { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; background: var(--paper-2); font-size: 0.86rem; color: var(--stone); }
 .tut-graduate a { color: var(--data); font-weight: 600; }
-.tut-stage { display: none; background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px; padding: 22px; text-align: center; }
+.tut-stage { display: none; background: var(--well); border: 1px solid var(--line); border-radius: 12px; padding: 22px; text-align: center; }
 .tut-stage.on { display: block; }
 .tut-teach { font-size: 0.86rem; color: var(--stone); line-height: 1.65; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); max-width: 70ch; margin-left: auto; margin-right: auto; }
 .tut-teach b { color: var(--ink); }
@@ -264,7 +292,7 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .tut-timer.over { color: var(--shu); font-weight: 700; }
 .tut-timer .tut-floor { color: var(--faint); font-size: 0.85rem; }
 .tut-meter { font-size: 0.95rem; color: var(--stone); margin-bottom: 6px; }
-.tut-dots { letter-spacing: 3px; color: var(--data); font-size: 1.05rem; }
+.tut-dots { letter-spacing: 3px; color: var(--gold); font-size: 1.05rem; }
 .tut-count { font-family: var(--mono); color: var(--stone); font-size: 0.8rem; }
 .tut-feedback { min-height: 1.8em; margin: 10px 0 16px; font-size: 0.95rem; }
 .tut-feedback .ok { color: var(--green); font-weight: 700; }
@@ -278,14 +306,14 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .board-slot { border-top: 1px solid var(--line); margin-top: 16px; }
 
 /* Rod-placement trainer — target rods stay vermilion: "act here". */
-.rod.target .rod-frame { background: var(--shu); background: color-mix(in srgb, var(--shu) 8%, transparent); box-shadow: inset 0 0 0 2px var(--shu); }
+.rod.target .rod-frame { background: var(--shu); background: color-mix(in srgb, var(--shu) 13%, transparent); box-shadow: inset 0 0 0 2px var(--shu); }
 .rod.target .rod-letter { color: var(--shu); }
-.rod.target.focused .rod-frame { box-shadow: inset 0 0 0 2px var(--shu), 0 0 0 2px var(--data); }
+.rod.target.focused .rod-frame { box-shadow: inset 0 0 0 2px var(--shu), 0 0 0 2px var(--gold); }
 .rt-head { margin-bottom: 10px; }
 .rt-title { font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--ink); }
 .rt-setup { font-size: 0.82rem; color: var(--stone); line-height: 1.6; margin: 2px auto 12px; max-width: 62ch; }
 .rt-setup b { color: var(--data); }
-.rt-dots { letter-spacing: 3px; color: var(--data); font-size: 1.05rem; }
+.rt-dots { letter-spacing: 3px; color: var(--gold); font-size: 1.05rem; }
 .rt-count { font-family: var(--mono); color: var(--stone); font-size: 0.8rem; }
 .rt-instr { font-size: 1rem; color: var(--ink); line-height: 1.65; margin: 8px auto; max-width: 62ch; min-height: 1.6em; }
 .rt-instr b { color: var(--shu); }
@@ -325,13 +353,14 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .cube-chip .faces.bare { color: var(--faint); font-size: 0.85rem; }
 .cube-chip .cname { font-size: 0.8rem; color: var(--stone); }
 .cube-chip .swatch { margin-left: auto; display: flex; gap: 3px; }
-.cube-chip .swatch i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.12); }
+.cube-chip .swatch i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,0.18); }
 
-/* Figures — the textbook plates. Marks are indigo (data); vermilion appears
-   only where attention lives: floor ticks, seals, the hot cell, the latest dot. */
+/* Figures — the textbook plates, now night charts. Marks are asagi (data);
+   vermilion appears only where attention lives: floor ticks, seals, the hot
+   cell, the latest dot. */
 .fig { margin: 0 0 22px; }
 .fig:last-child { margin-bottom: 6px; }
-.fig-plate { background: #fbfbfd; border: 1px solid var(--line); border-radius: 10px; padding: 16px 14px 10px; overflow-x: auto; }
+.fig-plate { background: var(--well); border: 1px solid var(--line); border-radius: 10px; padding: 16px 14px 10px; overflow-x: auto; }
 .fig-plate .figsvg { display: block; width: 100%; height: auto; margin: 0 auto; }
 .figsvg text { font-family: var(--mono); }
 .fig figcaption { margin-top: 8px; font-size: 0.8rem; line-height: 1.55; color: var(--stone); max-width: 70ch; }
@@ -339,8 +368,8 @@ button.primary:hover:not(:disabled) { background: var(--data-2); border-color: v
 .fig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 26px; align-items: end; }
 .fig-empty { font-size: 0.85rem; color: var(--stone); font-style: italic; padding: 26px 16px; text-align: center; }
 
-/* The multiplication table — a single-hue indigo ramp; .hot = the cell the
-   current trainer step reads. */
+/* The multiplication table — a single-hue asagi ramp out of the dark; .hot =
+   the cell the current trainer step reads. */
 .multab { border-collapse: separate; border-spacing: 2px; margin: 0 auto; font-family: var(--mono); }
 .multab th { font-size: 0.7rem; font-weight: 600; color: var(--stone); width: 30px; height: 24px; text-align: center; }
 .multab td { width: 30px; height: 26px; text-align: center; font-size: 0.72rem; font-weight: 600; font-variant-numeric: tabular-nums; cursor: default; border-radius: 5px; }
@@ -360,27 +389,28 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* Header strip: title · nav · resource chips · help/reset. */
 .ck-top { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.ck-title { font-family: var(--mono); font-size: 1rem; font-weight: 600; margin: 0; white-space: nowrap; }
+.ck-title { font-family: var(--mono); font-size: 1rem; font-weight: 700; margin: 0; white-space: nowrap; }
 .page-game .topnav { position: static; margin: 0; padding: 4px; box-shadow: none; flex-wrap: nowrap; }
 .page-game .topnav a { padding: 4px 10px; font-size: 0.7rem; white-space: nowrap; }
 .page-game .game-res { margin-left: auto; flex-wrap: nowrap; }
 .ck-actions { display: flex; gap: 6px; }
 .ck-actions button { padding: 5px 10px; font-size: 0.74rem; color: var(--stone); }
 
-/* Main region: the Phaser diorama + the side panel. */
+/* Main region: the Phaser diorama + the side panel. The village sits under a
+   dusk sky — the lit windows are the game's own festival. */
 .ck-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: 14px; min-height: 0; }
-.game-canvas { height: 100%; min-height: 0; background: linear-gradient(180deg, #f0f5e8, #e7efdb); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.game-canvas { height: 100%; min-height: 0; background: linear-gradient(180deg, #2a3222, #1e2618); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .game-canvas canvas { display: block; }
 .ck-side { display: flex; flex-direction: column; gap: 9px; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .game-h { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--stone); margin: 0 0 4px; }
 .game-h .h-tail { text-transform: none; letter-spacing: 0.3px; color: var(--faint); }
 
-/* Resource chips (shared look with the rest of the app). */
+/* Resource chips (shared look with the rest of the app). sp is the gold coin. */
 .game-res { display: flex; gap: 6px; flex-wrap: wrap; }
 .game-chip { font-family: var(--mono); display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; font-size: 0.78rem; color: var(--stone); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .game-chip b { color: var(--ink); }
-.game-chip.sp { background: var(--data-wash); border-color: var(--data); }
-.game-chip.sp b { color: var(--data); }
+.game-chip.sp { background: rgba(242, 189, 78, 0.10); border-color: var(--gold); }
+.game-chip.sp b { color: var(--gold); }
 .game-chip.founded { border-color: var(--green); }
 .game-chip.founded b { color: var(--green); }
 .game-chip.streak { border-color: var(--amber); }
@@ -391,10 +421,10 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-contract { display: flex; align-items: center; gap: 8px; padding: 4px 10px; text-align: left; width: 100%; }
 .game-contract .c-title { font-size: 0.76rem; font-weight: 600; white-space: nowrap; }
 .game-contract .c-math { font-size: 0.64rem; color: var(--stone); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.game-contract .c-pay { font-family: var(--mono); font-size: 0.68rem; color: var(--data); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.game-contract:hover:not(:disabled) .c-math { color: var(--data); }
+.game-contract .c-pay { font-family: var(--mono); font-size: 0.68rem; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.game-contract:hover:not(:disabled) .c-math { color: var(--ink); }
 .game-chain { display: block; margin-top: 5px; font-size: 0.7rem; color: var(--stone); cursor: pointer; user-select: none; }
-.game-chain input { accent-color: var(--data); vertical-align: -1px; }
+.game-chain input { accent-color: var(--gold); vertical-align: -1px; }
 
 /* Build palette — two-up; the full cost/yield story lives in the tooltip.
    flex-wrap: a long cost drops to its own right-aligned line — the cost is
@@ -405,8 +435,8 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .game-build .b-name { font-size: 0.72rem; white-space: nowrap; }
 .game-build .b-cost { font-family: var(--mono); margin-left: auto; font-size: 0.58rem; color: var(--stone); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
 .game-build.locked { opacity: 0.45; }
-.game-build.armed { background: var(--data); border-color: var(--data); color: var(--paper-2); }
-.game-build.armed .b-cost { color: var(--paper-2); }
+.game-build.armed { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.game-build.armed .b-cost { color: var(--on-gold); }
 
 /* Festival — the resource sink. Same rule as builds: the cost never truncates. */
 .game-festival { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; text-align: left; padding: 6px 11px; flex: none; }
@@ -428,7 +458,7 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 /* Contract strip — a fixed-height band so the layout never jumps. */
 .ck-strip {
   height: 68px; display: flex; align-items: center; padding: 5px 16px;
-  background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  background: var(--well); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
 }
 .ck-strip:has(.game-stage.on) .ck-idle { display: none; }
 .ck-idle { font-size: 0.82rem; color: var(--stone); }
@@ -442,7 +472,7 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-strip-mid { flex: 1; min-width: 0; }
 .page-game .tut-sub { margin: 0; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .game-pay { font-size: 0.72rem; color: var(--stone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.game-pay b { color: var(--data); }
+.game-pay b { color: var(--gold); }
 .ck-value { font-family: var(--mono); display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
 .ck-value span { font-size: 0.6rem; color: var(--stone); text-transform: uppercase; letter-spacing: 1.5px; }
 .ck-value b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
@@ -458,7 +488,7 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
    below it and the sound/metronome controls float over the top-right corner. */
 .ck-board {
   height: clamp(150px, 26vh, 330px); position: relative;
-  background: #f8f9fc; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--well); border: 1px solid var(--line); border-radius: 12px;
   padding: 4px 12px 2px;
 }
 .page-game .board-slot { border-top: none; margin: 0; height: 100%; display: flex; flex-direction: column; }
@@ -501,7 +531,7 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-focused .ck-dock {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   position: fixed; inset: 0; z-index: 40; padding: 4vh 3vw;
-  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  background: rgba(9, 8, 14, 0.66);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
 }
 .ck-focused .ck-strip {
@@ -546,11 +576,12 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
   .page-game .sound-row { position: static; justify-content: center; margin-top: 8px; }
 }
 
-/* Respect reduced-motion: no bead glide, no metronome pulse. */
+/* Respect reduced-motion: no bead glide, no metronome pulse, no success pop. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .bead { transition: none; }
   .metro-beat.pulse, .metro-beat.accent.pulse { animation: none; }
+  .drill-feedback .ok, .tut-feedback .ok { animation: none; }
 }
 
 /* Narrow screens */

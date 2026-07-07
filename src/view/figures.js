@@ -172,7 +172,7 @@ export function figPlaceValue(places) {
 }
 
 // --- Multiplication table heatmap (HTML — it is, after all, a table) ---------
-// Sequential ink density by product; cell text flips to paper on dark fills.
+// Sequential glow by product; cell text flips to paper on bright fills.
 // Cells carry id="mt-a-b" so the trainer can mark the live cell with .hot.
 export function multTableHTML() {
   let rows = `<tr><th></th>${Array.from({ length: 9 }, (_, j) => `<th>${j + 1}</th>`).join('')}</tr>`;
@@ -180,11 +180,13 @@ export function multTableHTML() {
     let cells = `<th>${a}</th>`;
     for (let b = 1; b <= 9; b++) {
       const p = a * b;
-      // single-hue sequential: white → deep indigo (#3743ba), darker = larger
+      // single-hue sequential out of the dark: well (#1a1826) → bright asagi
+      // (#8fa0ff), brighter = larger; bright cells flip to dark (paper) text.
       const t = 0.05 + 0.95 * (p - 1) / 80;
-      const rgb = [55, 67, 186].map(c => Math.round((1 - t) * 255 + t * c));
-      const dark = t > 0.72;
-      cells += `<td id="mt-${a}-${b}" style="background:rgb(${rgb.join(',')});color:${dark ? 'var(--paper)' : 'var(--ink)'}" title="${a} × ${b} = ${p}">${p}</td>`;
+      const lo = [26, 24, 38], hi = [143, 160, 255];
+      const rgb = lo.map((c, k) => Math.round((1 - t) * c + t * hi[k]));
+      const bright = t > 0.55;
+      cells += `<td id="mt-${a}-${b}" style="background:rgb(${rgb.join(',')});color:${bright ? 'var(--paper)' : 'var(--ink)'}" title="${a} × ${b} = ${p}">${p}</td>`;
     }
     rows += `<tr>${cells}</tr>`;
   }

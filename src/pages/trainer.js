@@ -52,7 +52,7 @@ const renderTrend = () => {
 };
 renderTrend();
 $('figMult').innerHTML = figure(3,
-  'The multiplication table, shaded by product (darker = larger). Hover any cell to read it; during a problem the cell the current step reads carries a red mark.',
+  'The multiplication table, shaded by product (brighter = larger). Hover any cell to read it; during a problem the cell the current step reads carries a red mark.',
   multTableHTML());
 const markCell = factors => {
   document.querySelectorAll('.multab td.hot').forEach(td => td.classList.remove('hot'));
