@@ -10,6 +10,7 @@ An interactive soroban (Japanese abacus) trainer that teaches a **place-value be
 
 - `npm test` — run the unit suite (`node --test`, no dependencies). Tests live in `test/*.test.js` and cover the DOM-free layers (domain, codec, commands, drill session, stats). Run one file with `node --test test/codec.test.js`.
 - `npm run dev` — serve over `http://localhost:8000` (`python3 -m http.server`). **Required for the ESM `index.html`**: browsers block `<script type="module">` imports over `file://`, so the app must be served, not opened as a file.
+- `npm run test:e2e` — run the Playwright browser suite (`e2e/*.spec.js`): a page-load smoke test per page plus layout/interaction regression tests that a DOM-free unit test can't see (e.g. CSS overflow bugs). This is the one dependency in an otherwise zero-dependency toolchain — `npm install` pulls `@playwright/test`, and `npx playwright install chromium` fetches the browser binary once. The suite boots its own `npm run dev` server (`playwright.config.js`), reusing one already running on :8000 outside CI.
 
 ## Architecture
 

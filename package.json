@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "playwright test"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
 }
