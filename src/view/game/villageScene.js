@@ -9,6 +9,14 @@
 // hut (plus a founder). Colors mirror styles.css tokens: gold (--gold) marks
 // the hovered/armed plot, --green/--amber tint payout text; the dusk-grass
 // checker matches the .game-canvas gradient.
+//
+// Painterly night-festival lighting pass (Sword-of-Ditto mood, no new art):
+// a camera-level dusk grade + vignette, a warm additive glow pool behind the
+// grid, speckled grass tile textures, soft radial shadows under buildings, a
+// glow halo on shrines, and low ambient dust motes + falling sakura petals.
+// Everything is generated once via Canvas textures / Phaser's postFX + a
+// couple of manual tween-chain "drift" loops (same recipe as _driftClouds) —
+// still zero image assets, still purely cosmetic.
 // ============================================================================
 import * as Phaser from '../../../vendor/phaser.esm.js';
 import { GRID_COLS, GRID_ROWS, GRID_CELLS, buildingById, RES_EMOJI } from '../../game/buildings.js';
@@ -17,6 +25,7 @@ const TILE = 88;
 const DPR = () => window.devicePixelRatio || 1;
 const VILLAGER_GLYPHS = ['🧑‍🌾', '👩‍🌾', '🧒', '👴', '🧑‍🍳', '👧', '🧑‍🔧', '👵'];
 const DECOR_GLYPHS = ['🌲', '🌳', '🌳', '🌲', '🌾', '🌸', '🪨'];
+const GLOW_GOLD = 0xf2bd4e;
 
 // Tiny seeded PRNG (mulberry32) so the decor ring is identical on every load.
 function seededRng(seed) {
@@ -50,9 +59,18 @@ export class VillageScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.ox = (width - GRID_COLS * TILE) / 2;
     this.oy = (height - GRID_ROWS * TILE) / 2;
+    this._generateTextures();
+    this._lightMood();
+    // A warm glow pool behind the whole grid — the festival's ambient light
+    // bleeding onto the grass, additive so it only ever brightens.
+    this.add.image(this.ox + (GRID_COLS * TILE) / 2, this.oy + (GRID_ROWS * TILE) / 2, 'vGlow')
+      .setBlendMode(Phaser.BlendModes.ADD).setDepth(-2);
     for (let i = 0; i < GRID_CELLS; i++) {
       const { x, y } = this.cellXY(i);
       const c = i % GRID_COLS, r = Math.floor(i / GRID_COLS);
+      // Speckled grass texture under the plate — purely visual, sits behind
+      // the interactive rect below so hover/tap hit-testing is untouched.
+      this.add.image(x, y, (c + r) % 2 ? 'vTile1' : 'vTile0').setDepth(-1);
       // A dark sliver under each plate so the plot reads raised off the grass.
       this.add.rectangle(x, y + 3, TILE - 4, TILE - 4, 0x000000, 0.22);
       const tile = this.add.rectangle(x, y, TILE - 4, TILE - 4, 0xffe9c0, (c + r) % 2 ? 0.05 : 0.10)
@@ -66,7 +84,62 @@ export class VillageScene extends Phaser.Scene {
     }
     this._plantDecor();
     this._driftClouds();
+    this._driftMotes();
+    this._driftPetals();
     if (this.onReady) this.onReady();
+  }
+
+  // Camera-level dusk grade: a soft vignette framing the diorama plus a touch
+  // more saturation/contrast for a richer, less flat night-festival mood.
+  // WebGL-only (postFX no-ops under the Canvas renderer fallback) — guarded
+  // so an unsupported renderer just skips the grade instead of throwing.
+  _lightMood() {
+    try {
+      const cam = this.cameras.main;
+      cam.postFX.addVignette(0.5, 0.5, 0.82, 0.35);
+      const cm = cam.postFX.addColorMatrix();
+      cm.saturate(0.12);
+      cm.contrast(1.05);
+      cm.brightness(1.02);
+    } catch { /* Canvas-renderer fallback: no postFX pipeline, skip the grade */ }
+  }
+
+  // One-time Canvas-drawn textures: a big soft radial glow, a small soft
+  // shadow puddle, a tiny glow-dot for the ambient dust motes, and two
+  // checker-parity speckled grass tiles. Generated once at boot; everything
+  // downstream just stamps these as ordinary (non-interactive) images.
+  _generateTextures() {
+    const radial = (key, w, h, stops) => {
+      const tex = this.textures.createCanvas(key, w, h);
+      const ctx = tex.getContext();
+      const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) / 2);
+      for (const [at, color] of stops) g.addColorStop(at, color);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      tex.refresh();
+    };
+    radial('vGlow', 900, 620, [
+      [0, 'rgba(242,189,78,0.30)'], [0.55, 'rgba(242,189,78,0.10)'], [1, 'rgba(242,189,78,0)'],
+    ]);
+    radial('vShadow', 70, 34, [
+      [0, 'rgba(0,0,0,0.40)'], [0.7, 'rgba(0,0,0,0.16)'], [1, 'rgba(0,0,0,0)'],
+    ]);
+    radial('vMote', 14, 14, [
+      [0, 'rgba(255,224,160,0.9)'], [1, 'rgba(255,224,160,0)'],
+    ]);
+    const rnd = seededRng(0xa11ce);
+    for (const parity of [0, 1]) {
+      const tex = this.textures.createCanvas(`vTile${parity}`, TILE, TILE);
+      const ctx = tex.getContext();
+      ctx.fillStyle = parity ? 'rgba(255,233,192,0.05)' : 'rgba(255,233,192,0.09)';
+      ctx.fillRect(0, 0, TILE, TILE);
+      for (let k = 0; k < 60; k++) {
+        const x = rnd() * TILE, y = rnd() * TILE, r = 1 + rnd() * 2.2;
+        ctx.fillStyle = rnd() > 0.85 ? 'rgba(242,189,78,0.10)' : `rgba(255,233,192,${(0.03 + rnd() * 0.05).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      tex.refresh();
+    }
   }
 
   // A ring of greenery just outside the plots — seeded, so the same forest
@@ -112,6 +185,47 @@ export class VillageScene extends Phaser.Scene {
     spawn(this.scale.width * 0.7, 36, 22, 430);
   }
 
+  // A trickle of warm dust motes drifting up out of the grid — ambient
+  // festival-light atmosphere, always on, well below the cloud layer.
+  _driftMotes() {
+    const spawn = () => {
+      const x = this.ox + Math.random() * GRID_COLS * TILE;
+      const y = this.oy + GRID_ROWS * TILE - Math.random() * 60;
+      const mote = this.add.image(x, y, 'vMote').setAlpha(0).setDepth(7)
+        .setBlendMode(Phaser.BlendModes.ADD).setScale(0.5 + Math.random() * 0.7);
+      const rise = 90 + Math.random() * 70, sway = (Math.random() - 0.5) * 40;
+      const dur = 4200 + Math.random() * 2400;
+      this.tweens.add({ targets: mote, alpha: 0.5, duration: 900 });
+      this.tweens.add({ targets: mote, alpha: 0, delay: Math.max(0, dur - 1200), duration: 1200 });
+      this.tweens.add({
+        targets: mote, x: x + sway, y: y - rise, duration: dur, ease: 'Sine.easeInOut',
+        onComplete: () => mote.destroy(),
+      });
+      this.time.delayedCall(450 + Math.random() * 650, spawn);
+    };
+    spawn();
+  }
+
+  // Sakura petals fall through the scene now and then, swaying as they go —
+  // an echo of the static 🌸 decor ring, just given a little life.
+  _driftPetals() {
+    const spawn = () => {
+      const x0 = this.ox + Math.random() * GRID_COLS * TILE;
+      const petal = this._emojiText(x0, this.oy - 24, '🌸', 12 + Math.random() * 6)
+        .setAlpha(0).setDepth(7);
+      const dur = 5200 + Math.random() * 3000;
+      this.tweens.add({ targets: petal, alpha: 0.85, duration: 500 });
+      this.tweens.add({ targets: petal, alpha: 0, delay: Math.max(0, dur - 800), duration: 800 });
+      this.tweens.add({
+        targets: petal, y: this.oy + GRID_ROWS * TILE + 24, angle: 140, duration: dur, ease: 'Sine.easeInOut',
+        onUpdate: tw => { petal.x = x0 + Math.sin(tw.progress * Math.PI * 4) * 22; },
+        onComplete: () => petal.destroy(),
+      });
+      this.time.delayedCall(3200 + Math.random() * 3600, spawn);
+    };
+    this.time.delayedCall(1800, spawn);
+  }
+
   _hover(i, on) {
     this.hoverIdx = on ? i : -1;
     this.tiles[i].setFillStyle(on ? 0xf2bd4e : 0xffe9c0, on ? 0.22 : this.tiles[i].baseAlpha);
@@ -136,7 +250,7 @@ export class VillageScene extends Phaser.Scene {
       if (cell && cell.id === 'hut') huts++;
       const cur = this.sprites.get(i);
       if (!cell) {
-        if (cur) { cur.emoji.destroy(); cur.badge.destroy(); this.sprites.delete(i); }
+        if (cur) { cur.emoji.destroy(); cur.badge.destroy(); cur.shadow.destroy(); this.sprites.delete(i); }
         continue;
       }
       const def = buildingById(cell.id);
@@ -148,11 +262,18 @@ export class VillageScene extends Phaser.Scene {
         cur.level = cell.level;
       } else {
         const { x, y } = this.cellXY(i);
+        // A soft radial puddle grounds the building instead of a hard-edged
+        // rect — cheap volumetric depth without any new art.
+        const shadow = this.add.image(x, y + 21, 'vShadow').setDepth(2);
         const emoji = this._emojiText(x, y - 2, def.emoji, 42).setDepth(4);
         const badge = this.add.text(x + 27, y + 25, badgeText, {
           fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffd984',
         }).setOrigin(0.5).setResolution(DPR()).setDepth(4);
-        this.sprites.set(i, { id: cell.id, level: cell.level, emoji, badge });
+        // The shrine is the festival's light source — give it a warm halo.
+        if (cell.id === 'shrine') {
+          try { emoji.postFX.addGlow(GLOW_GOLD, 0.6, 0, false, 0.4, 10); } catch { /* Canvas fallback */ }
+        }
+        this.sprites.set(i, { id: cell.id, level: cell.level, emoji, badge, shadow });
         this._pop(emoji);
       }
     }
