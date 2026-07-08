@@ -550,7 +550,13 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 }
 .ck-focused .soroban-wrap { align-items: center; }
 .ck-focused .soroban { transform-origin: center center; }
-.ck-focused .tut-prompt { font-size: 1.9rem; }
+/* The title and beads readout grow in focus mode and refuse to shrink below
+   their content width — give the title its own row so the payout column
+   (the only flexible child) always keeps real width instead of being
+   squeezed toward 0px, which forced its wrapped text into a 1-word column. */
+.ck-focused .ck-strip-row { flex-wrap: wrap; }
+.ck-focused .tut-prompt { flex: 1 1 100%; font-size: 1.9rem; }
+.ck-focused .ck-strip-mid { min-width: 220px; }
 .ck-focused .tut-sub, .ck-focused .game-pay { font-size: 0.8rem; }
 /* The popup has room — the payout story and feedback wrap instead of ellipsizing. */
 .ck-focused .tut-sub, .ck-focused .game-pay,
