@@ -14,6 +14,22 @@
 // ============================================================================
 
 import { MOVE_KEYS } from '../domain/movePlan.js';
+import { CUBE_FACES } from '../domain/pegs.js';
+import { CUBE_LAYOUT, cubeFaceValues, cubeName } from '../domain/faces.js';
+
+// A digit as a die face: each face-emoji in its fixed cell (taxi center, alien
+// top, tangerine left, rose right, wave bottom), lit when the digit contains it
+// (6-9 = rose + earth). Empty cells keep the plus-frame visible, so the same
+// slots always read the same face — the whole point of a spatial percept.
+export function cubeFaceGrid(d) {
+  const on = new Set(cubeFaceValues(d));
+  const cells = CUBE_LAYOUT.map(({ pos, value }) => {
+    const active = on.has(value);
+    const f = CUBE_FACES[value];
+    return `<span class="cg-cell cg-${pos}${active ? ' on' : ''}"${active ? ` title="${f.word}"` : ''}>${active ? f.emoji : ''}</span>`;
+  }).join('');
+  return `<span class="die-face" role="img" aria-label="${cubeName(d)}">${cells}</span>`;
+}
 
 const INK = 'var(--ink)';
 const DATA = 'var(--data)';     // indigo — every chart mark

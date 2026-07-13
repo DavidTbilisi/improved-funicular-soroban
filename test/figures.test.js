@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
-  figSolveTimes, figFumbles,
+  figSolveTimes, figFumbles, cubeFaceGrid,
 } from '../src/view/figures.js';
 import { fumbleRows } from '../src/tutorial/faultLog.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
@@ -16,6 +16,27 @@ test('figure wraps a plate with numbered caption chrome', () => {
   assert.ok(f.includes('Fig. 3'));
   assert.ok(f.includes('A caption.'));
   assert.ok(f.includes('fig-plate'));
+});
+
+test('cubeFaceGrid puts each face in its fixed die cell (opposite faces sum to 7)', () => {
+  const home = { 1: 'cg-center', 2: 'cg-left', 3: 'cg-top', 4: 'cg-bottom', 5: 'cg-right' };
+  const emoji = { 1: '🚕', 2: '🍊', 3: '👽', 4: '🌊', 5: '🌹' };
+  for (let d = 1; d <= 5; d++) {
+    const g = cubeFaceGrid(d);
+    assert.equal(count(g, / on"/g), 1, `digit ${d} lights exactly one face`);
+    assert.match(g, new RegExp(`cg-cell ${home[d]} on"[^>]*>${emoji[d]}<`), `digit ${d} in its home cell`);
+  }
+});
+
+test('cubeFaceGrid lights rose + earth for 6-9 and nothing for 0', () => {
+  assert.equal(count(cubeFaceGrid(0), / on"/g), 0);            // bare column
+  for (let d = 6; d <= 9; d++) {
+    const g = cubeFaceGrid(d);
+    assert.equal(count(g, / on"/g), 2, `digit ${d} lights rose + one earth`);
+    assert.ok(g.includes('🌹'), `digit ${d} carries the rose`);
+  }
+  assert.match(cubeFaceGrid(8), /cg-top on"[^>]*>👽</);         // 8 = rose + alien(top)
+  assert.match(cubeFaceGrid(6), /cg-center on"[^>]*>🚕</);      // 6 = rose + taxi(center)
 });
 
 test('rodGlyph encodes the digit in bead fills (5 beads per rod)', () => {

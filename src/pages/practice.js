@@ -9,6 +9,7 @@ import { TUTORIAL_LEVELS } from '../tutorial/levels.js';
 import { LocalStorageProgressStore, TutorialProgress } from '../tutorial/progressStore.js';
 import { TutorialSession } from '../tutorial/tutorialSession.js';
 import { TutorialView } from '../view/tutorialView.js';
+import { RodRailView } from '../view/rodRailView.js';
 import { figure, figLadder, figComplements, figTradeChain, figSolveTimes, figFumbles } from '../view/figures.js';
 import { planAdd } from '../domain/movePlan.js';
 import { SolveLog } from '../tutorial/solveLog.js';
@@ -82,6 +83,14 @@ const renderGraduate = infos => {
   if (done) el.innerHTML = '🎓 Ladder cleared — repeated addition and subtraction were training wheels. Graduate to the professional rod method in the <a href="trainer.html">Mult / Div trainer</a>.';
 };
 renderGraduate(tutorial.levelInfos());
+
+// --- Rod rail: the focused rod, lifted out like a calendar month tab ---------
+// Observes the store (for the digit on the focused rod) and follows the board's
+// focus (arrows / G-H / a step's snap). It is the "which rod am I on?" anchor
+// that survives the mnemonic-mental fade, when the beads themselves are hidden.
+const rail = new RodRailView($('tutRail'), shell.soroban.el).build();
+shell.store.subscribe(s => rail.update(s));
+shell.setFocusHook(exp => rail.setFocus(exp));
 
 // --- Mnemonic-mental track: the support-fade ladder on the shared board ------
 // Beads → Percept (cube faces) → Mental (imagined rods). It is the same live

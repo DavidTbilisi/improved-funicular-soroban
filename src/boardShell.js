@@ -137,7 +137,11 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   const MIN_EXP = -FRAC_COLS, MAX_EXP = INT_COLS - 1;
   const colDigit = e => rodValue(e >= 0 ? store.int[e] : store.frac[-e - 1]);  // per-rod: exact past 15 digits
   const placeName = e => e >= 0 ? (INT_PLACES[e] || `10^${e}`) : (FRAC_PLACES[-e - 1] || `10^${e}`);
-  const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); };
+  // A page can watch focus (the rod your keys land on) to drive its own
+  // indicator — e.g. the practice page's rod rail. Fires on every focus change,
+  // keyboard or programmatic.
+  let focusHook = () => {};
+  const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); focusHook(focus); };
 
   // A page (e.g. the tutorial) can register a fault sink; a rejected move or a
   // reset is reported to it so the page can spoil a "clean" solve — and with
@@ -217,6 +221,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     store, dispatch, bus, soroban, readout, sound, metronome, coachEl,
     setFocus, refreshUndo,
     setFaultHook(fn) { faultHook = fn; },
+    setFocusHook(fn) { focusHook = fn; },
     // The shell's three top-level chunks, so a page can rearrange them (e.g.
     // pull the live board into its own practice panel). Moving DOM nodes keeps
     // their ids and listeners, so everything above stays wired.

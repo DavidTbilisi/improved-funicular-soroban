@@ -335,6 +335,47 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .support-track .st-seg button, .support-track .st-peek { padding: 5px 10px; font-size: 0.76rem; }
 .support-track .st-seg button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 .support-track .st-hint { font-size: 0.76rem; color: var(--stone); flex: 1 1 12ch; }
+
+/* ── Rod rail: the focused-rod indicator (icons only) ───────────────────────
+   The perpetual-calendar "lift the active tab" mechanism, adapted to the board:
+   one slot per rod showing its food-peg emoji (the place), the focused rod lifts
+   out, and a small panel below (positioned in JS) shows its digit as a die face.
+   No text — the peg is the place, the die is the digit. Under the mnemonic-mental
+   fade this is the only "which rod am I on?" cue left once the beads go dark. */
+.rod-rail { position: relative; margin: 8px 0 2px; padding: 10px 2px 48px; }
+/* slots are absolutely positioned to overlay the board columns (left/width set
+   by RodRailView.align from the measured board rods), so the pegs line up with
+   the rods beneath them through the board's zoom-fit. */
+.rr-track { position: relative; height: 26px; }
+.rr-slot { position: absolute; top: 0; height: 26px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--paper-2);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; }
+.rr-peg { font-size: 0.92rem; line-height: 1; }
+.rr-slot.frac .rr-peg { display: inline-block; transform: rotate(180deg); } /* flipped = fractional */
+.rr-dp { position: absolute; top: 0; height: 26px; } /* invisible spacer over the board's decimal point */
+/* the lifted tab */
+.rr-slot.on { transform: translateY(-6px) scale(1.16); transform-origin: bottom center; background: var(--well);
+  border-color: var(--gold-2); box-shadow: 0 4px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); z-index: 2; }
+/* the die-face panel below, slid under the focused slot (left set in JS) */
+.rr-panel { position: absolute; top: 100%; margin-top: 7px; transform: translateX(-50%); z-index: 3;
+  display: inline-flex; padding: 4px 7px; border: 1px solid var(--gold-2); border-radius: 8px;
+  background: var(--well); box-shadow: 0 3px 0 var(--gold-edge); }
+
+/* ── Die-face grid: each cube emoji in its fixed cell ───────────────────────
+   taxi center, alien top, tangerine left, rose right, wave bottom (opposite
+   faces sum to 7). A digit lights its faces; empty cells keep the plus-frame
+   visible so a slot always reads the same face. Reusable anywhere a digit's
+   percept should read as one die. Size is driven by the context's font-size. */
+.die-face { display: inline-grid; vertical-align: middle; line-height: 1; gap: 0;
+  grid-template-columns: repeat(3, 1.5em); grid-template-rows: repeat(3, 1.5em);
+  grid-template-areas: ".  t  ." "l  c  r" ".  b  ."; }
+/* each cell is a full 1.5em square so the emoji sits centered in its own row and
+   column — the tracks must be >= the emoji glyph or the faces overlap vertically */
+.cg-cell { display: flex; align-items: center; justify-content: center; width: 1.5em; height: 1.5em; overflow: hidden; }
+.cg-top { grid-area: t; } .cg-left { grid-area: l; } .cg-center { grid-area: c; }
+.cg-right { grid-area: r; } .cg-bottom { grid-area: b; }
+.cg-cell:not(.on)::after { content: '·'; color: var(--faint); }
+.rr-panel .die-face { font-size: 0.92rem; }
 .rt-head { margin-bottom: 10px; }
 .rt-title { font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--ink); }
 .rt-setup { font-size: 0.82rem; color: var(--stone); line-height: 1.6; margin: 2px auto 12px; max-width: 62ch; }
