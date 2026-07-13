@@ -39,3 +39,20 @@ export function cubeFaceValues(d) {
   if (d <= 5) return [d];
   return [5, d - 5];
 }
+
+// Position → value, inverted from CUBE_LAYOUT (the single source for the die grid).
+const FACE_VALUE = Object.freeze(Object.fromEntries(CUBE_LAYOUT.map(f => [f.pos, f.value])));
+
+// The inverse of cubeFaceValues: which digit is spelled by a set of lit die cells.
+// A digit is at most one earth cell (center 1 / left 2 / top 3 / bottom 4) plus the
+// rose (right 5), so 6-9 = right + earth. The center (1) has no arrow of its own, so
+// pressing top+bottom together stands in for it (the two vertical arms meeting in the
+// middle) — the chord keyboard's way to reach the center cell. Returns 0 for the empty
+// set and null for anything that isn't a real die face (e.g. two earth cells at once).
+export function digitFromFaces(positions) {
+  const set = new Set(positions);
+  if (set.has('top') && set.has('bottom')) { set.delete('top'); set.delete('bottom'); set.add('center'); }
+  const earth = [...set].filter(p => p !== 'right');
+  if (earth.length > 1 || earth.some(p => FACE_VALUE[p] === undefined)) return null;
+  return (set.has('right') ? 5 : 0) + (earth.length ? FACE_VALUE[earth[0]] : 0);
+}

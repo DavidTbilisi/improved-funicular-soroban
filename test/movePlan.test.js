@@ -76,6 +76,6 @@ test('direct and small plans pass through unchanged', () => {
 
 test('display helpers: typographic chain text and home-row keys', () => {
   assert.equal(stepsText(['+10', '-5', '+2']), '+10 −5 +2');
-  assert.equal(keysText(['+10', '-5', '+2']), 'I then R then K');
+  assert.equal(keysText(['+10', '-5', '+2']), 'U then F then J');
   assert.equal(keysText(['+42']), null);
 });

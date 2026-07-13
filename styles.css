@@ -164,8 +164,9 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .rod.frac .bead { background-color: var(--violet-soft); }
 .rod.frac .bead.active { background-color: var(--violet); box-shadow: 0 0 10px rgba(171, 141, 242, 0.45), 0 2px 3px rgba(0, 0, 0, 0.45); }
 .rod-value { font-family: var(--mono); margin-top: 10px; font-size: 1.1rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; width: 26px; text-align: center; }
-.rod-cube { margin-top: 4px; font-size: 0.98rem; line-height: 1.1; text-align: center; min-height: 1.2em; letter-spacing: 1px; }
+.rod-cube { margin-top: 4px; font-size: 0.98rem; line-height: 1.1; text-align: center; min-height: 1.2em; }
 .rod-cube.bare { color: var(--faint); font-size: 0.8rem; }
+.rod-cube .die-face { font-size: 0.6rem; } /* the per-rod digit as a die face, sized to the rod */
 .rod-peg { margin-top: 5px; font-size: 1.15rem; line-height: 1; text-align: center; display: inline-block; }
 .rod.frac .rod-peg { transform: rotate(180deg); }
 .rod-letter { font-family: var(--mono); margin-top: 3px; font-size: 0.72rem; font-weight: 600; color: var(--stone); text-align: center; }
@@ -324,7 +325,8 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
    soroban. `peek` flashes the true board back (also fired on each solve). */
 .soroban.sup-1 .rod-frame, .soroban.sup-2 .rod-frame,
 .soroban.sup-1 .rod-value, .soroban.sup-2 .rod-value { visibility: hidden; }
-.soroban.sup-1 .rod-cube { font-size: 1.7rem; color: var(--ink); }
+.soroban.sup-1 .rod-cube { color: var(--ink); }
+.soroban.sup-1 .rod-cube .die-face { font-size: 0.72rem; } /* Percept: the die is the read, so enlarge it */
 .soroban.sup-2 .rod-cube { visibility: hidden; }
 .soroban.peek .rod-frame, .soroban.peek .rod-value, .soroban.peek .rod-cube { visibility: visible; }
 

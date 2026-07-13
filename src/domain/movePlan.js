@@ -17,11 +17,12 @@
 // ============================================================================
 import { classifyAdd, classifySub } from './soroban.js';
 
-// Keyboard for each primitive move — mirrors the board-shell home-row layout
-// (right hand adds, left hand mirrors it for subtraction).
+// Keyboard for each primitive move — mirrors the board-shell die-cross layout
+// (right hand adds, left hand mirrors it for subtraction): center 1, left 2,
+// top 3, bottom 4, right 5. The ±10 carry is not a die cell (its own key).
 export const MOVE_KEYS = Object.freeze({
-  '+1': 'J', '+2': 'K', '+3': 'L', '+4': ';', '+5': 'U', '+10': 'I',
-  '-1': 'F', '-2': 'D', '-3': 'S', '-4': 'A', '-5': 'R', '-10': 'E',
+  '+1': 'K', '+2': 'J', '+3': 'I', '+4': ',', '+5': 'L', '+10': 'U',
+  '-1': 'D', '-2': 'S', '-3': 'E', '-4': 'C', '-5': 'F', '-10': 'R',
 });
 
 const tokens = move => move.split(/\s+/);

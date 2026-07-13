@@ -104,7 +104,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'direct', title: 'Direct add / subtract', floor: 8, timeFloorMs: 3000,
-    teach: 'When the beads you need are free, just move them — no complement. <kbd>J K L ;</kbd> add 1–4 earth, <kbd>U</kbd> sets 5; <kbd>F D S A</kbd> subtract, <kbd>R</kbd> clears 5.',
+    teach: 'When the beads you need are free, just move them — no complement. The <b>die cross</b> adds earth <kbd>K</kbd>1 <kbd>J</kbd>2 <kbd>I</kbd>3 <kbd>,</kbd>4 and <kbd>L</kbd> sets 5; the left hand mirrors it — <kbd>D</kbd> <kbd>S</kbd> <kbd>E</kbd> <kbd>C</kbd> subtract 1–4, <kbd>F</kbd> clears 5.',
     gen(rng) {
       for (let k = 0; k < 80; k++) {
         const add = rng.int(2) === 0;
@@ -118,7 +118,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'small-add', title: 'Small friend +', floor: 8, timeFloorMs: 3500,
-    teach: 'Out of earth beads but the digit stays under 10? Use the <b>5-bead</b>: <b>+d = +5 −(5−d)</b>. Friends that sum to 5: 1↔4, 2↔3. e.g. 4 + 3 → <kbd>U</kbd> then <kbd>D</kbd> (+5 −2).',
+    teach: 'Out of earth beads but the digit stays under 10? Use the <b>5-bead</b>: <b>+d = +5 −(5−d)</b>. Friends that sum to 5: 1↔4, 2↔3. e.g. 4 + 3 → <kbd>L</kbd> then <kbd>S</kbd> (+5 −2).',
     gen(rng) {
       for (let k = 0; k < 80; k++) {
         const a = rng.int(10), b = 1 + rng.int(4);
@@ -130,7 +130,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'small-sub', title: 'Small friend −', floor: 8, timeFloorMs: 3500,
-    teach: 'The mirror: not enough earth beads to remove, but the 5-bead is there? <b>−d = −5 +(5−d)</b>. e.g. 7 − 3 → <kbd>R</kbd> then <kbd>K</kbd> (−5 +2).',
+    teach: 'The mirror: not enough earth beads to remove, but the 5-bead is there? <b>−d = −5 +(5−d)</b>. e.g. 7 − 3 → <kbd>F</kbd> then <kbd>J</kbd> (−5 +2).',
     gen(rng) {
       for (let k = 0; k < 80; k++) {
         const a = rng.int(10), b = 1 + rng.int(4);
@@ -142,7 +142,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'big-add', title: 'Big friend + (carry)', floor: 8, timeFloorMs: 4500,
-    teach: 'When a digit would cross 10, <b>carry</b>: <b>+d = +10 −(10−d)</b>. <kbd>I</kbd> adds 10 to the next rod; then subtract the complement here. e.g. 8 + 5 → <kbd>I</kbd> then <kbd>R</kbd> (+10 −5).',
+    teach: 'When a digit would cross 10, <b>carry</b>: <b>+d = +10 −(10−d)</b>. <kbd>U</kbd> adds 10 to the next rod; then subtract the complement here. e.g. 8 + 5 → <kbd>U</kbd> then <kbd>F</kbd> (+10 −5).',
     gen(rng) {
       for (let k = 0; k < 80; k++) {
         const a = rng.int(10), b = 1 + rng.int(9);
@@ -154,7 +154,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'big-sub', title: 'Big friend − (borrow)', floor: 8, timeFloorMs: 4500,
-    teach: 'The mirror: <b>borrow</b> from the next rod: <b>−d = −10 +(10−d)</b>. <kbd>E</kbd> subtracts 10 from the next rod; then add the complement here. e.g. 13 − 5 → <kbd>E</kbd> then <kbd>U</kbd> (−10 +5).',
+    teach: 'The mirror: <b>borrow</b> from the next rod: <b>−d = −10 +(10−d)</b>. <kbd>R</kbd> subtracts 10 from the next rod; then add the complement here. e.g. 13 − 5 → <kbd>R</kbd> then <kbd>L</kbd> (−10 +5).',
     gen(rng) {
       for (let k = 0; k < 80; k++) {
         const A = 10 + rng.int(9), b = 1 + rng.int(9); // A = 10..18
@@ -169,7 +169,7 @@ export const TUTORIAL_LEVELS = [
     // NOTE: inserted at index 6 after release — progressStore migrates older
     // saved `unlocked` counts past this slot (see TutorialProgress._data).
     id: 'compound', title: 'Compound trades', floor: 6, timeFloorMs: 6000,
-    teach: 'Sometimes one trade opens another: <b>6 + 7</b> crosses ten, so +7 = +10 −3 — but −3 is blocked (only 1 earth bead down), so it trades too: −3 = −5 +2. <b>Never plan the whole chain.</b> Ask one question per move — <i>can I do this directly? if not, which trade?</i> — and the chain unrolls itself: <kbd>I</kbd> <kbd>R</kbd> <kbd>K</kbd>.',
+    teach: 'Sometimes one trade opens another: <b>6 + 7</b> crosses ten, so +7 = +10 −3 — but −3 is blocked (only 1 earth bead down), so it trades too: −3 = −5 +2. <b>Never plan the whole chain.</b> Ask one question per move — <i>can I do this directly? if not, which trade?</i> — and the chain unrolls itself: <kbd>U</kbd> <kbd>F</kbd> <kbd>J</kbd>.',
     gen(rng) {
       for (let k = 0; k < 200; k++) {
         const add = rng.int(2) === 0;
@@ -187,7 +187,7 @@ export const TUTORIAL_LEVELS = [
   },
   {
     id: 'multi', title: 'Multi-digit', floor: 6, timeFloorMs: 9000,
-    teach: 'Chain the rules across columns. Focus a rod with <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>G</kbd>/<kbd>H</kbd>); when a column overflows, carry <kbd>I</kbd> into the next; when it underflows, borrow <kbd>E</kbd>.',
+    teach: 'Chain the rules across columns. Focus a rod with <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>G</kbd>/<kbd>H</kbd>); when a column overflows, carry <kbd>U</kbd> into the next; when it underflows, borrow <kbd>R</kbd>.',
     gen(rng) {
       for (let k = 0; k < 120; k++) {
         const add = rng.int(2) === 0;

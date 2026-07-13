@@ -94,7 +94,7 @@ test('nested hints narrate every trade down to keys', () => {
   const h = big.hint({ a: 6, b: 7, op: '+' });
   assert.match(h, /\+7 = \+10 −3/);
   assert.match(h, /−3 = −5 \+2/);
-  assert.match(h, /<b>\+10 −5 \+2<\/b> \(I then R then K\)/);
+  assert.match(h, /<b>\+10 −5 \+2<\/b> \(U then F then J\)/);
 });
 
 test('multi-digit level uses two-digit operands and a non-negative result', () => {

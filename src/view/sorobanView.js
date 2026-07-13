@@ -7,7 +7,8 @@
 import { INT_COLS, FRAC_COLS, INT_PLACES, FRAC_PLACES, columnLetter } from '../domain/config.js';
 import { rodValue } from '../domain/rod.js';
 import { ALPHABET_PEGS } from '../domain/pegs.js';
-import { cubeEmojis, cubeName } from '../domain/faces.js';
+import { cubeName } from '../domain/faces.js';
+import { cubeFaceGrid } from './figures.js';
 
 export class SorobanView {
   constructor(containerEl, { onToggleSky, onClickEarth }) {
@@ -126,7 +127,7 @@ export class SorobanView {
         const d = rodValue(rod);
         document.getElementById(`rod-${kind}-value-${i}`).textContent = d;
         const cubeEl = document.getElementById(`rod-${kind}-cube-${i}`);
-        cubeEl.textContent = d === 0 ? '·' : cubeEmojis(d);
+        cubeEl.innerHTML = d === 0 ? '·' : cubeFaceGrid(d); // die face: each emoji in its fixed cell
         cubeEl.className = 'rod-cube' + (d === 0 ? ' bare' : '');
         cubeEl.title = cubeName(d);
       }

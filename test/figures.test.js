@@ -8,6 +8,7 @@ import {
 import { fumbleRows } from '../src/tutorial/faultLog.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
 import { planAdd } from '../src/domain/movePlan.js';
+import { cubeFaceValues, CUBE_LAYOUT, digitFromFaces } from '../src/domain/faces.js';
 
 const count = (s, re) => (s.match(re) || []).length;
 
@@ -37,6 +38,23 @@ test('cubeFaceGrid lights rose + earth for 6-9 and nothing for 0', () => {
   }
   assert.match(cubeFaceGrid(8), /cg-top on"[^>]*>👽</);         // 8 = rose + alien(top)
   assert.match(cubeFaceGrid(6), /cg-center on"[^>]*>🚕</);      // 6 = rose + taxi(center)
+});
+
+test('digitFromFaces inverts cubeFaceValues for every digit (the chord round-trip)', () => {
+  const posOf = Object.fromEntries(CUBE_LAYOUT.map(f => [f.value, f.pos])); // value → die cell
+  for (let d = 1; d <= 9; d++) {
+    const positions = cubeFaceValues(d).map(v => posOf[v]);                 // the cells d lights
+    assert.equal(digitFromFaces(positions), d, `digit ${d} round-trips through its die cells`);
+  }
+  assert.equal(digitFromFaces([]), 0, 'no cells → 0 (bare column)');
+});
+
+test('digitFromFaces reads top+bottom as the center (1), and rejects non-die combos', () => {
+  assert.equal(digitFromFaces(['top', 'bottom']), 1);            // up+down stand in for the center
+  assert.equal(digitFromFaces(['top', 'bottom', 'right']), 6);   // center + rose = 6
+  assert.equal(digitFromFaces(['left', 'right']), 7);            // 2 + 5
+  assert.equal(digitFromFaces(['top', 'left']), null);           // two earth cells: not a die face
+  assert.equal(digitFromFaces(['left', 'top', 'right']), null);  // ditto, even with the rose
 });
 
 test('rodGlyph encodes the digit in bead fills (5 beads per rod)', () => {
@@ -94,7 +112,7 @@ test('figTradeChain walks 6+7 through every intermediate board state', () => {
   const f = figTradeChain(6, planAdd(6, 7));
   for (const v of ['6', '16', '11', '13']) assert.ok(f.includes(`>${v}</text>`), `frame value ${v}`);
   for (const m of ['+10', '−5', '+2']) assert.ok(f.includes(`>${m}</text>`), `move label ${m}`);
-  for (const k of ['I', 'R', 'K']) assert.ok(f.includes(`>${k}</text>`), `key label ${k}`);
+  for (const k of ['U', 'F', 'J']) assert.ok(f.includes(`>${k}</text>`), `key label ${k}`);
   assert.equal(count(f, /<ellipse/g), 4 * 2 * 5, 'four frames of two rods, five beads each');
 });
 

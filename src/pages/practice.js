@@ -113,7 +113,7 @@ let support = setSupport(parseInt(localStorage.getItem('npv-support'), 10) || 0)
 stSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { support = setSupport(+b.dataset.sup); }));
 $('stPeek').addEventListener('click', () => shell.soroban.peek());
 // Keyboard: M cycles the fade, P peeks — both miss the board's move keys
-// (J K L ; U I / F D S A R E / G H / Q), so mental drilling stays on the home row.
+// (die cross K J I , L + U / D S E C F + R / G H / Q), so mental drilling stays clear.
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.altKey || e.ctrlKey || e.metaKey) return;

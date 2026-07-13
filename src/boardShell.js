@@ -9,8 +9,9 @@
 // ============================================================================
 import { FRAC_COLS, INT_COLS, INT_PLACES, FRAC_PLACES } from './domain/config.js';
 import { rodValue } from './domain/rod.js';
-import { earthMoveLegal, heavenMoveLegal } from './domain/soroban.js';
+import { earthMoveLegal, classifyAdd, classifySub } from './domain/soroban.js';
 import { planAdd, planSub, stepsText, keysText } from './domain/movePlan.js';
+import { digitFromFaces } from './domain/faces.js';
 import { AbacusStore } from './state/abacusStore.js';
 import { CommandBus, SetValueCommand, StepIntCommand, AddAtColumnCommand, ToggleSkyCommand, ClickEarthCommand } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
@@ -25,7 +26,7 @@ const SHELL_HTML = `
   </div>
   <div class="panel" id="shellBoard">
     <div class="soroban-wrap"><div class="soroban" id="soroban"></div></div>
-    <div class="coach" id="coach"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add</b> <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> +1..4 · <kbd>U</kbd> +5 · <kbd>I</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>F</kbd><kbd>D</kbd><kbd>S</kbd><kbd>A</kbd> −1..4 · <kbd>R</kbd> −5 · <kbd>E</kbd> −10</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
+    <div class="coach" id="coach"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add ·die cross</b> <kbd>K</kbd>1 <kbd>J</kbd>2 <kbd>I</kbd>3 <kbd>,</kbd>4 <kbd>L</kbd>5 · <kbd>U</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>D</kbd>1 <kbd>S</kbd>2 <kbd>E</kbd>3 <kbd>C</kbd>4 <kbd>F</kbd>5 · <kbd>R</kbd> −10</span><span class="kbg"><b class="kbl">chords</b> <kbd>L+J</kbd>7 <kbd>L+I</kbd>8 <kbd>L+,</kbd>9 <kbd>L+K</kbd>6</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
     <div class="sound-row">
       <button id="soundBtn" class="sound-toggle">🔊 Sound on</button>
       <span class="metro">
@@ -125,13 +126,17 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   });
   undoBtn.addEventListener('click', () => { bus.undo(); refreshUndo(); });
 
-  // --- Keyboard arithmetic (home-row soroban moves with live coaching) ------
-  const KEYMAP = {
-    KeyJ: { sign: +1, amount: 1 }, KeyK: { sign: +1, amount: 2 }, KeyL: { sign: +1, amount: 3 }, Semicolon: { sign: +1, amount: 4 },
-    KeyU: { sign: +1, amount: 5 }, KeyI: { sign: +1, amount: 10 },
-    KeyF: { sign: -1, amount: 1 }, KeyD: { sign: -1, amount: 2 }, KeyS: { sign: -1, amount: 3 }, KeyA: { sign: -1, amount: 4 },
-    KeyR: { sign: -1, amount: 5 }, KeyE: { sign: -1, amount: 10 },
-  };
+  // --- Keyboard arithmetic: the die-cross home clusters ---------------------
+  // Each hand IS the digit's die face — center 1, left 2, top 3, bottom 4,
+  // right 5 (rose) — so the keys you hold spell the digit's lit cells. The right
+  // hand adds, the left mirrors it for subtraction (same layout; the hand is the
+  // sign). Holding cells together is a CHORD: left+right = 7, up+right = 8, … —
+  // resolved by digitFromFaces (the inverse of the die grid). The ±10 carry is
+  // not a die cell, so it keeps its own keys (U / R).
+  const ADD_CELLS = { KeyK: 'center', KeyJ: 'left', KeyI: 'top', Comma: 'bottom', KeyL: 'right' };
+  const SUB_CELLS = { KeyD: 'center', KeyS: 'left', KeyE: 'top', KeyC: 'bottom', KeyF: 'right' };
+  const CHORD_MS = 45; // cells pressed within this window group into one digit
+  let chord = null;    // { sign, cells: Set<pos>, timer } — the pending press
   const coachEl = $('coach');
   let focus = 0;
   const MIN_EXP = -FRAC_COLS, MAX_EXP = INT_COLS - 1;
@@ -148,45 +153,83 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   // enough context ({kind, rule, amount}) to diagnose WHICH trade was missed.
   let faultHook = () => {};
 
-  function applyMove(sign, amount) {
+  // The beads a whole digit lands on this rod (for the coach line).
+  const beadWord = d => d === 5 ? 'heaven bead'
+    : d < 5 ? `${d} earth bead${d > 1 ? 's' : ''}` : `heaven + ${d - 5} earth`;
+
+  // Add/subtract a whole digit d (1..9) on the focused rod — STRICT: it lands
+  // only if it fits directly (classifyAdd/Sub === 'direct', which already covers
+  // the compound 6-9 = rose + earth). Otherwise it is rejected with the exact
+  // complement chain to key by hand, and reported to the fault sink — the same
+  // contract the single-key moves used, so the practice fumble chart is unchanged.
+  function applyDigit(sign, d) {
+    if (!d) return;
     const c = colDigit(focus);
     const place = placeName(focus);
-    const nbr = placeName(focus + 1);
-    const op = `${sign > 0 ? '+' : '−'}${amount}`;
-    let legal, reason, plan = null;
-    if (amount === 10) {
-      const hasNext = focus + 1 <= MAX_EXP;
-      const next = hasNext ? colDigit(focus + 1) : 0;
-      legal = hasNext && earthMoveLegal(next, 1, sign);
-      if (!legal) reason = !hasNext ? 'no column beyond the top'
-        : sign > 0 ? `${nbr} can’t take a carry bead (it’s at ${next})` : `${nbr} has no earth bead to borrow (it’s at ${next})`;
-    } else if (amount === 5) {
-      legal = heavenMoveLegal(c, sign);
-      if (!legal) { reason = sign > 0 ? 'heaven bead already set' : 'heaven bead not set'; plan = (sign > 0 ? planAdd : planSub)(c, 5); }
-    } else {
-      legal = earthMoveLegal(c, amount, sign);
-      if (!legal) { reason = sign > 0 ? 'not enough free earth beads' : 'not enough active earth beads'; plan = (sign > 0 ? planAdd : planSub)(c, amount); }
-    }
-    if (!legal) {
-      let msg = `<span class="warn">⚠ ${op} on ${place} — illegal</span>: ${reason}`;
-      if (plan) { const keys = keysText(plan.steps); msg += ` · use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''}`; }
-      coachEl.innerHTML = msg;
+    const op = `${sign > 0 ? '+' : '−'}${d}`;
+    const cl = sign > 0 ? classifyAdd(c, d) : classifySub(c, d);
+    if (cl.rule !== 'direct') {
+      const plan = (sign > 0 ? planAdd : planSub)(c, d);
+      const keys = keysText(plan.steps);
+      coachEl.innerHTML = `<span class="warn">⚠ ${op} on ${place} — needs a ${plan.rule === 'big' ? 'carry' : 'five'} trade</span>: use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''}`;
       sound.reject();
-      faultHook({ kind: 'illegal', rule: plan ? plan.rule : null, amount, sign });
+      faultHook({ kind: 'illegal', rule: plan.rule, amount: d, sign });
       return;
     }
-    dispatch(new AddAtColumnCommand(store, focus, amount, sign));
-    if (amount === 10) sound.carry(sign); else sound.bead(sign);
+    dispatch(new AddAtColumnCommand(store, focus, d, sign));
+    sound.bead(sign);
     setFocus(focus);
-    let detail;
-    if (amount === 10) detail = sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`;
-    else { const what = amount === 5 ? 'heaven bead' : `${amount} earth bead${amount > 1 ? 's' : ''}`; detail = `${what} → ${place} now ${colDigit(focus)}`; }
-    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${detail}`;
+    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? 'set' : 'clear'} ${beadWord(d)} → ${place} now ${colDigit(focus)}`;
+  }
+
+  // The ±10 carry/borrow — a bead on the NEXT rod, not a die cell of this one.
+  function applyCarry(sign) {
+    const place = placeName(focus);
+    const nbr = placeName(focus + 1);
+    const op = `${sign > 0 ? '+' : '−'}10`;
+    const hasNext = focus + 1 <= MAX_EXP;
+    const next = hasNext ? colDigit(focus + 1) : 0;
+    if (!(hasNext && earthMoveLegal(next, 1, sign))) {
+      const reason = !hasNext ? 'no column beyond the top'
+        : sign > 0 ? `${nbr} can’t take a carry bead (it’s at ${next})` : `${nbr} has no earth bead to borrow (it’s at ${next})`;
+      coachEl.innerHTML = `<span class="warn">⚠ ${op} on ${place} — illegal</span>: ${reason}`;
+      sound.reject();
+      faultHook({ kind: 'illegal', rule: null, amount: 10, sign });
+      return;
+    }
+    dispatch(new AddAtColumnCommand(store, focus, 10, sign));
+    sound.carry(sign);
+    setFocus(focus);
+    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`}`;
+  }
+
+  // Chord accumulator: die-cell keys pressed within CHORD_MS group into one
+  // digit (a single key is just a one-cell "chord"). An opposite-hand key first
+  // commits the pending group, so add and subtract never blur together.
+  function flushChord() {
+    if (!chord) return;
+    const { sign, cells, timer } = chord;
+    clearTimeout(timer);
+    chord = null;
+    const d = digitFromFaces([...cells]); // null for a non-die combo → ignored
+    if (d) applyDigit(sign, d);
+  }
+  function pushCell(sign, cell) {
+    if (chord && chord.sign !== sign) flushChord();
+    if (!chord) chord = { sign, cells: new Set(), timer: null };
+    chord.cells.add(cell);
+    clearTimeout(chord.timer);
+    chord.timer = setTimeout(flushChord, CHORD_MS);
   }
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
+    // Die-cross cells (single key or chord): accumulate, don't fire yet.
+    const cell = ADD_CELLS[e.code] || SUB_CELLS[e.code];
+    if (cell) { e.preventDefault(); if (!e.repeat) pushCell(ADD_CELLS[e.code] ? +1 : -1, cell); return; }
+    // Any other key commits a pending chord first, preserving move order.
+    flushChord();
     if (/^[0-9]$/.test(e.key) || e.key === '.') {
       e.preventDefault();
       const inp = $('numInput'); inp.value = e.key === '.' ? '0.' : e.key; inp.focus(); return;
@@ -194,8 +237,8 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
     if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
     if (e.code === 'KeyQ') { e.preventDefault(); faultHook({ kind: 'reset' }); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
-    const mv = KEYMAP[e.code];
-    if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
+    if (e.code === 'KeyU') { e.preventDefault(); applyCarry(+1); return; }
+    if (e.code === 'KeyR') { e.preventDefault(); applyCarry(-1); return; }
   });
 
   // --- Fit the board to its panel width -------------------------------------
