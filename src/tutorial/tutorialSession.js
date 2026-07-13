@@ -83,7 +83,7 @@ export class TutorialSession extends Observable {
 
   _onStore() {
     if (!this.armed || this.solved || this.idx === null) return;
-    if (this.store.scaledValue() === this.problem.targetScaled) this._solve();
+    if (this.store.scaledValue() === BigInt(this.problem.targetScaled)) this._solve();
   }
 
   _solve() {

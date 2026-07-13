@@ -83,6 +83,35 @@ const renderGraduate = infos => {
 };
 renderGraduate(tutorial.levelInfos());
 
+// --- Mnemonic-mental track: the support-fade ladder on the shared board ------
+// Beads → Percept (cube faces) → Mental (imagined rods). It is the same live
+// soroban; only its display fades, so the arithmetic and the solve-check are
+// unchanged — a mental solve is just a solve you couldn't see. Choice persists.
+const SUP_HINTS = [
+  'Beads — full support, the physical soroban.',
+  'Percept — beads hidden; read and compute on the cube-face percepts.',
+  'Mental — imagined rods; move blind, the trainer still checks your value.',
+];
+const stSeg = $('stSeg');
+const setSupport = lvl => {
+  lvl = shell.soroban.setSupport(lvl);
+  stSeg.querySelectorAll('button').forEach(b => b.classList.toggle('active', +b.dataset.sup === lvl));
+  $('stHint').textContent = SUP_HINTS[lvl];
+  localStorage.setItem('npv-support', String(lvl));
+  return lvl;
+};
+let support = setSupport(parseInt(localStorage.getItem('npv-support'), 10) || 0);
+stSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { support = setSupport(+b.dataset.sup); }));
+$('stPeek').addEventListener('click', () => shell.soroban.peek());
+// Keyboard: M cycles the fade, P peeks — both miss the board's move keys
+// (J K L ; U I / F D S A R E / G H / Q), so mental drilling stays on the home row.
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.code === 'KeyM') { e.preventDefault(); support = setSupport((support + 1) % 3); }
+  else if (e.code === 'KeyP') { e.preventDefault(); shell.soroban.peek(); }
+});
+
 // A rejected move or a reset spoils a clean solve — and is logged by the trade
 // it demanded, so the fumble chart can name what to drill.
 shell.setFaultHook(info => {
@@ -99,6 +128,7 @@ tutorial.subscribe(evt => {
   if (evt.type === 'level') { curLevel = { id: evt.id, timeFloorMs: evt.timeFloorMs }; renderTimes(); }
   if (evt.type === 'solved') {
     if (evt.justPassed) shell.sound.levelUp(); else if (evt.clean) shell.sound.solve(); else shell.sound.reject();
+    if (support > 0) shell.soroban.peek(); // faded modes: flash the landed value into view
     renderTimes();
   }
   if (evt.type === 'stopped') { curLevel = null; renderTimes(); }

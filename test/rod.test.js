@@ -19,7 +19,7 @@ test('intRodsFromVal / intValOf round-trip', () => {
   for (const v of [0, 7, 15, 90909, 4217583906]) {
     const rods = intRodsFromVal(v);
     assert.equal(rods.length, INT_COLS);
-    assert.equal(intValOf(rods), v);
+    assert.equal(intValOf(rods), BigInt(v));  // intValOf is BigInt
   }
 });
 
@@ -33,6 +33,6 @@ test('fracRodsFromStr fills FRAC_COLS and trims trailing zeros on read', () => {
 
 test('intValOf uses place weights (low index = ones)', () => {
   const rods = intRodsFromVal(1000);
-  assert.equal(intValOf(rods), 1000);
+  assert.equal(intValOf(rods), 1000n);
   assert.equal(rodValue(rods[3]), 1); // thousands place
 });

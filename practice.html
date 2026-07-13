@@ -30,9 +30,21 @@
         <button id="tutRestart">Restart level</button>
       </div>
     </div>
-    <!-- the live board is adopted here, directly under the problem -->
-    <div class="board-slot" id="tutBoardSlot"></div>
-    <p class="help help-cols" style="margin-top:14px;">Work the ladder: pick a level, then solve problems <strong>on the beads</strong> with the keyboard. The gate is <strong>automaticity</strong> — a solve only counts if it's <strong>under the level's time floor</strong> and <strong>fumble-free</strong> (an illegal move or a reset spoils it). A slow or fumbled solve <strong>resets your streak</strong>, so you must string together several fluent solves <strong>in a row</strong> to unlock the next level. 🔒 = locked · progress is saved per browser.</p>
+    <!-- the live board is adopted here, directly under the problem; the
+         mnemonic-mental fade control leads it, and the board nodes append after. -->
+    <div class="board-slot" id="tutBoardSlot">
+      <div class="support-track" id="tutSupport">
+        <span class="st-label">Board</span>
+        <div class="st-seg" id="stSeg">
+          <button type="button" data-sup="0" class="active">● Beads</button>
+          <button type="button" data-sup="1">◐ Percept</button>
+          <button type="button" data-sup="2">○ Mental</button>
+        </div>
+        <button type="button" class="st-peek" id="stPeek">👁 Peek</button>
+        <span class="st-hint" id="stHint"></span>
+      </div>
+    </div>
+    <p class="help help-cols" style="margin-top:14px;">Work the ladder: pick a level, then solve problems <strong>on the beads</strong> with the keyboard. The gate is <strong>automaticity</strong> — a solve only counts if it's <strong>under the level's time floor</strong> and <strong>fumble-free</strong> (an illegal move or a reset spoils it). A slow or fumbled solve <strong>resets your streak</strong>, so you must string together several fluent solves <strong>in a row</strong> to unlock the next level. 🔒 = locked · progress is saved per browser.<br>Going mental? The <strong>Board</strong> control fades the beads down to the <strong>cube-face percepts</strong>, then to <strong>imagined rods</strong> — solve blind and the trainer still verifies your value (press <kbd>M</kbd> to cycle the fade, <kbd>P</kbd> to peek; each solve flashes the board back).</p>
   </div>
 
   <!-- board shell mounts here; the board panel itself is adopted above -->

@@ -102,7 +102,7 @@ export class RodTrainerSession extends Observable {
 
   _onStore() {
     if (!this.armed || this.done || !this.problem) return;
-    const v = this.store.intValue();
+    const v = Number(this.store.intValue());  // rod-trainer values are small; step compares are Numbers
     const steps = this.problem.steps;
     // Find the furthest checkpoint the board now satisfies (a fluent operator may
     // clear several book-steps before we sample), starting from the current one.

@@ -22,7 +22,7 @@ const P = buildMultiplication(6, 3); // steps expected: [30618, 30018]
 test('start seeds the layout and emits problem + first step', () => {
   const { store, session, events } = make();
   session.start('mul');
-  assert.equal(store.intValue(), P.setup);
+  assert.equal(store.intValue(), BigInt(P.setup));
   assert.deepEqual(events.map(e => e.type), ['problem', 'step']);
   assert.equal(events[0].total, 2);
   assert.equal(events[0].answer, 18);
@@ -69,7 +69,7 @@ test('doStep plays the current step and advances', () => {
   const { store, session, events } = make();
   session.start('mul');
   session.doStep();
-  assert.equal(store.intValue(), P.steps[0].expected);
+  assert.equal(store.intValue(), BigInt(P.steps[0].expected));
   assert.equal(events.filter(e => e.type === 'step').pop().n, 2);
   session.doStep();
   assert.ok(events.some(e => e.type === 'solved'));

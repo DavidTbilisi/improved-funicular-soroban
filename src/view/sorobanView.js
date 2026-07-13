@@ -14,6 +14,8 @@ export class SorobanView {
     this.el = containerEl;
     this.onToggleSky = onToggleSky;
     this.onClickEarth = onClickEarth;
+    this.support = 0;      // mnemonic-mental fade level: 0 beads, 1 percept, 2 mental
+    this._peekTimer = null;
   }
 
   init() {
@@ -39,8 +41,12 @@ export class SorobanView {
     const L = columnLetter(idx);
     const peg = ALPHABET_PEGS[L];
     const place = kind === 'int' ? (INT_PLACES[idx] || ('10^' + idx)) : (FRAC_PLACES[idx] || ('10^-' + (idx + 1)));
+    // Unit-point rods: a marker on the reckoning bar at every power of 1000,
+    // like a standard soroban — ones/thousands/millions… on the integer side and
+    // the thousandths on the fraction side — so long numbers read in groups of 3.
+    const isUnit = kind === 'int' ? (idx % 3 === 0) : (idx === 2);
     const rodEl = document.createElement('div');
-    rodEl.className = 'rod' + (kind === 'frac' ? ' frac' : '');
+    rodEl.className = 'rod' + (kind === 'frac' ? ' frac' : '') + (isUnit ? ' unit' : '');
     rodEl.dataset.kind = kind;
     rodEl.dataset.place = idx;
     let earthHTML = '';
@@ -48,6 +54,7 @@ export class SorobanView {
     rodEl.innerHTML = `
       <div class="rod-frame" data-kind="${kind}" data-idx="${idx}">
         <div class="bar"></div>
+        ${isUnit ? '<div class="unit-dot"></div>' : ''}
         <div class="bead sky" id="bead-${kind}-sky-${idx}" data-kind="${kind}" data-idx="${idx}"></div>
         ${earthHTML}
       </div>
@@ -76,6 +83,31 @@ export class SorobanView {
     const set = new Set(exponents);
     this.el.querySelectorAll('.rod').forEach(r =>
       r.classList.toggle('target', r.dataset.kind === 'int' && set.has(+r.dataset.place)));
+  }
+
+  // ── Mnemonic-mental track ────────────────────────────────────────────────
+  // Support-fade ladder on the board (soroban-gym's Full Support → Mental Only):
+  //   0 = Beads   — everything visible (the physical soroban)
+  //   1 = Percept — beads + digit hidden; the cube-face percept is the read
+  //   2 = Mental  — cube also hidden; only the faint column pegs remain (imagined
+  //                 rods). Moves still land on the store, so the solve still
+  //                 verifies — a mental solve is a solve you couldn't see.
+  // The fade itself is CSS (`.sup-1`/`.sup-2` on the board, by `visibility`), so
+  // every column keeps its footprint and nothing reflows on a switch.
+  setSupport(level) {
+    this.support = Math.max(0, Math.min(2, level | 0));
+    this.el.classList.toggle('sup-1', this.support === 1);
+    this.el.classList.toggle('sup-2', this.support === 2);
+    return this.support;
+  }
+
+  // Flash the true board back for `ms` from any faded mode, then restore — the
+  // "reset with the physical frame if the image blurs" move, and the reveal that
+  // lets a mental solve still land in view.
+  peek(ms = 1300) {
+    this.el.classList.add('peek');
+    clearTimeout(this._peekTimer);
+    this._peekTimer = setTimeout(() => this.el.classList.remove('peek'), ms);
   }
 
   update(store) {

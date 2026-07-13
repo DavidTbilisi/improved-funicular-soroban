@@ -51,7 +51,7 @@ export class DecimalCodec extends Codec {
   get radix() { return 10; }
   get label() { return 'Decimal'; }
   prepare(intVal, fracStr) {
-    const code = (intVal === 0 && !fracStr) ? '' : String(intVal) + fracStr;
+    const code = (!intVal && !fracStr) ? '' : String(intVal) + fracStr;  // !intVal: 0 or 0n
     const loci = code ? groupLoci(deepPackScenes(code), s => s.digits, sealDigit) : [];
     return { code, unitCount: code.length, unitNoun: 'digit', fractionIgnored: false, loci };
   }
@@ -63,7 +63,7 @@ export class HexCodec extends Codec {
   get radix() { return 16; }
   get label() { return 'Hex'; }
   prepare(intVal, fracStr) {
-    const raw = intVal === 0 ? '' : intVal.toString(16).toUpperCase();
+    const raw = !intVal ? '' : intVal.toString(16).toUpperCase();  // !intVal: 0 or 0n
     const code = raw ? padHex(raw) : '';
     const loci = code ? groupLoci(deepPackScenesHex(raw), s => s.digits, sealHex, { radix: 16 }) : [];
     return { code, unitCount: code.length / 2, unitNoun: 'byte', fractionIgnored: !!fracStr, loci };

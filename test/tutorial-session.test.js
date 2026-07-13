@@ -34,7 +34,7 @@ const lastSolved = events => events.filter(e => e.type === 'solved').pop();
 test('starting a level seeds the beads and emits level + problem', () => {
   const { store, session, events } = makeSession();
   session.startLevel(0);
-  assert.equal(store.scaledValue(), 0);              // seeded to start
+  assert.equal(store.scaledValue(), 0n);             // seeded to start
   assert.deepEqual(events.map(e => e.type), ['level', 'problem']);
   assert.equal(events[1].timeFloorMs, 1000);
 });
@@ -125,7 +125,7 @@ test('skip reveals the answer, resets the streak, and re-seeds the same problem'
   assert.ok(skipped);
   assert.equal(skipped.text, 'do +5');
   assert.equal(session.streak, 0);
-  assert.equal(store.scaledValue(), 0);              // re-seeded to start
+  assert.equal(store.scaledValue(), 0n);             // re-seeded to start
 });
 
 test('already-unlocked progress is honored on construction', () => {

@@ -135,7 +135,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   const coachEl = $('coach');
   let focus = 0;
   const MIN_EXP = -FRAC_COLS, MAX_EXP = INT_COLS - 1;
-  const colDigit = e => e >= 0 ? Math.floor(store.intValue() / Math.pow(10, e)) % 10 : rodValue(store.frac[-e - 1]);
+  const colDigit = e => rodValue(e >= 0 ? store.int[e] : store.frac[-e - 1]);  // per-rod: exact past 15 digits
   const placeName = e => e >= 0 ? (INT_PLACES[e] || `10^${e}`) : (FRAC_PLACES[-e - 1] || `10^${e}`);
   const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); };
 
@@ -193,6 +193,25 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     const mv = KEYMAP[e.code];
     if (mv) { e.preventDefault(); applyMove(mv.sign, mv.amount); }
   });
+
+  // --- Fit the board to its panel width -------------------------------------
+  // The board's bead geometry is fixed px, so a full 23-rod strip is wider than
+  // the reading column. `zoom` scales the whole subtree *including its layout
+  // box* (unlike transform), so it just fits — no overflow, gap, or click
+  // offset. The one-screen game page runs its own transform-based fitBoard, so
+  // this is skipped there. natW is the fixed natural width, measured once.
+  if (!document.body.classList.contains('page-game')) {
+    const soroEl = $('soroban');
+    let natW = 0;
+    const fitBoard = () => {
+      const avail = soroEl.parentElement.clientWidth;
+      if (!avail) return;
+      if (!natW) { soroEl.style.zoom = ''; natW = soroEl.offsetWidth; }
+      soroEl.style.zoom = (natW && natW > avail) ? String(avail / natW) : '';
+    };
+    new ResizeObserver(fitBoard).observe(mountEl);
+    fitBoard();
+  }
 
   return {
     store, dispatch, bus, soroban, readout, sound, metronome, coachEl,

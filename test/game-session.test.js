@@ -30,7 +30,7 @@ const last = (events, type) => events.filter(e => e.type === type).pop();
 test('taking a contract seeds the board without self-solving', () => {
   const { store, session, events } = makeSession();
   session.startChallenge('t1');
-  assert.equal(store.scaledValue(), 30000);
+  assert.equal(store.scaledValue(), 30000n);
   assert.equal(events.filter(e => e.type === 'solved').length, 0);
   const ch = last(events, 'challenge');
   assert.equal(ch.kind, 'earn');

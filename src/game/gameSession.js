@@ -139,7 +139,7 @@ export class GameSession extends Observable {
 
   _onStore() {
     if (!this.armed || !this.challenge) return;
-    if (this.store.scaledValue() === this.challenge.problem.targetScaled) this._solve();
+    if (this.store.scaledValue() === BigInt(this.challenge.problem.targetScaled)) this._solve();
   }
 
   _solve() {

@@ -144,6 +144,11 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .rod-frame { height: 340px; width: 100%; position: relative; cursor: pointer; border-radius: 8px; }
 .rod-frame::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #57503f; transform: translateX(-1px); border-radius: 1px; }
 .bar { position: absolute; left: -10px; right: -10px; top: 96px; height: 3px; background: var(--ink); z-index: 5; border-radius: 1px; }
+/* Unit-point marker: a small dot centred on the reckoning bar, on every power-of-1000 rod. */
+.unit-dot { position: absolute; left: 50%; top: 97px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gold-edge); transform: translate(-50%, -50%); z-index: 6;
+  box-shadow: 0 0 0 1.5px var(--ink); }
+.rod.frac .unit-dot { background: var(--violet); }
 .bead {
   width: 34px; height: 19px; background-color: var(--bead); border-radius: 50% / 38%;
   position: absolute; left: 50%; transform: translateX(-50%);
@@ -309,6 +314,27 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .rod.target .rod-frame { background: var(--shu); background: color-mix(in srgb, var(--shu) 13%, transparent); box-shadow: inset 0 0 0 2px var(--shu); }
 .rod.target .rod-letter { color: var(--shu); }
 .rod.target.focused .rod-frame { box-shadow: inset 0 0 0 2px var(--shu), 0 0 0 2px var(--gold); }
+
+/* ── Mnemonic-mental track: support-fade ladder on the shared board ──────────
+   soroban-gym's Full Support → Mental Only, mapped to the board's display rows.
+   Beads (no class) → Percept (sup-1: beads + digit hidden, the cube faces are
+   the read) → Mental (sup-2: cube also hidden, only the faint column pegs remain
+   as imagined rods). Fading is by `visibility`, so every column keeps its
+   footprint and nothing reflows on a switch — the blank frame IS the imagined
+   soroban. `peek` flashes the true board back (also fired on each solve). */
+.soroban.sup-1 .rod-frame, .soroban.sup-2 .rod-frame,
+.soroban.sup-1 .rod-value, .soroban.sup-2 .rod-value { visibility: hidden; }
+.soroban.sup-1 .rod-cube { font-size: 1.7rem; color: var(--ink); }
+.soroban.sup-2 .rod-cube { visibility: hidden; }
+.soroban.peek .rod-frame, .soroban.peek .rod-value, .soroban.peek .rod-cube { visibility: visible; }
+
+/* The fade control, sitting at the top of the board slot. */
+.support-track { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 12px 2px 2px; }
+.support-track .st-label { font-family: var(--mono); font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--faint); }
+.support-track .st-seg { display: inline-flex; gap: 4px; }
+.support-track .st-seg button, .support-track .st-peek { padding: 5px 10px; font-size: 0.76rem; }
+.support-track .st-seg button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.support-track .st-hint { font-size: 0.76rem; color: var(--stone); flex: 1 1 12ch; }
 .rt-head { margin-bottom: 10px; }
 .rt-title { font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--ink); }
 .rt-setup { font-size: 0.82rem; color: var(--stone); line-height: 1.6; margin: 2px auto 12px; max-width: 62ch; }

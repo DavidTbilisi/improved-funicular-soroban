@@ -2,7 +2,7 @@
 // Number parsing / display / decode — pure presentation-logic over rods.
 // Returns plain data (chip descriptors); rendering to DOM is the view's job.
 // ============================================================================
-import { INT_COLS, FRAC_COLS, columnLetter } from './config.js';
+import { INT_COLS, FRAC_COLS, MAXINT, columnLetter } from './config.js';
 import { rodValue, intValOf, fracStrOf } from './rod.js';
 
 // Parse a decimal-ish string -> clamped { intVal:Number, fracStr:String(digits, tenths-first) }
@@ -11,7 +11,8 @@ export function parseDecimal(str) {
   const dot = cleaned.indexOf('.');
   const ipart = dot < 0 ? cleaned : cleaned.slice(0, dot);
   const fpart = dot < 0 ? '' : cleaned.slice(dot + 1).replace(/\./g, '');
-  const intVal = Math.min(parseInt(ipart || '0', 10) || 0, Math.pow(10, INT_COLS) - 1);
+  const parsed = BigInt(ipart.replace(/[^0-9]/g, '') || '0');  // BigInt: up to 19 digits
+  const intVal = parsed > MAXINT ? MAXINT : parsed;
   const fracStr = fpart.replace(/[^0-9]/g, '').slice(0, FRAC_COLS);
   return { intVal, fracStr };
 }
@@ -26,7 +27,7 @@ export function displayString(intRods, fracRods) {
 // with no fraction. `pegs` is injected (Dependency Inversion) — defaults to the
 // A–Z food pegs but any peg table works.
 export function decodeChips(intRods, fracRods, pegs) {
-  const allIntZero = intValOf(intRods) === 0;
+  const allIntZero = intValOf(intRods) === 0n;
   const fs = fracStrOf(fracRods);
   const hasFrac = fs.length > 0;
   const chips = [];

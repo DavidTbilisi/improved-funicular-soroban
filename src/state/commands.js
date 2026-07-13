@@ -27,7 +27,7 @@ export class SetValueCommand extends Command {
 
 export class StepIntCommand extends Command {
   constructor(store, delta) { super(store); this.delta = delta; }
-  apply() { this.store.setIntValue(this.store.intValue() + this.delta); }
+  apply() { this.store.setIntValue(this.store.intValue() + BigInt(this.delta)); }
 }
 
 // Add/subtract `amount` at a column identified by its power-of-ten exponent
@@ -37,7 +37,7 @@ export class StepIntCommand extends Command {
 export class AddAtColumnCommand extends Command {
   constructor(store, exponent, amount, sign) { super(store); this.exponent = exponent; this.amount = amount; this.sign = sign; }
   apply() {
-    const delta = this.sign * this.amount * Math.pow(10, this.exponent + FRAC_COLS);
+    const delta = BigInt(this.sign * this.amount) * 10n ** BigInt(this.exponent + FRAC_COLS);
     this.store.setScaled(this.store.scaledValue() + delta);
   }
 }

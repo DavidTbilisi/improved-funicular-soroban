@@ -6,15 +6,15 @@ import { ALPHABET_PEGS } from '../src/domain/pegs.js';
 import { INT_COLS, FRAC_COLS, MAXINT } from '../src/domain/config.js';
 
 test('parseDecimal splits and sanitizes', () => {
-  assert.deepEqual(parseDecimal('15.98'), { intVal: 15, fracStr: '98' });
-  assert.deepEqual(parseDecimal('  42 '), { intVal: 42, fracStr: '' });
-  assert.deepEqual(parseDecimal('abc'), { intVal: 0, fracStr: '' });
-  assert.deepEqual(parseDecimal('3.14159'), { intVal: 3, fracStr: '1415' }); // frac clamped to FRAC_COLS
+  assert.deepEqual(parseDecimal('15.98'), { intVal: 15n, fracStr: '98' });  // intVal is BigInt
+  assert.deepEqual(parseDecimal('  42 '), { intVal: 42n, fracStr: '' });
+  assert.deepEqual(parseDecimal('abc'), { intVal: 0n, fracStr: '' });
+  assert.deepEqual(parseDecimal('3.14159'), { intVal: 3n, fracStr: '1415' }); // frac clamped to FRAC_COLS
 });
 
 test('parseDecimal clamps the integer to MAXINT', () => {
-  assert.equal(parseDecimal('999999999999999').intVal, MAXINT);
-  assert.equal(MAXINT, Math.pow(10, INT_COLS) - 1);
+  assert.equal(parseDecimal('9'.repeat(INT_COLS + 1)).intVal, MAXINT);  // over-long clamps
+  assert.equal(MAXINT, 10n ** BigInt(INT_COLS) - 1n);
   assert.equal(FRAC_COLS, 4);
 });
 
