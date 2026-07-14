@@ -34,7 +34,7 @@ import { Observable } from '../state/observable.js';
 
 export class TutorialSession extends Observable {
   constructor({ levels, progress, rng, store, clock = { now: () => 0 }, history = null,
-                timer = { set: () => 0, clear: () => {} }, idleMs = 30000 }) {
+                timer = { set: () => 0, clear: () => {} }, idleMs = 30000, support = () => 0 }) {
     super();
     this.levels = levels;
     this.progress = progress;
@@ -44,6 +44,7 @@ export class TutorialSession extends Observable {
     this.history = history; // optional SolveLog — records every solve for the trend chart
     this.timer = timer;     // { set(fn, ms) -> id, clear(id) } — drives the idle pause
     this.idleMs = idleMs;   // stop the timer after this long with no answer
+    this.support = support; // () => current mnemonic-mental fade level, tagged onto each solve
     this.idx = null;
     this.problem = null;
     this.streak = 0;
@@ -161,7 +162,7 @@ export class TutorialSession extends Observable {
     if (clean) { this.streak++; verdict = 'clean'; }
     else { this.streak = 0; verdict = this.faults > 0 ? 'fumbled' : 'slow'; }
 
-    if (this.history) this.history.record(lv.id, { ms: elapsedMs, clean });
+    if (this.history) this.history.record(lv.id, { ms: elapsedMs, clean, support: this.support() });
     this.progress.setBest(lv.id, this.streak);
     let justPassed = false, unlockedIdx = null;
     if (clean && this.streak >= floor) {

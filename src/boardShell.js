@@ -251,8 +251,14 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     const soroEl = $('soroban');
     let natW = 0;
     const fitBoard = () => {
-      const avail = soroEl.parentElement.clientWidth;
-      if (!avail) return;
+      const wrap = soroEl.parentElement; // .soroban-wrap
+      // clientWidth counts the wrap's own horizontal padding as usable room,
+      // but the board sits *inside* that padding — fitting to the full
+      // clientWidth leaves it a few px too wide, and `overflow-x: auto` then
+      // shows a scrollbar. Fit to the content box (clientWidth minus padding).
+      const cs = getComputedStyle(wrap);
+      const avail = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (avail <= 0) return;
       if (!natW) { soroEl.style.zoom = ''; natW = soroEl.offsetWidth; }
       soroEl.style.zoom = (natW && natW > avail) ? String(avail / natW) : '';
     };

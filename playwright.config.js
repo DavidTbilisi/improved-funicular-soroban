@@ -5,12 +5,12 @@ export default defineConfig({
   fullyParallel: true,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:8000',
+    baseURL: 'http://localhost:8139',
     trace: 'retain-on-failure',
   },
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:8000',
+    url: 'http://localhost:8139',
     reuseExistingServer: !process.env.CI,
   },
 });

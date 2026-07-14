@@ -10,10 +10,10 @@ checksum seals, in decimal or hex.
 ## Run it
 
 ```sh
-npm run dev     # serve at http://localhost:8000 (ES-module dev build)
+npm run dev     # serve at http://localhost:8139 (ES-module dev build)
 ```
 
-Open `http://localhost:8000/index.html`. A static server is needed because the app is
+Open `http://localhost:8139/index.html`. A static server is needed because the app is
 built from native ES modules, which browsers refuse to import over `file://`.
 
 ### Keyboard arithmetic

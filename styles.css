@@ -338,6 +338,9 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .support-track .st-seg button, .support-track .st-peek { padding: 5px 10px; font-size: 0.76rem; }
 .support-track .st-seg button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 .support-track .st-hint { font-size: 0.76rem; color: var(--stone); flex: 1 1 12ch; }
+/* Live mental-readiness prognosis — its own line under the segment control. */
+.support-track .st-prog { flex: 1 1 100%; font-size: 0.78rem; color: var(--ink); font-weight: 600; padding: 6px 10px; border-left: 3px solid var(--shu); background: var(--paper-2); border-radius: 0 6px 6px 0; }
+.support-track .st-prog:empty { display: none; }
 
 /* ── Rod rail: the focused-rod indicator (icons only) ───────────────────────
    The perpetual-calendar "lift the active tab" mechanism, adapted to the board:

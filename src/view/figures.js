@@ -387,3 +387,66 @@ export function figSessions(sessions) {
   if (n > 1) body += txt(W - R, H - 6, lastS.t.slice(0, 10), { size: 8.5, fill: FAINT, anchor: 'end' });
   return svg(W, H, 'Reps under the pass-floor across saved sessions', body);
 }
+
+// --- Mental-readiness prognosis (live) ---------------------------------------
+// The forecast from prognose(): a three-station runway (Beads → Percept →
+// Mental) with a readiness fill from the current station toward the next, a
+// readiness gauge with the drop-threshold tick, and the headline ETA in minutes
+// and solves. Shu marks the target — where you're headed, and the pass line.
+const STATIONS = ['Beads', 'Percept', 'Mental'];
+const roundMin = m => (m == null ? '—' : m < 1 ? '<1' : String(Math.round(m)));
+
+export function figPrognosis(prog) {
+  const W = 520, H = 182;
+  if (!prog || (!prog.enoughData && prog.n === 0 && !prog.atMental)) {
+    return `<div class="fig-empty">${prog ? prog.message : 'No solves yet — your time-to-mental charts here.'}</div>`;
+  }
+  const NX = [76, 260, 444], NY = 120, ready = prog.support / 2; // stations at 0,1,2
+  // Runway: base track, then a solid fill for crossed segments and a partial
+  // fill for the current one (readiness/READY, or full when ready to drop).
+  let body = hline(NX[0], NX[2], NY, LINE2, 3);
+  const frac = prog.ready ? 1 : Math.max(0, Math.min(1, prog.readiness / 0.8));
+  for (let seg = 0; seg < 2; seg++) {
+    const f = prog.support > seg ? 1 : prog.support === seg ? frac : 0;
+    if (f > 0) body += hline(NX[seg], NX[seg] + f * (NX[seg + 1] - NX[seg]), NY, prog.support > seg ? DATA : SHU, 3);
+  }
+  STATIONS.forEach((name, i) => {
+    const cur = i === prog.support, passed = i < prog.support;
+    const fill = passed ? DATA : cur ? PAPER2 : PAPER2;
+    const stroke = passed ? DATA : cur ? SHU : LINE2;
+    body += `<circle cx="${NX[i]}" cy="${NY}" r="${cur ? 9 : 7}" fill="${fill}" stroke="${stroke}" stroke-width="${cur ? 3 : 2}"/>`;
+    if (i === prog.support + 1) body += `<circle cx="${NX[i]}" cy="${NY}" r="13" fill="none" stroke="${SHU}" stroke-width="1" opacity="0.5"/>`; // the target
+    body += txt(NX[i], NY + 28, name, { size: 10.5, fill: cur ? INK : STONE, weight: cur ? 700 : 400 });
+  });
+  body += txt(NX[prog.support], NY - 16, 'you are here', { size: 8.5, fill: SHU });
+
+  // Readiness gauge (top-right): a 0→100% bar with the 80% drop tick in shu.
+  const GX0 = 300, GX1 = 500, GY = 34, pctR = Math.round(prog.readiness * 100);
+  body += txt(GX1, GY - 12, `readiness ${pctR}%`, { size: 10, fill: INK, anchor: 'end', weight: 600 });
+  body += `<rect x="${GX0}" y="${GY}" width="${GX1 - GX0}" height="9" rx="4.5" fill="${PAPER2}" stroke="${LINE2}" stroke-width="1"/>`;
+  const gw = (prog.readiness) * (GX1 - GX0);
+  if (gw > 0) body += `<rect x="${GX0}" y="${GY}" width="${gw.toFixed(1)}" height="9" rx="4.5" fill="${prog.ready ? DATA : STONE}"/>`;
+  const tickX = GX0 + 0.8 * (GX1 - GX0);
+  body += vline(tickX, GY - 4, GY + 13, SHU, 1.5) + txt(tickX, GY + 26, 'drop @80%', { size: 8, fill: SHU });
+
+  // Headline (top-left), stacked so nothing collides with the number.
+  if (prog.atMental) {
+    body += txt(16, 40, '🧠 Mental', { size: 24, fill: INK, anchor: 'start', weight: 700 });
+    body += txt(18, 60, 'solving without the beads', { size: 11, fill: STONE, anchor: 'start' });
+  } else if (!prog.enoughData) {
+    body += txt(16, 40, 'Warming up', { size: 22, fill: STONE, anchor: 'start', weight: 700 });
+    body += txt(18, 60, `${prog.n} ${prog.stageName} solve${prog.n === 1 ? '' : 's'} — a few more to forecast`, { size: 10.5, fill: STONE, anchor: 'start' });
+  } else if (prog.ready) {
+    body += txt(16, 40, 'Ready', { size: 30, fill: DATA, anchor: 'start', weight: 700 });
+    body += txt(18, 60, `drop to ${prog.nextName} now`, { size: 12, fill: DATA, anchor: 'start', weight: 600 });
+    if (prog.stagesRemaining > 1) body += txt(18, 78, `≈${roundMin(prog.minutesToMental)} min more to fully mental`, { size: 10.5, fill: STONE, anchor: 'start' });
+  } else if (prog.minutesToMental != null) {
+    body += txt(16, 42, `≈ ${roundMin(prog.minutesToMental)} min`, { size: 30, fill: INK, anchor: 'start', weight: 700 });
+    body += txt(18, 62, `to Mental · ${prog.stagesRemaining} drop${prog.stagesRemaining === 1 ? '' : 's'} to go`, { size: 11, fill: STONE, anchor: 'start' });
+    body += txt(18, 80, `${prog.solvesToMental} more solves · pace ${prog.trend}`, { size: 11, fill: DATA, anchor: 'start', weight: 600 });
+  } else {
+    body += txt(16, 40, 'Not climbing', { size: 22, fill: STONE, anchor: 'start', weight: 700 });
+    body += txt(18, 60, `readiness ${pctR}% — hold and drill your fumble pairs`, { size: 10.5, fill: STONE, anchor: 'start' });
+  }
+  return svg(W, H, 'Estimated practice time until you can work mentally', body);
+}
