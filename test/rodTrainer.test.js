@@ -123,7 +123,7 @@ test('a fast, unassisted, fumble-free solve is clean and persists', () => {
   assert.equal(s.streak, 1);
   assert.equal(s.floor, 2);
   assert.equal(s.cleared, false);
-  assert.deepEqual(log.solves('mul'), [{ t: 'T1', ms: 600, clean: true }]);
+  assert.deepEqual(log.solves('mul'), [{ t: 'T1', ms: 600, clean: true, support: 0 }]);
 });
 
 test('a streak of clean solves at the floor marks the mode cleared', () => {

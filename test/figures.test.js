@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
-  figSolveTimes, figFumbles, cubeFaceGrid,
+  figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis,
 } from '../src/view/figures.js';
+import { prognose } from '../src/tutorial/prognosis.js';
 import { fumbleRows } from '../src/tutorial/faultLog.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
 import { planAdd } from '../src/domain/movePlan.js';
@@ -193,4 +194,31 @@ test('session trend: empty message, single dot, and a 2px line for a history', (
   assert.ok(many.includes('stroke-width="2"'));
   assert.ok(many.includes('>75%</text>'), 'endpoint labelled');
   assert.equal(count(many, /fill="var\(--shu\)"/g), 1, 'only the latest dot is shu');
+});
+
+test('prognosis figure: empty state, an ETA plate, and the Mental celebration', () => {
+  const s = (over = {}) => ({ t: '2026-01-01T00:00', ms: 2000, clean: true, support: 0, ...over });
+  const opt = { floorMs: 4000, support: 0 };
+
+  // no data -> the empty message, no svg
+  const empty = figPrognosis(prognose([], opt));
+  assert.ok(empty.includes('fig-empty'));
+  assert.ok(!empty.includes('<svg'));
+
+  // improving history -> an svg runway with the three stations and an ETA
+  const improving = prognose(
+    [...Array(5).fill(s({ clean: false, ms: 5000 })), ...Array(5).fill(s({ ms: 2000 }))], opt);
+  const plate = figPrognosis(improving);
+  assert.ok(plate.includes('<svg'));
+  ['Beads', 'Percept', 'Mental'].forEach(n => assert.ok(plate.includes(`>${n}</text>`), `station ${n} labelled`));
+  assert.ok(/≈ [^<]+ min/.test(plate), 'headline ETA in minutes');
+  assert.ok(plate.includes('drops to go'), 'names the remaining support drops');
+  assert.ok(plate.includes('pace improving'));
+  assert.ok(plate.includes('you are here'));
+  assert.ok(plate.includes('drop @80%'), 'the readiness gauge marks the drop threshold');
+
+  // at Mental -> celebration, no ETA runway headline
+  const mental = figPrognosis(prognose([s({ support: 2 })], { floorMs: 4000, support: 2 }));
+  assert.ok(mental.includes('🧠 Mental'));
+  assert.ok(!mental.includes('drops to go'));
 });

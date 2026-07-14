@@ -155,7 +155,20 @@ test('every solve — clean or not — is recorded to the injected history log',
   session.next();
   clock.t = 500 + 2000; store.setScaled(50000);      // slow solve (floor 1000ms)
   assert.deepEqual(history.solves('l0'), [
-    { t: 'T1', ms: 500, clean: true },
-    { t: 'T1', ms: 2000, clean: false },
+    { t: 'T1', ms: 500, clean: true, support: 0 },
+    { t: 'T1', ms: 2000, clean: false, support: 0 },
   ]);
+});
+
+test('solves are tagged with the current mnemonic-mental support level', async () => {
+  const { SolveLog } = await import('../src/tutorial/solveLog.js');
+  const history = new SolveLog(new MemoryProgressStore({}), () => 'T1');
+  const store = new AbacusStore(0, '');
+  const progress = new TutorialProgress(new MemoryProgressStore({}));
+  const clock = { t: 0, now() { return this.t; } };
+  let support = 2; // "Mental"
+  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store, clock, history, support: () => support });
+  session.startLevel(0);
+  clock.t = 500; store.setScaled(50000);
+  assert.equal(history.solves('l0')[0].support, 2);
 });

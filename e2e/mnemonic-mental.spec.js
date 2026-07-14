@@ -44,6 +44,27 @@ test('Peek flashes the true board back from a faded mode', async ({ page }) => {
   await expect(page.locator('#rod-int-cube-0')).toBeVisible();
 });
 
+test('the mental-readiness prognosis reads the solve history and re-renders on a support switch', async ({ page }) => {
+  // Seed an improving Beads history for the first level, then reload so the page reads it.
+  await page.evaluate(() => {
+    const solves = [];
+    for (let i = 0; i < 12; i++) solves.push({ t: '2026-07-10T09:00', ms: i >= 4 ? 2000 : 3200, clean: i >= 4, support: 0 });
+    localStorage.setItem('npv-practice-history', JSON.stringify({ read: { solves, best: 5 } }));
+  });
+  await page.reload();
+  await page.locator('#tutLevels button[data-idx="0"]').click(); // a current level to forecast
+
+  const fig = page.locator('#figProg');
+  await expect(fig.locator('svg')).toBeVisible();
+  for (const s of ['Beads', 'Percept', 'Mental']) await expect(fig.getByText(s, { exact: true })).toBeVisible();
+  await expect(fig.getByText('you are here')).toBeVisible();
+  await expect(page.locator('#stProg')).toContainText('to reach Mental'); // the live one-liner
+
+  // Switching support re-renders the forecast: at Percept there are no Percept-tagged solves yet.
+  await page.getByRole('button', { name: 'Percept' }).click();
+  await expect(page.locator('#stProg')).toContainText('No Percept solves');
+});
+
 test('M cycles the fade and the choice persists across a reload', async ({ page }) => {
   const board = page.locator('#soroban');
 

@@ -10,10 +10,11 @@ import { LocalStorageProgressStore, TutorialProgress } from '../tutorial/progres
 import { TutorialSession } from '../tutorial/tutorialSession.js';
 import { TutorialView } from '../view/tutorialView.js';
 import { RodRailView } from '../view/rodRailView.js';
-import { figure, figLadder, figComplements, figTradeChain, figSolveTimes, figFumbles } from '../view/figures.js';
+import { figure, figLadder, figComplements, figTradeChain, figSolveTimes, figFumbles, figPrognosis } from '../view/figures.js';
 import { planAdd } from '../domain/movePlan.js';
 import { SolveLog } from '../tutorial/solveLog.js';
 import { FaultLog, fumbleRows } from '../tutorial/faultLog.js';
+import { prognose } from '../tutorial/prognosis.js';
 
 const $ = id => document.getElementById(id);
 mountNav('practice');
@@ -35,6 +36,7 @@ const tutorial = new TutorialSession({
   store: shell.store,
   clock: { now: () => performance.now() },
   history: solveLog,
+  support: () => support, // tag each solve with the current mnemonic-mental fade level
 });
 new TutorialView({
   levelsEl: $('tutLevels'), stageEl: $('tutStage'), teachEl: $('tutTeach'),
@@ -54,22 +56,34 @@ const renderTimes = () => {
     'Seconds per solve on the current level, oldest → newest. The red rule is the level’s automaticity floor; hollow dots were slow or fumbled.',
     figSolveTimes(curLevel ? solveLog.solves(curLevel.id) : [], curLevel ? curLevel.timeFloorMs : 0));
 };
+// Live prognosis: from this level's solves at the CURRENT support level, how much
+// more practice until you can fade the beads and work mentally. Also drives the
+// one-line readout beside the Board control.
+const prognosisNow = () => prognose(curLevel ? solveLog.solves(curLevel.id) : [],
+  { floorMs: curLevel ? curLevel.timeFloorMs : 0, support });
+const renderProg = () => {
+  const p = prognosisNow();
+  $('figProg').innerHTML = figure(3,
+    'Estimated time to “mental mode”, from your automaticity at the current board support. The gauge fills toward the 80% drop line; the runway steps Beads → Percept → Mental.',
+    figPrognosis(p));
+  if ($('stProg')) $('stProg').textContent = p.message;
+};
 const renderFumbles = () => {
   const c = faultLog.counts();
-  $('figFumbles').innerHTML = figure(3,
+  $('figFumbles').innerHTML = figure(4,
     'Every rejected move, counted by the complement pair its trade needed. The tall bars are the pairs to drill.',
     figFumbles(fumbleRows(c), c.resets));
 };
 renderLadder(tutorial.levelInfos());
 renderTimes();
-renderFumbles();
-$('figFive').innerHTML = figure(4,
+renderFumbles(); // renderProg() runs once `support` is initialized (below)
+$('figFive').innerHTML = figure(5,
   'The five-complements. Each pair sums to five: out of earth beads, +3 becomes +5 −2 — set the sky bead, remove the friend.',
   figComplements(5));
-$('figTen').innerHTML = figure(5,
+$('figTen').innerHTML = figure(6,
   'The ten-complements. Each pair sums to ten: crossing the bar, +8 becomes +10 −2 — carry one to the next rod, remove the friend. Five is its own complement (dashed).',
   figComplements(10));
-$('figChain').innerHTML = figure(6,
+$('figChain').innerHTML = figure(7,
   'A compound trade, walked bead for bead: 6 + 7 crosses ten, so +7 = +10 −3 — but −3 has only one earth bead to take, so it trades too: −3 = −5 +2. Each arrow is one key. You never plan the chain; you ask one local question per move and it unrolls itself.',
   figTradeChain(6, planAdd(6, 7)));
 
@@ -110,14 +124,15 @@ const setSupport = lvl => {
   return lvl;
 };
 let support = setSupport(parseInt(localStorage.getItem('npv-support'), 10) || 0);
-stSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { support = setSupport(+b.dataset.sup); }));
+renderProg(); // initial prognosis, now that `support` is set
+stSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { support = setSupport(+b.dataset.sup); renderProg(); }));
 $('stPeek').addEventListener('click', () => shell.soroban.peek());
 // Keyboard: M cycles the fade, P peeks — both miss the board's move keys
 // (die cross K J I , L + U / D S E C F + R / G H / Q), so mental drilling stays clear.
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.altKey || e.ctrlKey || e.metaKey) return;
-  if (e.code === 'KeyM') { e.preventDefault(); support = setSupport((support + 1) % 3); }
+  if (e.code === 'KeyM') { e.preventDefault(); support = setSupport((support + 1) % 3); renderProg(); }
   else if (e.code === 'KeyP') { e.preventDefault(); shell.soroban.peek(); }
 });
 
@@ -134,13 +149,14 @@ shell.setFaultHook(info => {
 // and clear the coach line; play the right sound on a verdict.
 tutorial.subscribe(evt => {
   if (evt.type === 'problem' || evt.type === 'skipped') { shell.setFocus(0); shell.coachEl.textContent = ''; }
-  if (evt.type === 'level') { curLevel = { id: evt.id, timeFloorMs: evt.timeFloorMs }; renderTimes(); }
+  if (evt.type === 'level') { curLevel = { id: evt.id, timeFloorMs: evt.timeFloorMs }; renderTimes(); renderProg(); }
   if (evt.type === 'solved') {
     if (evt.justPassed) shell.sound.levelUp(); else if (evt.clean) shell.sound.solve(); else shell.sound.reject();
     if (support > 0) shell.soroban.peek(); // faded modes: flash the landed value into view
     renderTimes();
+    renderProg(); // every solve moves the forecast — this is the "live" prognosis
   }
-  if (evt.type === 'stopped') { curLevel = null; renderTimes(); }
+  if (evt.type === 'stopped') { curLevel = null; renderTimes(); renderProg(); }
   if (evt.levels) { renderLadder(evt.levels); renderGraduate(evt.levels); } // level/solved events carry a fresh snapshot
 });
 
