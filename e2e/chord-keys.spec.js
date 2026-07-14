@@ -11,11 +11,27 @@ test.beforeEach(async ({ page }) => {
 
 const value = page => page.locator('#numValue');
 const reset = async page => { await page.keyboard.press('q'); }; // clears to 0, focus on ones
-// Hold every cell down, let the ~45ms debounce flush, then release — one chord.
+
+// The board groups die-cell keydowns pressed within a ~45ms window into one
+// chord (CHORD_MS in src/boardShell.js). Driving that with two awaited
+// page.keyboard.down() calls flakes under load: each is a separate CDP
+// round-trip, and if the gap between them exceeds 45ms the first cell flushes
+// as a lone digit before the second lands (e.g. +7 collapses to a bare +5).
+// The grouping is what we're testing, not key transport — so dispatch every
+// keydown in ONE in-page turn (single-threaded JS keeps the flush timer from
+// firing mid-group, so they're always inside the window), then wait past
+// CHORD_MS for the real timer to flush. Real Playwright key→e.code delivery is
+// still exercised by the single-die-cross-key test.
+const CODE = { k: 'KeyK', j: 'KeyJ', i: 'KeyI', ',': 'Comma', l: 'KeyL' };
 const chord = async (page, keys) => {
-  for (const k of keys) await page.keyboard.down(k);
-  await page.waitForTimeout(90);
-  for (const k of [...keys].reverse()) await page.keyboard.up(k);
+  const codes = keys.map(k => CODE[k]);
+  await page.evaluate(cs => {
+    for (const code of cs) document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+  }, codes);
+  await page.waitForTimeout(120); // > CHORD_MS: let the board flush the grouped digit
+  await page.evaluate(cs => {
+    for (const code of [...cs].reverse()) document.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+  }, codes);
 };
 
 test('single die-cross keys add their cell value on the ones rod', async ({ page }) => {
