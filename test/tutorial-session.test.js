@@ -160,6 +160,59 @@ test('every solve — clean or not — is recorded to the injected history log',
   ]);
 });
 
+// --- Idle pause: the timer stops after idleMs with no answer ------------------
+// A controllable fake timer captures the single pending idle callback so a test
+// can advance the manual clock and then fire idle deterministically.
+function makeIdleSession({ idleMs = 30000 } = {}) {
+  const store = new AbacusStore(0, '');
+  const progress = new TutorialProgress(new MemoryProgressStore({}));
+  const clock = { t: 0, now() { return this.t; } };
+  const timer = {
+    pending: null,
+    set(fn) { this.pending = fn; return 1; },
+    clear() { this.pending = null; },
+    fire() { const f = this.pending; this.pending = null; if (f) f(); },
+  };
+  const events = [];
+  const session = new TutorialSession({ levels: LEVELS, progress, rng: {}, store, clock, timer, idleMs });
+  session.subscribe(e => events.push(e));
+  return { store, clock, timer, session, events };
+}
+
+test('going idle stops the timer and excludes the whole away-gap from the solve', () => {
+  const { store, clock, timer, session, events } = makeIdleSession({ idleMs: 30000 });
+  session.startLevel(0);                              // t0 = 0
+  clock.t = 30000; timer.fire();                      // no answer for 30s -> idle
+  assert.ok(events.some(e => e.type === 'idle'));
+  clock.t = 90000; store.setScaled(50000);            // step back and solve after 90s wall time
+  const s = lastSolved(events);
+  assert.ok(events.some(e => e.type === 'resume'));
+  assert.equal(s.elapsedMs, 0);                       // the 90s away-gap is excluded
+  assert.equal(s.clean, true);                        // so it isn't judged slow
+  assert.equal(s.verdict, 'clean');
+});
+
+test('idle excludes the away-gap but still counts active thinking time', () => {
+  const { store, clock, timer, session, events } = makeIdleSession({ idleMs: 30000 });
+  session.startLevel(0);                              // t0 = 0
+  clock.t = 300; store.setScaled(10000);             // a move at 300ms (not the target) — active
+  clock.t = 30300; timer.fire();                      // then 30s with no answer -> idle
+  clock.t = 60000; store.setScaled(50000);            // return much later and finish
+  const s = lastSolved(events);
+  assert.equal(s.elapsedMs, 300);                     // only the pre-idle active time counts
+  assert.equal(s.clean, true);
+});
+
+test('without idle firing, a long solve is still judged slow (no free pass)', () => {
+  const { store, clock, session, events } = makeIdleSession({ idleMs: 30000 });
+  session.startLevel(0);
+  clock.t = 2000; store.setScaled(50000);            // 2s straight through, idle never fired
+  const s = lastSolved(events);
+  assert.equal(s.elapsedMs, 2000);
+  assert.equal(s.clean, false);
+  assert.equal(s.verdict, 'slow');
+});
+
 test('solves are tagged with the current mnemonic-mental support level', async () => {
   const { SolveLog } = await import('../src/tutorial/solveLog.js');
   const history = new SolveLog(new MemoryProgressStore({}), () => 'T1');
