@@ -5,6 +5,8 @@
 // bead manipulation happens on the shared soroban panel (same store) with the
 // keyboard — this panel only shows the problem and tracks progress. Auto-advance
 // uses an injected scheduler; the live timer uses setInterval (browser-only).
+// The session's `idle`/`resume` events freeze and un-freeze this display so it
+// mirrors the excluded idle gap (the session is the authoritative timer).
 // ============================================================================
 export class TutorialView {
   constructor(elements, session, { scheduler = (fn, ms) => setTimeout(fn, ms) } = {}) {
@@ -15,7 +17,11 @@ export class TutorialView {
     this._timer = null;
     this._t0 = 0;
     this._floorMs = 0;
+    this._pausedMs = 0;   // display time excluded while idle (mirrors the session)
+    this._pauseStart = 0; // clock time this display pause began
   }
+
+  _now() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
 
   build() {
     this.session.subscribe(evt => this._onEvent(evt));
@@ -49,11 +55,17 @@ export class TutorialView {
   // reported. Turns red once the time floor is blown.
   _startTimer(floorMs) {
     this._stopTimer();
-    this._t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    this._t0 = this._now();
     this._floorMs = floorMs;
+    this._pausedMs = 0;
+    this._runTimer();
+  }
+
+  // (Re)start the ticking interval, showing elapsed minus the excluded idle time.
+  _runTimer() {
+    if (this._timer) clearInterval(this._timer);
     const tick = () => {
-      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-      const el = (now - this._t0);
+      const el = this._now() - this._t0 - this._pausedMs;
       const over = el > this._floorMs;
       this.el.timerEl.className = 'tut-timer' + (over ? ' over' : '');
       this.el.timerEl.innerHTML = `⏱ ${this._secs(el)}s <span class="tut-floor">/ ${this._secs(this._floorMs)}s</span>`;
@@ -63,6 +75,24 @@ export class TutorialView {
   }
 
   _stopTimer() { if (this._timer) { clearInterval(this._timer); this._timer = null; } }
+
+  // Idle: freeze the display. `sinceMs` back-dates the excluded gap to the last
+  // answer (matching the session), and the whole away-span is excluded on resume.
+  _pauseTimer(sinceMs) {
+    if (!this._timer) return;      // no running timer to pause
+    clearInterval(this._timer);
+    this._timer = null;
+    this._pausedMs += sinceMs || 0;
+    this._pauseStart = this._now();
+    this.el.timerEl.className = 'tut-timer idle';
+    this.el.timerEl.innerHTML = '⏸ timer stopped — no answer';
+  }
+
+  _resumeTimer() {
+    if (this._timer) return;       // already running
+    this._pausedMs += this._now() - this._pauseStart;
+    this._runTimer();
+  }
 
   _onEvent(evt) {
     const el = this.el;
@@ -80,6 +110,12 @@ export class TutorialView {
         el.meterEl.innerHTML = this._meter(evt.streak, evt.floor, evt.timeFloorMs);
         el.feedbackEl.innerHTML = '';
         this._startTimer(evt.timeFloorMs);
+        break;
+      case 'idle':
+        this._pauseTimer(evt.sinceMs);
+        break;
+      case 'resume':
+        this._resumeTimer();
         break;
       case 'solved': {
         this._stopTimer();

@@ -11,9 +11,19 @@
 // solve RESETS the streak. A streak of `floor` clean solves unlocks the next
 // level (persisted via TutorialProgress).
 //
+// IDLE PAUSE: the automaticity timer measures *thinking* time, not wall time.
+// If the learner stops answering for `idleMs` (default 30s of no bead move), the
+// timer stops — the whole idle gap is excluded from the recorded elapsed, so a
+// solve interrupted by stepping away isn't judged slow (and doesn't pollute the
+// pace/prognosis history). It resumes on the next move. Idle detection needs a
+// real timer, so one is injected (`timer.set/clear`, a setTimeout/clearTimeout
+// wrapper); the default is a no-op, so without it the timer never pauses.
+//
 // Emitted events (payload.type):
 //   level    { idx, id, title, teach, floor, timeFloorMs, best, levels }
 //   problem  { prompt, sub, streak, floor, timeFloorMs }
+//   idle     { sinceMs }   // timer stopped — no answer for idleMs
+//   resume   {}            // answered again — timer running
 //   solved   { clean, verdict, elapsedMs, timeFloorMs, faults, streak, floor, justPassed, unlockedIdx, levels }
 //   hint     { text }
 //   skipped  { text, floor }
@@ -23,7 +33,8 @@
 import { Observable } from '../state/observable.js';
 
 export class TutorialSession extends Observable {
-  constructor({ levels, progress, rng, store, clock = { now: () => 0 }, history = null }) {
+  constructor({ levels, progress, rng, store, clock = { now: () => 0 }, history = null,
+                timer = { set: () => 0, clear: () => {} }, idleMs = 30000 }) {
     super();
     this.levels = levels;
     this.progress = progress;
@@ -31,6 +42,8 @@ export class TutorialSession extends Observable {
     this.store = store;
     this.clock = clock;
     this.history = history; // optional SolveLog — records every solve for the trend chart
+    this.timer = timer;     // { set(fn, ms) -> id, clear(id) } — drives the idle pause
+    this.idleMs = idleMs;   // stop the timer after this long with no answer
     this.idx = null;
     this.problem = null;
     this.streak = 0;
@@ -38,6 +51,12 @@ export class TutorialSession extends Observable {
     this.armed = false; // ignore store notifications while seeding a problem
     this.t0 = 0;
     this.faults = 0;
+    // Idle-pause bookkeeping (see IDLE PAUSE above).
+    this.paused = false;
+    this.pausedMs = 0;       // total time excluded from elapsed while idle
+    this.pauseStart = 0;     // clock time the excluded gap began (= last activity)
+    this.lastActivity = 0;   // clock time of the last answer/move
+    this._idleId = null;     // pending idle timer handle
     store.subscribe(() => this._onStore());
   }
 
@@ -71,6 +90,10 @@ export class TutorialSession extends Observable {
     this.store.setScaled(this.problem.startScaled); // notify fires while disarmed
     this.armed = true;
     this.t0 = this.clock.now();                      // start the automaticity timer
+    this.pausedMs = 0;
+    this.paused = false;
+    this.lastActivity = this.t0;
+    this._armIdle();                                 // stop the timer if no answer for idleMs
     this.notify({ type: 'problem', prompt: this.problem.prompt, sub: this.problem.sub, streak: this.streak, floor: lv.floor, timeFloorMs: lv.timeFloorMs });
   }
 
@@ -83,15 +106,51 @@ export class TutorialSession extends Observable {
 
   _onStore() {
     if (!this.armed || this.solved || this.idx === null) return;
+    this._touch(); // a bead moved: resume the timer if idle, and restart the idle countdown
     if (this.store.scaledValue() === BigInt(this.problem.targetScaled)) this._solve();
   }
 
+  // Activity during the active problem: close out any idle gap (excluding it from
+  // the elapsed time) and restart the "no answer" countdown from now.
+  _touch() {
+    const t = this.clock.now();
+    if (this.paused) {
+      this.pausedMs += t - this.pauseStart; // exclude the whole gap since the last answer
+      this.paused = false;
+      this.notify({ type: 'resume' });
+    }
+    this.lastActivity = t;
+    this._armIdle();
+  }
+
+  _armIdle() {
+    this._clearIdle();
+    this._idleId = this.timer.set(() => this._goIdle(), this.idleMs);
+  }
+
+  _clearIdle() {
+    if (this._idleId !== null) { this.timer.clear(this._idleId); this._idleId = null; }
+  }
+
+  // No answer for idleMs: stop the timer. The excluded gap is dated back to the
+  // last answer, so the whole away-time drops out of the recorded solve — not
+  // just the part past idleMs (with sub-second time floors, counting the grace
+  // would mark every interrupted solve slow).
+  _goIdle() {
+    if (this.solved || this.idx === null || this.paused) return;
+    this.paused = true;
+    this.pauseStart = this.lastActivity;
+    this.notify({ type: 'idle', sinceMs: this.clock.now() - this.lastActivity });
+  }
+
   _solve() {
+    this._clearIdle();
+    if (this.paused) { this.pausedMs += this.clock.now() - this.pauseStart; this.paused = false; }
     this.solved = true;
     this.armed = false;
     const lv = this.levels[this.idx];
     const floor = lv.floor;
-    const elapsedMs = this.clock.now() - this.t0;
+    const elapsedMs = Math.max(0, this.clock.now() - this.t0 - this.pausedMs);
     const overTime = elapsedMs > lv.timeFloorMs;
     const clean = !overTime && this.faults === 0;
 
@@ -119,6 +178,7 @@ export class TutorialSession extends Observable {
 
   hint() {
     if (this.idx === null || !this.problem) return;
+    if (!this.solved) this._touch(); // asking for a hint means the learner is present
     const lv = this.levels[this.idx];
     this.notify({ type: 'hint', text: lv.hint ? lv.hint(this.problem) : '' });
   }
@@ -133,10 +193,11 @@ export class TutorialSession extends Observable {
     this.armed = false;
     this.store.setScaled(this.problem.startScaled);
     this.armed = true;
+    this._touch(); // clicking skip is activity — resume and restart the idle countdown
     this.notify({ type: 'skipped', text: lv.hint ? lv.hint(this.problem) : '', floor: lv.floor });
   }
 
   next() { this.newProblem(); }
   restart() { if (this.idx !== null) this.startLevel(this.idx); }
-  stop() { this.idx = null; this.problem = null; this.notify({ type: 'stopped' }); }
+  stop() { this._clearIdle(); this.idx = null; this.problem = null; this.notify({ type: 'stopped' }); }
 }

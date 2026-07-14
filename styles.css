@@ -296,6 +296,7 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .tut-sub { font-size: 0.78rem; color: var(--stone); margin-bottom: 10px; }
 .tut-timer { font-family: var(--mono); font-size: 1.02rem; color: var(--stone); font-variant-numeric: tabular-nums; min-height: 1.3em; margin-bottom: 4px; }
 .tut-timer.over { color: var(--shu); font-weight: 700; }
+.tut-timer.idle { color: var(--faint); font-style: italic; }
 .tut-timer .tut-floor { color: var(--faint); font-size: 0.85rem; }
 .tut-meter { font-size: 0.95rem; color: var(--stone); margin-bottom: 6px; }
 .tut-dots { letter-spacing: 3px; color: var(--gold); font-size: 1.05rem; }

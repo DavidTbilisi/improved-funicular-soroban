@@ -35,6 +35,10 @@ const tutorial = new TutorialSession({
   store: shell.store,
   clock: { now: () => performance.now() },
   history: solveLog,
+  // Stop the solve timer after 30s with no answer, so stepping away doesn't get
+  // judged as a slow solve (the session excludes the idle gap from the elapsed).
+  timer: { set: (fn, ms) => setTimeout(fn, ms), clear: id => clearTimeout(id) },
+  idleMs: 30000,
 });
 new TutorialView({
   levelsEl: $('tutLevels'), stageEl: $('tutStage'), teachEl: $('tutTeach'),
