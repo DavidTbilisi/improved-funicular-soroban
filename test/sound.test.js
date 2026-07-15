@@ -23,6 +23,7 @@ test('all sound methods are no-ops without an AudioContext', () => {
   const s = new SoundService();
   assert.doesNotThrow(() => {
     s.bead(); s.bead(-1);
+    s.digit(3); s.digit(7, -1); s.digit(0);
     s.carry(); s.carry(-1);
     s.reject(); s.reset();
     s.solve(); s.levelUp();

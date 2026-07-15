@@ -177,7 +177,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
       return;
     }
     dispatch(new AddAtColumnCommand(store, focus, d, sign));
-    sound.bead(sign);
+    sound.digit(d, sign);
     setFocus(focus);
     coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? 'set' : 'clear'} ${beadWord(d)} → ${place} now ${colDigit(focus)}`;
   }

@@ -11,6 +11,10 @@
 // ============================================================================
 import { getAudioContext } from './audioContext.js';
 
+// One note per digit 1-9, ascending (C major scale) so magnitude maps to
+// pitch by ear — index 0 unused, digits are 1-indexed to match applyDigit.
+const DIGIT_NOTES = [null, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66];
+
 export class SoundService {
   constructor({ enabled = true } = {}) {
     this.enabled = enabled;
@@ -56,6 +60,18 @@ export class SoundService {
     const ac = this._ac();
     if (!ac) return;
     this._tone(sign > 0 ? 520 : 430, ac.currentTime, 0.055, { type: 'triangle', gain: 0.16 });
+  }
+
+  // A whole digit (1-9) landing on a rod via the die-cross keyboard: pitch
+  // says WHICH digit, a subtract's slight downward glide says which direction.
+  digit(d, sign = 1) {
+    if (!this.enabled || !d) return;
+    const ac = this._ac();
+    if (!ac) return;
+    const freq = DIGIT_NOTES[d];
+    this._tone(freq, ac.currentTime, 0.11, {
+      type: 'triangle', gain: 0.18, glideTo: sign > 0 ? null : freq * 0.94,
+    });
   }
 
   // Carry (+10) / borrow (−10): two notes, rising to carry, falling to borrow —
