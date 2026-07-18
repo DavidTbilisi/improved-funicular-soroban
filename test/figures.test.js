@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
-  figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis,
+  figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
+  figNineFold, figFingerFacts, figChisanbop,
 } from '../src/view/figures.js';
 import { prognose } from '../src/tutorial/prognosis.js';
 import { fumbleRows } from '../src/tutorial/faultLog.js';
@@ -117,6 +118,28 @@ test('figTradeChain walks 6+7 through every intermediate board state', () => {
   assert.equal(count(f, /<ellipse/g), 4 * 2 * 5, 'four frames of two rods, five beads each');
 });
 
+test('figChisanbop walks the same 6+7 friend trade on the hands', () => {
+  const f = figChisanbop(6, '+', 7); // +10 −5 +2 — the figTradeChain example, on hands
+  // Same running two-digit values as the board walkthrough: the hands ARE the rods.
+  for (const v of ['6', '16', '11', '13']) assert.ok(f.includes(`>${v}</text>`), `frame value ${v}`);
+  // The three board steps label the arrows...
+  for (const s of ['+10', '−5', '+2']) assert.ok(f.includes(`>${s}</text>`), `step ${s}`);
+  // ...and each names the part the step moves.
+  for (const p of ['left hand', 'thumb', 'fingers']) assert.ok(f.includes(`>${p}</text>`), `part ${p}`);
+  // Four frames, five circles each (thumb + four fingers) plus the thumb's ring.
+  assert.equal(count(f, /<circle/g), 4 * 6, 'four hands: five beads + a thumb ring each');
+  assert.equal(count(f, />5<\/text>/g), 4, 'the thumb is marked as the 5-bead in every frame');
+  assert.ok(f.includes('1 on the left hand'), 'the carried ten shows on the left hand');
+});
+
+test('figChisanbop: a direct add is a single finger press, no carry', () => {
+  const f = figChisanbop(1, '+', 2); // enough free earth beads → just press fingers
+  assert.ok(f.includes('>1</text>') && f.includes('>3</text>'), 'from 1 to 3');
+  assert.ok(f.includes('>+2</text>') && f.includes('>fingers</text>'));
+  assert.ok(!f.includes('left hand'), 'no carry, so the left hand never appears');
+  assert.equal(count(f, /<circle/g), 2 * 6, 'two frames of one hand');
+});
+
 test('place-value chart stems only non-zero digits and labels the dominant rod', () => {
   const places = [
     { label: 'C', exp: 2, digit: 0, frac: false },
@@ -147,6 +170,51 @@ test('multiplication table has 81 shaded product cells with flip-contrast text',
   assert.ok(t.includes('id="mt-7-8"') && t.includes('7 × 8 = 56'));
   assert.ok(t.includes('color:var(--paper)'), 'dark cells flip to paper text');
   assert.ok(t.includes('color:var(--ink)'), 'light cells keep ink text');
+});
+
+test('finger-trick plate raises the right fingers and sums to the product', () => {
+  const f = figFingerTrick(7, 8);
+  assert.equal(count(f, /<circle/g), 10, 'two hands of five fingers');
+  // 2 + 3 raised (inked) fingers, 3 + 2 folded (bead-toned).
+  assert.equal(count(f, /fill="var\(--ink\)" stroke/g), 5);
+  assert.equal(count(f, /fill="var\(--bead\)" stroke/g), 5);
+  assert.ok(f.includes('7 × 8 = 50 + 6 = 56'));
+  assert.ok(figFingerTrick(6, 6).includes('6 × 6 = 20 + 16 = 36'), 'units past 9 still sum exactly');
+});
+
+test('finger-trick right hand mirrors: pinky outermost, thumbs meeting mid-plate', () => {
+  const f = figFingerTrick(7, 8); // right hand: 3 raised (6,7,8), 2 folded (9,10)
+  // Finger 6 (pinky, raised) sits at the far right of the mirrored hand...
+  assert.match(f, /<circle cx="314" cy="30" r="10" fill="var\(--ink\)"/);
+  assert.match(f, /<text x="314" y="70"[^>]*>6<\/text>/);
+  // ...and finger 10 (thumb, folded) at its inner edge, toward the other thumb.
+  assert.match(f, /<circle cx="202" cy="44" r="10" fill="var\(--bead\)"/);
+  assert.match(f, /<text x="202" y="70"[^>]*>10<\/text>/);
+});
+
+test('nine-fold plate folds one finger and reads tens/units around it', () => {
+  const f = figNineFold(3);
+  assert.equal(count(f, /<circle/g), 10, 'all ten fingers');
+  assert.equal(count(f, /fill="var\(--ink\)" stroke/g), 9, 'nine stay raised');
+  assert.equal(count(f, /fill="var\(--bead\)" stroke/g), 1, 'one folds');
+  assert.ok(f.includes('2 left → 20'));
+  assert.ok(f.includes('7 right → 7'));
+  assert.ok(f.includes('9 × 3 = 27'));
+  assert.ok(figNineFold(9).includes('9 × 9 = 81'), 'edge fold still sums');
+});
+
+test('finger-facts heatmap shades the 6–9 corner by recall gap', () => {
+  assert.ok(figFingerFacts({}).includes('fig-empty'), 'undrilled → empty message');
+  const t = figFingerFacts({
+    '7x8': { n: 4, miss: 0, sumMs: 4000, floorPass: 4 },  // fully automatic → dark
+    '6x9': { n: 4, miss: 3, sumMs: 12000, floorPass: 0 }, // still on the hands → bright
+  });
+  assert.equal(count(t, /<td/g), 16, 'the full 6–9 corner');
+  assert.ok(t.includes('id="ff-7-8"') && t.includes('>100%</td>'));
+  assert.ok(t.includes('id="ff-6-9"') && t.includes('>0%</td>'));
+  assert.equal(count(t, />—</g), 14, 'undrilled cells stay blank');
+  assert.ok(t.includes('color:var(--paper)'), 'bright (needs-work) cells flip text');
+  assert.ok(t.includes('mean 3.0s'), 'tooltip carries reps, misses, and mean');
 });
 
 test('layout band brackets all three regions for × and ÷', () => {

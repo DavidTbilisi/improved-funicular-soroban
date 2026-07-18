@@ -272,6 +272,9 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .drill-feedback .bad { color: var(--shu); font-weight: 600; }
 .drill-feedback .slow { color: var(--amber); font-weight: 600; }
 .drill-feedback .detail { color: var(--stone); }
+/* A missed rep's redrawn method plate (see DrillView's revealFigFor). */
+.drill-fig { max-width: 340px; margin: 10px auto 0; }
+.drill-fig .figsvg { display: block; width: 100%; height: auto; }
 /* A correct answer lands with a little pop — quiet, but felt. */
 .drill-feedback .ok, .tut-feedback .ok { display: inline-block; animation: okPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes okPop { from { transform: scale(0.7); opacity: 0; } }
@@ -440,6 +443,8 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 .fig-no { font-family: var(--mono); font-weight: 700; color: var(--data); margin-right: 4px; }
 .fig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 26px; align-items: end; }
 .fig-empty { font-size: 0.85rem; color: var(--stone); font-style: italic; padding: 26px 16px; text-align: center; }
+/* The automaticity one-liner under the session-trend figure (drills page). */
+.drill-forecast { font-size: 0.8rem; margin: -14px 0 22px; }
 
 /* The multiplication table — a single-hue asagi ramp out of the dark; .hot =
    the cell the current trainer step reads. */

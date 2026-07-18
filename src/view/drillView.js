@@ -3,14 +3,23 @@
 // to its events) and forwards user input back to the session's methods. All
 // timing/scoring lives in the session; this file only renders and wires input.
 // Auto-advance uses an injected scheduler (setTimeout by default) so it is easy
-// to control in a browser and to stub elsewhere.
+// to control in a browser and to stub elsewhere. `revealFigFor` is an optional
+// injected item→plate-string callback (see the drills page): when a rep needs
+// its reveal — a miss, or a reveal-mode flip — the plate renders under the
+// feedback line. Injection keeps this file free of any figure imports.
 // ============================================================================
 export class DrillView {
-  constructor(elements, session, { scheduler = (fn, ms) => setTimeout(fn, ms) } = {}) {
+  constructor(elements, session, { scheduler = (fn, ms) => setTimeout(fn, ms), revealFigFor = null } = {}) {
     this.el = elements;
     this.session = session;
     this.scheduler = scheduler;
+    this.revealFigFor = revealFigFor;
     this._stopped = false;
+  }
+
+  _figHtml(item) {
+    const fig = this.revealFigFor && this.revealFigFor(item);
+    return fig ? `<div class="drill-fig">${fig}</div>` : '';
   }
 
   build() {
@@ -79,7 +88,7 @@ export class DrillView {
   }
 
   _onRevealed(evt) {
-    this.el.feedbackEl.innerHTML = `<span class="detail">${evt.item.reveal}</span>`;
+    this.el.feedbackEl.innerHTML = `<span class="detail">${evt.item.reveal}</span>` + this._figHtml(evt.item);
     this.el.revealBtn.style.display = 'none';
     this.el.gotItBtn.style.display = '';
     this.el.missedBtn.style.display = '';
@@ -89,7 +98,8 @@ export class DrillView {
     const { result } = evt;
     this.el.feedbackEl.innerHTML =
       `<span class="${result.cls}">${result.verdict}</span> · ${(result.elapsedMs / 1000).toFixed(2)}s ` +
-      `<span class="detail">— ${result.reveal}</span>`;
+      `<span class="detail">— ${result.reveal}</span>` +
+      (result.correct ? '' : this._figHtml(evt.item)); // a miss redraws the method
     const s = result.stats;
     this.el.statsEl.innerHTML =
       `<span>reps <b>${s.n}</b></span><span>accuracy <b>${s.accuracy}%</b></span>` +
