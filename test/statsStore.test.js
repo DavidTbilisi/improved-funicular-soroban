@@ -33,6 +33,24 @@ test('keeps at most 20 sessions', () => {
   assert.equal(store.load().d.sessions.length, 20);
 });
 
+test('per-fact tallies merge into lifetime aggregates across sessions', () => {
+  const svc = new DrillStatsService(new MemoryStatsStore(), FIXED);
+  svc.saveSession('d', {
+    n: 2, correct: 1, sumMs: 1000, floorPass: 1,
+    facts: { '7x8': { n: 2, miss: 1, sumMs: 1000, floorPass: 1 } },
+  });
+  svc.saveSession('d', {
+    n: 2, correct: 2, sumMs: 600, floorPass: 2,
+    facts: {
+      '7x8': { n: 1, miss: 0, sumMs: 300, floorPass: 1 },
+      '6x9': { n: 1, miss: 0, sumMs: 300, floorPass: 1 },
+    },
+  });
+  assert.deepEqual(svc.facts('d')['7x8'], { n: 3, miss: 1, sumMs: 1300, floorPass: 2 });
+  assert.deepEqual(svc.facts('d')['6x9'], { n: 1, miss: 0, sumMs: 300, floorPass: 1 });
+  assert.deepEqual(svc.facts('undrilled'), {});
+});
+
 test('history returns the saved sessions oldest-first, [] for undrilled decks', () => {
   const svc = new DrillStatsService(new MemoryStatsStore(), FIXED);
   assert.deepEqual(svc.history('d'), []);

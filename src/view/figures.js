@@ -16,6 +16,8 @@
 import { MOVE_KEYS } from '../domain/movePlan.js';
 import { CUBE_FACES } from '../domain/pegs.js';
 import { CUBE_LAYOUT, cubeFaceValues, cubeName } from '../domain/faces.js';
+import { fingerPlan, nineFoldPlan } from '../domain/fingers.js';
+import { chisanbopAdd, chisanbopSub, handOf, actionValue } from '../domain/chisanbop.js';
 
 // A digit as a die face: each face-emoji in its fixed cell (taxi center, alien
 // top, tangerine left, rose right, wave bottom), lit when the digit contains it
@@ -207,6 +209,148 @@ export function multTableHTML() {
     rows += `<tr>${cells}</tr>`;
   }
   return `<table class="multab" aria-label="Multiplication table, shaded by product">${rows}</table>`;
+}
+
+// --- Finger multiplication (the hands method, 6–10) --------------------------
+// One worked example as a plate: each hand is five finger-circles, pinky→thumb
+// numbered 6..10; fingers up to the operand are raised (lifted and inked, the
+// bead-state convention: pushed = counts). The two hands MIRROR like real hands
+// raised toward you — thumbs meet in the middle — so the plate teaches the
+// physical gesture, not a diagram of it. The arithmetic lines below derive
+// from the same fingerPlan the drill deck reveals, so plate and deck agree.
+export function figFingerTrick(a = 7, b = 8) {
+  const p = fingerPlan(a, b);
+  const hand = (x0, up, mirror) => {
+    let s = '';
+    for (let i = 0; i < 5; i++) { // i = 0 is the pinky, finger value 6+i
+      const raised = i < up;
+      const cx = x0 + (mirror ? 4 - i : i) * 28, cy = raised ? 30 : 44;
+      s += `<circle cx="${cx}" cy="${cy}" r="10" fill="${raised ? INK : BEAD}" stroke="${INK}" stroke-width="1"/>`;
+      s += txt(cx, 70, String(6 + i), { size: 9 });
+    }
+    return s;
+  };
+  let body = hand(26, p.upA, false) + hand(202, p.upB, true);
+  body += txt(170, 44, '×', { size: 14, fill: INK, weight: 600 });
+  body += txt(82, 86, `${a}: raised ${p.upA} · folded ${p.downA}`, { size: 9 });
+  body += txt(258, 86, `${b}: raised ${p.upB} · folded ${p.downB}`, { size: 9 });
+  body += txt(170, 108, `tens — raised ${p.upA} + ${p.upB} = ${p.upA + p.upB} → ${p.tens}`, { size: 10, fill: INK });
+  body += txt(170, 123, `units — folded ${p.downA} × ${p.downB} = ${p.units}`, { size: 10, fill: INK });
+  body += txt(170, 141, `${a} × ${b} = ${p.tens} + ${p.units} = ${p.product}`, { size: 12, fill: INK, weight: 600 });
+  return svg(340, 150, `Finger multiplication: ${a} × ${b}`, body);
+}
+
+// --- Nine-fold (the 9s-row hands method) --------------------------------------
+// Ten fingers numbered 1..10; the folded one drops (hollow, the bead-state
+// convention: withdrawn = doesn't count). Tens read left of the fold, units
+// right of it — derived from the same nineFoldPlan the drill deck reveals.
+export function figNineFold(n = 3) {
+  const p = nineFoldPlan(n);
+  const X = i => 26 + i * 32; // finger i (0-based, value i+1)
+  let body = '';
+  for (let i = 0; i < 10; i++) {
+    const folded = i + 1 === n;
+    body += `<circle cx="${X(i)}" cy="${folded ? 44 : 30}" r="10" fill="${folded ? BEAD : INK}" stroke="${INK}" stroke-width="1"/>`;
+    body += txt(X(i), 70, String(i + 1), { size: 9 });
+  }
+  // The two sides of the fold, bracketed under the labels.
+  const bracket = (lo, hi, label, color) => {
+    const x1 = X(lo) - 10, x2 = X(hi) + 10, y = 82;
+    return hline(x1, x2, y, color, 1.5) + vline(x1, y - 4, y, color, 1.5) + vline(x2, y - 4, y, color, 1.5) +
+      txt((x1 + x2) / 2, y + 14, label, { size: 9.5, fill: color, weight: 600 });
+  };
+  body += bracket(0, n - 2, `${p.left} left → ${p.left * 10}`, DATA);
+  body += bracket(n, 9, `${p.right} right → ${p.right}`, DATA);
+  body += txt(170, 122, `9 × ${n} = ${p.product}`, { size: 12, fill: INK, weight: 600 });
+  return svg(340, 132, `Nine-fold: 9 × ${n}`, body);
+}
+
+// --- Chisanbop trade, walked on the hands -------------------------------------
+// The hand analog of figTradeChain: a chisanbop hand IS a rod (thumb = the
+// 5-bead, four fingers = the earth beads), so the SAME friend trade replays as
+// a film strip of ones-hand frames. Inked = pressed (counts), hollow = raised;
+// the thumb is ringed and marked "5". A ±10 step is the carry — one press/lift
+// on the LEFT (tens) hand — shown as the running value jumping a decade and the
+// arrow reading "left hand". Frames come from chisanbop{Add,Sub}, so plate and
+// drill can't drift.
+function chisanHand(cx0, cy, h) {
+  const R = 8, SP = 17, TG = 11;              // thumb, gap, then four fingers
+  const slot = k => cx0 + (k === 0 ? 0 : TG + SP * k); // k=0 thumb, 1..4 fingers
+  const dot = (x, on, ring) =>
+    `<circle cx="${x}" cy="${cy}" r="${R}" fill="${on ? INK : BEAD}" stroke="${INK}" stroke-width="1"/>` +
+    (ring ? `<circle cx="${x}" cy="${cy}" r="${R + 3}" fill="none" stroke="${INK}" stroke-width="1"/>` : '');
+  let s = dot(slot(0), h.thumb, true) + txt(slot(0), cy + R + 14, '5', { size: 8, fill: FAINT });
+  for (let k = 1; k <= 4; k++) s += dot(slot(k), k <= h.fingers, false);
+  return { s, w: TG + SP * 4 + R };           // right edge from cx0
+}
+
+// c = starting ones digit, sign '+'/'-', d = digit to add/subtract (1..9).
+export function figChisanbop(c, sign = '+', d = 1) {
+  const m = sign === '-' ? chisanbopSub(c, d) : chisanbopAdd(c, d);
+  // A borrow needs a ten already in play to take, so seed the left hand for it;
+  // an add's carry lands on an empty left hand. This keeps the running value in
+  // range (a bare ones digit can't go below zero).
+  let tens = sign === '-' ? m.borrow : 0, ones = c;
+  const start = tens * 10 + ones;
+  const frames = [{ tens, ones, act: null }];
+  for (const a of m.actions) {
+    if (a.part === 'carry') tens += a.dir === 'press' ? 1 : -1;
+    else ones += actionValue(a);
+    frames.push({ tens, ones, act: a });
+  }
+  const R = 8, FW = 8 + (11 + 17 * 4 + 8) + 8, GAP = 48, M = 10, cy = 42;
+  const W = M * 2 + frames.length * FW + (frames.length - 1) * GAP;
+  const part = a => a.part === 'carry' ? 'left hand' : a.part; // thumb / fingers / left hand
+  let body = '';
+  frames.forEach((f, i) => {
+    const ox = M + i * (FW + GAP);
+    body += chisanHand(ox + R + 2, cy, handOf(f.ones)).s;
+    const val = f.tens * 10 + f.ones;
+    body += txt(ox + FW / 2, 92, String(val), { size: 13, fill: INK, weight: 600 });
+    if (f.tens > 0) body += txt(ox + FW / 2, 106, `${f.tens} on the left hand`, { size: 8, fill: DATA });
+    if (i > 0) { // the action that produced this frame, over an arrow from the last
+      const x1 = ox - GAP + 6, x2 = ox - 6, ym = cy;
+      body += `<line x1="${x1}" y1="${ym}" x2="${x2}" y2="${ym}" stroke="${LINE2}" stroke-width="1.5"/>`;
+      body += `<path d="M${x2 - 5} ${ym - 3.5} L${x2} ${ym} L${x2 - 5} ${ym + 3.5}" fill="none" stroke="${LINE2}" stroke-width="1.5"/>`;
+      body += txt((x1 + x2) / 2, ym - 8, f.act.step.replace('-', '−'), { size: 11, fill: DATA, weight: 600 });
+      body += txt((x1 + x2) / 2, ym + 15, part(f.act), { size: 8.5, fill: STONE });
+    }
+  });
+  return svg(W, 118, `Chisanbop: ${start} ${sign} ${d} walked on the hands`, body);
+}
+
+// --- Finger-facts heatmap (HTML, like the multiplication table) ---------------
+// The 6–9 corner shaded by what still needs the hands: BRIGHT = low recall
+// (share of lifetime reps landed correct-and-under-floor), dark = automatic.
+// facts = a stats-service lifetime map { '7x8': { n, miss, sumMs, floorPass } }.
+export function figFingerFacts(facts = {}) {
+  if (!Object.keys(facts).length) {
+    return `<div class="fig-empty">No Finger × reps saved yet — the 6–9 corner heats up here, bright where recall still needs the hands.</div>`;
+  }
+  let rows = `<tr><th></th>${[6, 7, 8, 9].map(b => `<th>${b}</th>`).join('')}</tr>`;
+  for (let a = 6; a <= 9; a++) {
+    let cells = `<th>${a}</th>`;
+    for (let b = 6; b <= 9; b++) {
+      const s = facts[`${a}x${b}`];
+      if (!s || !s.n) {
+        cells += `<td id="ff-${a}-${b}" title="${a} × ${b} — not drilled yet">—</td>`;
+        continue;
+      }
+      const recall = s.floorPass / s.n;
+      // Same single-hue ramp as the multiplication table, but keyed to the
+      // automaticity GAP: well (#1a1826, recall 100%) → bright asagi (#8fa0ff,
+      // recall 0%); bright cells flip to dark (paper) text.
+      const t = 0.05 + 0.95 * (1 - recall);
+      const lo = [26, 24, 38], hi = [143, 160, 255];
+      const rgb = lo.map((c, k) => Math.round((1 - t) * c + t * hi[k]));
+      const bright = t > 0.55;
+      const title = `${a} × ${b} — ${s.n} rep${s.n === 1 ? '' : 's'} · ${s.miss} miss${s.miss === 1 ? '' : 'es'}` +
+        ` · mean ${(s.sumMs / s.n / 1000).toFixed(1)}s · ${Math.round(recall * 100)}% under floor`;
+      cells += `<td id="ff-${a}-${b}" style="background:rgb(${rgb.join(',')});color:${bright ? 'var(--paper)' : 'var(--ink)'}" title="${title}">${Math.round(recall * 100)}%</td>`;
+    }
+    rows += `<tr>${cells}</tr>`;
+  }
+  return `<table class="multab" aria-label="Finger-times facts, bright where recall still needs the hands">${rows}</table>`;
 }
 
 // --- Rod-layout band for a trainer problem (live) ----------------------------

@@ -1,9 +1,16 @@
 // ============================================================================
 // Drill decks — Strategy pattern. Each deck is an interchangeable strategy with
 // { label, floorMs, mode, gen(rng) }. gen() returns an item:
-//   { prompt, sub, answers:[...], reveal, small? }
-// Ordered per the tier discipline: atomics → cells → scenes → seals.
+//   { prompt, sub, answers:[...], reveal, small?, fact? }
+// Ordered per the tier discipline: atomics → cells → scenes → seals, with the
+// finger times-table decks appended after them (their own discipline).
 // gen() takes an rng (see rng.js) so items are reproducible under test.
+//
+// Decks over a FINITE fact space may also declare { facts, genFact(fact, rng) }:
+// the session then deals facts from a shuffled bag (full coverage per round,
+// missed facts re-dealt early — see drillSession.js) instead of sampling gen()
+// i.i.d. Such items carry their `fact` so misses can be requeued and per-fact
+// stats aggregated; gen() stays as the uniform fallback.
 // ============================================================================
 import { HEX_SYMS, AUDIO_PEGS, VISUAL_PEGS } from '../domain/pegs.js';
 import { cubeEmojis, cubeName } from '../domain/faces.js';
@@ -11,7 +18,21 @@ import { matrixCell, hexCell, packAction } from '../domain/codec/cell.js';
 import { deepPackScenes, sceneStory } from '../domain/codec/scene.js';
 import { sealDigit, sealHex } from '../domain/codec/codec.js';
 import { sealPerceptHex } from '../domain/codec/scene.js';
+import {
+  fingerPlan, fingerStory, handGlyph, handGlyphR,
+  nineFoldPlan, nineFoldStory,
+} from '../domain/fingers.js';
 import { stripStoryDigits } from './text.js';
+
+// The fact spaces of the finger decks: the hard 6–9 corner of the times table
+// (both operand orders — recognizing 6×9 and 9×6 are separate skills) and the
+// 9s row of the nine-fold method.
+const FINGER_FACTS = Object.freeze(Array.from({ length: 16 }, (_, i) => {
+  const a = 6 + (i >> 2), b = 6 + (i & 3);
+  return Object.freeze({ key: `${a}x${b}`, kind: 'raise', a, b });
+}));
+const NINE_FACTS = Object.freeze(Array.from({ length: 8 }, (_, i) =>
+  Object.freeze({ key: `9f${i + 2}`, kind: 'fold', n: i + 2 })));
 
 export const DRILL_DECKS = {
   faceToDigit: {
@@ -113,6 +134,86 @@ export const DRILL_DECKS = {
         answers,
         reveal: `▢ = ${missing}${(missing === 0 || missing === 9) ? ' (0 and 9 are both seal-consistent — mod-9 cannot tell them apart)' : ''}`,
         small: true,
+      };
+    },
+  },
+  fingerRead: {
+    // Stage 1 of the finger ladder: fluently READ a pair of hands — raised
+    // fingers count tens, folded multiply into units. Computing is the point
+    // here (the floor allows it); Finger × below is where recall takes over.
+    label: 'Hands → product', floorMs: 4000, mode: 'type',
+    facts: FINGER_FACTS,
+    genFact(fact) {
+      const p = fingerPlan(fact.a, fact.b);
+      return {
+        prompt: `${handGlyph(p.upA)} ✕ ${handGlyphR(p.upB)}`,
+        sub: 'read the hands — raised count tens, folded multiply into units → type the product',
+        answers: [String(p.product)],
+        reveal: fingerStory(fact.a, fact.b),
+        fact,
+      };
+    },
+    gen(rng) { return this.genFact(this.facts[rng.int(this.facts.length)], rng); },
+  },
+  fingerTimes: {
+    // Not a codec tier — the hard 6–9 corner of the times table, drilled the
+    // CRA way: compute on the hands first, let recall displace them. The floor
+    // is tuned for *recall*, not finger work: early sessions run over it, and
+    // the under-floor share climbing toward 100% is the signal that the fact
+    // has become automatic and the hands have faded.
+    label: 'Finger ×', floorMs: 2500, mode: 'type',
+    facts: FINGER_FACTS,
+    genFact(fact) {
+      return {
+        prompt: `${fact.a} × ${fact.b}`,
+        sub: 'work it on your hands (fingers = 6–9) until recall beats them → type the product',
+        answers: [String(fingerPlan(fact.a, fact.b).product)],
+        reveal: fingerStory(fact.a, fact.b),
+        fact,
+      };
+    },
+    gen(rng) { return this.genFact(this.facts[rng.int(this.facts.length)], rng); },
+  },
+  nineFold: {
+    // The sibling trick for the 9s row: fold finger n of ten, read tens left
+    // of the fold and units right of it. Same CRA arc as Finger ×.
+    label: '9-fold ×', floorMs: 2000, mode: 'type',
+    facts: NINE_FACTS,
+    genFact(fact, rng) {
+      const p = nineFoldPlan(fact.n);
+      return {
+        prompt: rng.int(2) ? `${fact.n} × 9` : `9 × ${fact.n}`,
+        sub: 'fold that finger of ten — tens left of the fold, units right → type the product',
+        answers: [String(p.product)],
+        reveal: nineFoldStory(fact.n),
+        fact,
+      };
+    },
+    gen(rng) { return this.genFact(this.facts[rng.int(this.facts.length)], rng); },
+  },
+  percentOf: {
+    // Percentages on the soroban: P% of N = N × P ÷ 100 — and the ÷100 is not a
+    // move but a two-rod place shift. The result slides right: whole digits land
+    // on the integer rods, and a leftover half lands on the tenths rod. Drills
+    // that multiply-then-shift routine. Bases are multiples of 10 and percents
+    // multiples of 5, so N×P is always a multiple of 50 → every answer is whole
+    // or lands on a single .5 (never finer than the tenths rod). Not a codec
+    // tier or a finger trick — its own soroban-arithmetic discipline.
+    label: '% of a number', floorMs: 8000, mode: 'type',
+    gen(rng) {
+      const PCTS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80];
+      const pct = PCTS[rng.int(PCTS.length)];
+      const base = 10 * (2 + rng.int(98)); // 20..990, a multiple of 10
+      const product = base * pct;          // the multiply step (exact integer)
+      const half = product % 100 === 50;   // ÷100 leaves a half on the tenths rod
+      const whole = Math.floor(product / 100);
+      const value = half ? `${whole}.5` : String(whole);
+      return {
+        prompt: `${pct}% of ${base}`,
+        sub: 'multiply, then shift two rods right (÷100) → type the result',
+        // accept the padded ".50" spelling of a half so an over-typed answer grades correct
+        answers: half ? [value, `${whole}.50`] : [value],
+        reveal: `${base} × ${pct} = ${product}, shift ÷100 → ${value}`,
       };
     },
   },

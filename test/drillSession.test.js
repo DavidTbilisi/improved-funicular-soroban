@@ -97,3 +97,61 @@ test('starting a new deck auto-saves the previous one', () => {
   session.start('audioPeg'); // should flush faceToDigit
   assert.ok(mem.load().faceToDigit);
 });
+
+// --- Fact decks: bag dealing, miss requeue, per-fact stats -------------------
+
+// Answer the current item correctly and deal the next one.
+const passRep = session => { session.submitTyped(session.item.answers[0]); session.next(); };
+
+test('a fact deck deals every fact exactly once per round', () => {
+  const { session } = makeSession([0]);
+  session.start('fingerTimes');
+  const prompts = [];
+  for (let i = 0; i < 16; i++) { prompts.push(session.item.prompt); passRep(session); }
+  assert.equal(new Set(prompts).size, 16, 'all 16 facts, no repeats within the round');
+  assert.ok(prompts.includes('6 × 6') && prompts.includes('9 × 9'));
+});
+
+test('a missed fact is re-dealt two items later, with a longer dwell', () => {
+  const { session } = makeSession([0]);
+  session.start('fingerTimes');
+  const missed = session.item.prompt;
+  const res = session.submitTyped(String(Number(session.item.answers[0]) + 1)); // wrong
+  assert.equal(res.correct, false);
+  assert.equal(res.nextDelayMs, 3200, 'fact-deck misses linger for the redrawn method');
+  session.next();
+  const after = [];
+  for (let i = 0; i < 3; i++) { after.push(session.item.prompt); passRep(session); }
+  assert.notEqual(after[0], missed);
+  assert.notEqual(after[1], missed);
+  assert.equal(after[2], missed, 'the miss comes back after two other items');
+});
+
+test('per-fact tallies persist through the stats service on stop', () => {
+  const { session, mem, clock } = makeSession([0]);
+  session.start('fingerTimes');
+  const key = session.item.fact.key;
+  clock.set(500); // under the 2500ms floor
+  session.submitTyped(String(Number(session.item.answers[0]) + 1)); // miss
+  session.next();
+  const key2 = session.item.fact.key;
+  session.submitTyped(session.item.answers[0]); // pass
+  session.stop();
+  const facts = mem.load().fingerTimes.facts;
+  assert.deepEqual(facts[key], { n: 1, miss: 1, sumMs: 500, floorPass: 0 });
+  assert.equal(facts[key2].n, 1);
+  assert.equal(facts[key2].miss, 0);
+  assert.equal(facts[key2].floorPass, 1);
+});
+
+test('lifetime-weak facts are dealt twice in a round', () => {
+  const mem = new MemoryStatsStore({
+    fingerTimes: { sessions: [], facts: { '6x6': { n: 4, miss: 3, sumMs: 9000, floorPass: 0 } } },
+  });
+  const { session } = makeSession([0], { mem });
+  session.start('fingerTimes');
+  const prompts = [];
+  for (let i = 0; i < 17; i++) { prompts.push(session.item.prompt); passRep(session); }
+  assert.equal(prompts.filter(p => p === '6 × 6').length, 2, 'the weak fact rides twice');
+  assert.equal(new Set(prompts).size, 16, 'everything else still exactly once');
+});

@@ -38,7 +38,12 @@ export class DrillStatsService {
   // The persisted session records for one deck (oldest → newest, ≤ 20).
   history(deckId) { return (this.store.load()[deckId] || {}).sessions || []; }
 
-  // counters: { n, correct, sumMs, floorPass }
+  // Lifetime per-fact aggregates for one deck (fact decks only):
+  // { key: { n, miss, sumMs, floorPass } }. Feeds the weak-fact bag bias in
+  // DrillSession and the facts heatmap.
+  facts(deckId) { return (this.store.load()[deckId] || {}).facts || {}; }
+
+  // counters: { n, correct, sumMs, floorPass, facts? }
   saveSession(deckId, counters) {
     if (!deckId || counters.n === 0) return null;
     const rec = {
@@ -51,6 +56,12 @@ export class DrillStatsService {
     const all = this.store.load();
     const d = all[deckId] || { sessions: [] };
     d.sessions = (d.sessions || []).slice(-19).concat([rec]);
+    // Fold the session's per-fact tallies into the deck's lifetime aggregates.
+    for (const [key, f] of Object.entries(counters.facts || {})) {
+      const t = (d.facts = d.facts || {})[key] || { n: 0, miss: 0, sumMs: 0, floorPass: 0 };
+      t.n += f.n; t.miss += f.miss; t.sumMs += f.sumMs; t.floorPass += f.floorPass;
+      d.facts[key] = t;
+    }
     if (!d.best || rec.floorPct > d.best.floorPct ||
         (rec.floorPct === d.best.floorPct && rec.meanMs < d.best.meanMs)) {
       d.best = rec;

@@ -10,12 +10,12 @@
 
 <div class="app">
   <h1>Place-Value Peg Soroban</h1>
-  <p class="subtitle">Timed recall drills for the mnemonic number-codec — pegs, cells, scenes, seals.</p>
+  <p class="subtitle">Timed recall drills for the mnemonic number-codec — pegs, cells, scenes, seals — plus the finger times-table track.</p>
   <div id="nav"></div>
 
   <div class="panel">
     <h2>Drill mode — timed against the METER pass-floors</h2>
-    <p class="help help-cols" style="margin-bottom:12px;">Pick a deck; items keep coming until you stop. Typed decks check exactly (case-insensitive, <code>0x</code> optional); recall decks reveal for self-grading — the timer measures until you hit <strong>Reveal</strong>. A rep passes its floor only if it's <em>correct and under time</em>. Session stats persist per deck (localStorage). Drill order per the tier discipline: atomics (pegs, faces, actions) → cells → scenes → seals.</p>
+    <p class="help help-cols" style="margin-bottom:12px;">Pick a deck; items keep coming until you stop. Typed decks check exactly (case-insensitive, <code>0x</code> optional); recall decks reveal for self-grading — the timer measures until you hit <strong>Reveal</strong>. A rep passes its floor only if it's <em>correct and under time</em>. Session stats persist per deck (localStorage). Drill order per the tier discipline: atomics (pegs, faces, actions) → cells → scenes → seals. The finger decks are their own track, a ladder over the hard 6–9 corner of the times table: <strong>Hands → product</strong> teaches you to read a pair of hands fluently (Fig. 1), <strong>Finger ×</strong> then drills the bare facts until recall displaces the hands — its floor is set for recall, so your under-floor share <em>is</em> your automaticity — and <strong>9-fold ×</strong> covers the 9s row (Fig. 2). These decks deal every fact once per round, re-deal a miss two items later (with the method redrawn), and deal facts your record shows as weak twice.</p>
     <div class="drill-decks" id="drillDecks"></div>
     <div class="drill-stage" id="drillStage">
       <div class="drill-floor" id="drillFloor"></div>
@@ -34,6 +34,11 @@
       <div class="drill-best" id="drillBest"></div>
       <div style="margin-top:12px;"><button id="drillStop">Stop session</button></div>
     </div>
+    <div class="fig-grid">
+      <div id="figFinger"></div>
+      <div id="figNineFold"></div>
+      <div id="figChisanbop"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -41,6 +46,7 @@
     <div class="fig-grid">
       <div id="figSessions"></div>
       <div id="figBests"></div>
+      <div id="figFacts"></div>
     </div>
   </div>
 </div>
