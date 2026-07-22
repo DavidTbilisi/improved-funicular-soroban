@@ -20,6 +20,7 @@ const populated = () => new FakeStorage({
   'npv-practice-history': JSON.stringify({ 'big-add': { solves: [{ t: '2026-07-02T10:00', ms: 3000, clean: true }], best: 4 } }),
   'npv-game-save': JSON.stringify({ v: 1, sp: 120, day: 14, grid: [] }),
   'npv-days': JSON.stringify({ v: 1, seeded: true, days: ['2026-07-01', '2026-07-02'] }),
+  'npv-anzan': JSON.stringify({ warm: { rounds: [{ t: '2026-07-02T10:00', ms: 650, ok: true }], best: 5, fastest: 650 } }),
   'npv-support': '1',
   'npv-sound': 'off',
   'npv-bpm': '72',

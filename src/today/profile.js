@@ -54,6 +54,7 @@ function cleanRate(solves, window = 10) {
  * @param levels   TUTORIAL_LEVELS
  * @param decks    DRILL_DECKS (an object keyed by deck id)
  * @param modes    ROD_MODES
+ * @param anzanRungs ANZAN_LEVELS, with anzanLog the AnzanLog beside it
  * @param progress TutorialProgress
  * @param practiceLog / trainerLog  SolveLog instances
  * @param stats    DrillStatsService
@@ -65,8 +66,8 @@ function cleanRate(solves, window = 10) {
  * @param today    the injected day key ('YYYY-MM-DD')
  */
 export function buildProfile({
-  levels = [], decks = {}, modes = [],
-  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog,
+  levels = [], decks = {}, modes = [], anzanRungs = [],
+  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog,
   support = 0, today = null,
 } = {}) {
   // --- Days ----------------------------------------------------------------
@@ -108,6 +109,28 @@ export function buildProfile({
     };
   });
   const weakestMode = trainerModes.find(m => !m.cleared) || null;
+
+  // --- Flash anzan ---------------------------------------------------------
+  // Its axis is the PACE it was carried at, not the time it took, so `cleared`
+  // means the floor was ever carried unbroken and `fastest` is the real score.
+  const anzanLevels = anzanRungs.map(l => {
+    const rounds = anzanLog ? anzanLog.rounds(l.id) : [];
+    const lastDay = lastDayOf(rounds);
+    return {
+      id: l.id, title: l.title, terms: l.terms, digits: l.digits,
+      baseMs: l.baseMs, floor: l.floor,
+      best: anzanLog ? anzanLog.best(l.id) : 0,
+      fastest: anzanLog ? anzanLog.fastest(l.id) : null,
+      cleared: !!(anzanLog && anzanLog.fastest(l.id) !== null),
+      rounds: rounds.length,
+      accuracy: anzanLog ? anzanLog.accuracy(l.id) : null,
+      // The pace of the most recent round — what the learner is actually working
+      // at, which need not be the rung's default once they've moved the control.
+      lastMs: rounds.length ? rounds[rounds.length - 1].ms : null,
+      lastDay, daysSince: sinceDays(lastDay, today),
+    };
+  });
+  const currentAnzan = anzanLevels.find(l => !l.cleared) || anzanLevels[anzanLevels.length - 1] || null;
 
   // --- Drill decks ---------------------------------------------------------
   const drillDecks = Object.entries(decks).map(([id, deck]) => {
@@ -173,7 +196,8 @@ export function buildProfile({
 
   const totalSolves = practiceLevels.reduce((n, l) => n + l.solves, 0)
     + trainerModes.reduce((n, m) => n + m.solves, 0);
-  const totalSessions = drillDecks.reduce((n, d) => n + d.sessions, 0);
+  const totalSessions = drillDecks.reduce((n, d) => n + d.sessions, 0)
+    + anzanLevels.reduce((n, l) => n + l.rounds, 0);
 
   return {
     today, days, streak,
@@ -195,6 +219,13 @@ export function buildProfile({
       cleared: trainerModes.filter(m => m.cleared).length,
       weakest: weakestMode,
       solves: trainerModes.reduce((n, m) => n + m.solves, 0),
+    },
+    anzan: {
+      levels: anzanLevels,
+      total: anzanLevels.length,
+      cleared: anzanLevels.filter(l => l.cleared).length,
+      current: currentAnzan,
+      rounds: anzanLevels.reduce((n, l) => n + l.rounds, 0),
     },
     drills: {
       decks: drillDecks,

@@ -34,6 +34,7 @@ export const SAVE_KEYS = Object.freeze([
   'npv-trainer-progress',   // per-mode solve records
   'npv-fault-log',          // rejected moves by complement pair
   'npv-game-save',          // the village
+  'npv-anzan',              // flash-anzan rounds, best streaks, fastest pace cleared
   'npv-achievements',       // badges + lifetime counters
   'npv-days',               // the day axis (streak)
   'npv-today',              // today's plan checklist

@@ -638,3 +638,40 @@ export function figStreak(dayKeys = [], todayKey = null, weeks = 12) {
     { size: 8.5, fill: FAINT, anchor: 'start' });
   return svg(W, H, 'Calendar days practised', body);
 }
+
+// --- Flash-anzan ladder (live) -----------------------------------------------
+// One row per rung, and the mark is the PACE it was carried at — the only score
+// anzan has. The axis is inverted on purpose: faster is further right, because
+// "further along the axis" has to mean "better" or the chart reads backwards.
+// Untouched rungs keep their row so the ladder's shape stays visible.
+export function figAnzan(rows = []) {
+  if (!rows.length) return `<div class="fig-empty">No anzan rungs yet.</div>`;
+  const W = 520, RH = 20, L = 132, R = 54, T = 20;
+  const H = T + rows.length * RH + 22;
+  const speeds = [2000, 1000, 500, 250];
+  const lo = 200, hi = 2000;
+  // Log scale: the interesting spread is at the fast end, where the rungs bunch.
+  const xFor = ms => L + (Math.log(hi / Math.max(lo, Math.min(hi, ms))) / Math.log(hi / lo)) * (W - L - R);
+
+  let body = '';
+  for (const ms of speeds) {
+    body += vline(xFor(ms), T - 6, T + rows.length * RH, LINE)
+      + txt(xFor(ms), H - 8, `${ms >= 1000 ? `${ms / 1000}s` : `${ms}ms`}`, { size: 8, fill: FAINT });
+  }
+  rows.forEach((r, i) => {
+    const y = T + i * RH + RH / 2;
+    body += txt(L - 8, y + 3.5, r.title.replace(/^.*· /, ''), { size: 9, fill: r.cleared ? INK : STONE, anchor: 'end' });
+    if (r.fastest) {
+      body += hline(xFor(r.baseMs), xFor(r.fastest), y, LINE2, 2);
+      body += `<circle cx="${xFor(r.fastest)}" cy="${y}" r="4.5" fill="${DATA}" stroke="${PAPER2}" stroke-width="1.5">` +
+        `<title>${r.title} — carried at ${r.fastest} ms (best streak ${r.best})</title></circle>`;
+    } else if (r.rounds) {
+      body += `<circle cx="${xFor(r.baseMs)}" cy="${y}" r="3.5" fill="${PAPER2}" stroke="${DATA}" stroke-width="1.5">` +
+        `<title>${r.title} — ${r.rounds} rounds, ${Math.round((r.accuracy || 0) * 100)}% correct, not yet carried</title></circle>`;
+    } else {
+      body += `<circle cx="${xFor(r.baseMs)}" cy="${y}" r="2" fill="${LINE2}"><title>${r.title} — not started</title></circle>`;
+    }
+  });
+  body += txt(W - R, 11, 'faster →', { size: 8, fill: FAINT, anchor: 'end' });
+  return svg(W, H, 'Fastest pace carried, per anzan rung', body);
+}
