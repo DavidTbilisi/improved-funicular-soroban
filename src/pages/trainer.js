@@ -12,6 +12,8 @@ import { figure, figLayout, multTableHTML, figSolveTimes } from '../view/figures
 import { SolveLog } from '../tutorial/solveLog.js';
 import { FaultLog } from '../tutorial/faultLog.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
+import { DayLog } from '../today/dayLog.js';
+import { targetFromSearch } from '../today/deepLink.js';
 
 const $ = id => document.getElementById(id);
 mountNav('trainer');
@@ -24,6 +26,8 @@ shell.adoptBoard($('rtBoardSlot'));
 // page's log, so the diagnosis chart there sees trainer mistakes too.
 const log = new SolveLog(new LocalStorageProgressStore(window.localStorage, 'npv-trainer-progress'));
 const faultLog = new FaultLog(new LocalStorageProgressStore(window.localStorage, 'npv-fault-log'));
+// The day axis behind the Today page's streak — marked on real work only.
+const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
 
 const rodTrainer = new RodTrainerSession({
   modes: ROD_MODES, rng: new MathRng(), store: shell.store,
@@ -74,6 +78,7 @@ rodTrainer.subscribe(evt => {
     shell.setFocus(Math.min(...evt.targets)); // snap focus to the step's rightmost target
     markCell(evt.factors);
   } else if (evt.type === 'solved') {
+    dayLog.mark(); // a solve is work: today counts toward the streak
     if (evt.clean) shell.sound.solve(); else shell.sound.reject();
     markCell(null);
     renderTrend();
@@ -83,5 +88,12 @@ rodTrainer.subscribe(evt => {
     renderTrend();
   }
 });
+
+// Deep link from the Today plan: trainer.html?mode=mul-1x1 starts that mode.
+// Modes are never locked, so any known id is fair game.
+{
+  const want = targetFromSearch(location.search, 'trainer');
+  if (want && ROD_MODES.some(m => m.id === want)) rodTrainer.start(want);
+}
 
 shell.start();

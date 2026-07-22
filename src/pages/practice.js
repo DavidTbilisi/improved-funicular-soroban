@@ -15,6 +15,8 @@ import { planAdd } from '../domain/movePlan.js';
 import { SolveLog } from '../tutorial/solveLog.js';
 import { FaultLog, fumbleRows } from '../tutorial/faultLog.js';
 import { prognose } from '../tutorial/prognosis.js';
+import { DayLog } from '../today/dayLog.js';
+import { targetFromSearch } from '../today/deepLink.js';
 
 const $ = id => document.getElementById(id);
 mountNav('practice');
@@ -28,6 +30,8 @@ shell.adoptBoard($('tutBoardSlot'));
 // each fumble's needed trade (for diagnosis). All on the same blob-store port.
 const solveLog = new SolveLog(new LocalStorageProgressStore(window.localStorage, 'npv-practice-history'));
 const faultLog = new FaultLog(new LocalStorageProgressStore(window.localStorage, 'npv-fault-log'));
+// The day axis behind the Today page's streak — marked on real work only.
+const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
 
 const tutorial = new TutorialSession({
   levels: TUTORIAL_LEVELS,
@@ -155,6 +159,7 @@ tutorial.subscribe(evt => {
   if (evt.type === 'problem' || evt.type === 'skipped') { shell.setFocus(0); shell.coachEl.textContent = ''; }
   if (evt.type === 'level') { curLevel = { id: evt.id, timeFloorMs: evt.timeFloorMs }; renderTimes(); renderProg(); }
   if (evt.type === 'solved') {
+    dayLog.mark(); // a solve is work: today counts toward the streak
     if (evt.justPassed) shell.sound.levelUp(); else if (evt.clean) shell.sound.solve(); else shell.sound.reject();
     if (support > 0) shell.soroban.peek(); // faded modes: flash the landed value into view
     renderTimes();
@@ -163,5 +168,13 @@ tutorial.subscribe(evt => {
   if (evt.type === 'stopped') { curLevel = null; renderTimes(); renderProg(); }
   if (evt.levels) { renderLadder(evt.levels); renderGraduate(evt.levels); } // level/solved events carry a fresh snapshot
 });
+
+// Deep link from the Today plan: practice.html?level=big-sub opens that level
+// directly. Locked levels are ignored — a link can't jump the unlock ladder.
+{
+  const want = targetFromSearch(location.search, 'practice');
+  const i = want ? TUTORIAL_LEVELS.findIndex(l => l.id === want) : -1;
+  if (i >= 0 && tutorial.levelInfos()[i].unlocked) tutorial.startLevel(i);
+}
 
 shell.start();

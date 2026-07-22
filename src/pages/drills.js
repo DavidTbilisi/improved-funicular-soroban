@@ -13,11 +13,16 @@ import { DrillView } from '../view/drillView.js';
 import {
   figure, figDeckBests, figSessions, figFingerTrick, figNineFold, figFingerFacts, figChisanbop,
 } from '../view/figures.js';
+import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
+import { DayLog } from '../today/dayLog.js';
+import { targetFromSearch } from '../today/deepLink.js';
 
 const $ = id => document.getElementById(id);
 mountNav('drills');
 
 const statsService = new DrillStatsService(new LocalStorageStatsStore(window.localStorage));
+// The day axis behind the Today page's streak — marked on real work only.
+const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
 const session = new DrillSession({
   decks: DRILL_DECKS, modes: MODES, stats: statsService,
   rng: new MathRng(), clock: { now: () => performance.now() },
@@ -80,5 +85,14 @@ renderBests();
 renderFacts();
 session.subscribe(evt => {
   if (evt.type === 'started') { trendDeck = evt.deckId; renderTrend(); }
+  // Marked on each graded rep, NOT on 'stopped': a session the learner never
+  // stops is never saved, so waiting for the stop would silently lose the day.
+  if (evt.type === 'result') dayLog.mark();
   if (evt.type === 'stopped') { renderTrend(); renderBests(); renderFacts(); }
 });
+
+// Deep link from the Today plan: drills.html?deck=fingerTimes starts that deck.
+{
+  const want = targetFromSearch(location.search, 'drills');
+  if (want && DRILL_DECKS[want]) session.start(want);
+}

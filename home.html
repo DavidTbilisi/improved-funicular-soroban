@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Today — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">Today — where you are across the ladder, the decks, the rod method and the village, and the ten minutes that move it.</p>
+  <div id="nav"></div>
+
+  <div class="panel today-card">
+    <div class="today-head" id="todayHead"></div>
+    <h2>Today's ten minutes</h2>
+    <p class="today-msg" id="todayMsg"></p>
+    <ol class="today-plan" id="todayPlan"></ol>
+    <p class="today-total" id="todayTotal"></p>
+    <div class="today-notes">
+      <div class="today-note" id="todayMental"></div>
+      <div class="today-note" id="todayFaults"></div>
+      <div class="today-note" id="todayVillage"></div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+  <div class="panel">
+    <h2>Practice days</h2>
+    <div class="fig-grid">
+      <div id="figStreak"></div>
+      <div id="figLadder"></div>
+    </div>
+    <p class="help" style="margin-top:12px;">A day lights when you land a solve or a graded drill rep on any page — guided practice, the rod trainer, the codec drills, or a village contract. Days are recorded in UTC, so the boundary is the same wherever you practise. The ladder beside it is your best clean streak per level against the streak each level demands.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Carry your progress</h2>
+    <p class="help" style="margin-bottom:14px;">Everything here lives in this browser's local storage and nowhere else — clearing site data, switching machines, or using a private window loses it. Export writes one JSON file holding every key: the unlock ladder, solve histories, drill stats and per-fact tallies, fumble counts, the village, achievements, your day log and your preferences. Importing writes back every key the file names and <strong>leaves the rest untouched</strong>, so a partial or older export merges rather than wipes. A safety copy of your current save downloads automatically before any import.</p>
+    <div class="today-transfer">
+      <button id="todayExport" class="primary">⬇ Export save</button>
+      <label class="today-file">📂 Choose a file<input type="file" id="todayImportFile" accept="application/json,.json"></label>
+    </div>
+    <textarea id="todayImport" class="today-paste" rows="3" placeholder="…or paste the exported JSON here"></textarea>
+    <div class="today-transfer">
+      <button id="todayImportBtn">⬆ Import pasted save</button>
+    </div>
+    <p class="today-status" id="todayStatus"></p>
+  </div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/home.js"></script>
+
+</body>
+</html>

@@ -17,6 +17,7 @@ import { buildingById } from '../game/buildings.js';
 import { goalStates } from '../game/goals.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { FaultLog } from '../tutorial/faultLog.js';
+import { DayLog } from '../today/dayLog.js';
 import { mountGameCanvas } from '../view/game/gameCanvas.js';
 import { GameHudView } from '../view/game/hudView.js';
 import { AchievementsView } from '../view/game/achievementsView.js';
@@ -50,6 +51,10 @@ fitBoard();
 // feed the practice page's diagnosis chart (same as the trainer).
 const save = new GameSave(new LocalStorageProgressStore(window.localStorage, 'npv-game-save'));
 const faultLog = new FaultLog(new LocalStorageProgressStore(window.localStorage, 'npv-fault-log'));
+// The day axis behind the Today page's streak. The village blob counts village
+// days (one per solve) and carries no wall-clock stamp, so contracts can only
+// reach the streak through this live mark — nothing here is backfillable.
+const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
 
 const session = new GameSession({
   save, rng: new MathRng(), store: shell.store,
@@ -189,6 +194,7 @@ session.subscribe(evt => {
     shell.setFocus(0);
     shell.coachEl.textContent = 'contract: reach the answer on the beads with the keyboard';
   } else if (evt.type === 'solved') {
+    dayLog.mark(); // a solved contract is work: today counts toward the streak
     shell.parts.setter.hidden = false;
     canvas.setVillage(evt.village);
     // Close the popup unless the chain (1.4s) deals a new contract first.

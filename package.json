@@ -4,7 +4,7 @@
   "description": "Place-Value Peg Soroban — a modular, SOLID, testable ESM refactor",
   "type": "module",
   "scripts": {
-    "dev": "python3 -m http.server 8139",
+    "dev": "python3 -m http.server 8139 --protocol HTTP/1.1",
     "test": "node --test",
     "test:e2e": "playwright test"
   },
