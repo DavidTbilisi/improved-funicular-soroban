@@ -20,7 +20,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 
 | Page | What it is |
 |---|---|
-| `index.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, your mental-track stage, the complement pairs you fumble, and save export/import |
+| `index.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, **what is fading** across every track, your mental-track stage, the complement pairs you fumble, and save export/import |
 | `explore.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
@@ -123,6 +123,13 @@ page that reads all of it at once:
 Days are keyed in **UTC**, matching every timestamp the app already writes, so the day
 boundary is the same wherever you practise.
 
+Nothing new is stored for **retention**: what is left of each skill is estimated from the
+logs above. A track's half-life grows with the number of *separate days* you have practised
+it — forty reps in one sitting is one day of learning — discounted by how cleanly those days
+went, and what remains halves every half-life. It is a rough model, but it is the only thing
+that puts a tutorial level, a drill deck and an anzan rung on one axis, which is what lets
+Today's plan choose between them instead of guessing from a flat "untouched for 3 days".
+
 **Export** writes all of it as one versioned JSON file. **Import** writes back every key
 the file names and leaves the rest untouched — a partial or older export merges rather
 than wipes — and downloads a safety copy of your current save first.
@@ -154,6 +161,7 @@ src/
   exam/             the kyu ladder, the paper generators + marking, the attempt log
   vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements
+  review/           retention: the decay model, and every track on one axis
   today/            the day axis, the unified profile, the plan ladder, save transfer
   view/             one class per panel (observers of the store/session) + figures.js
   pages/            one composition root per page

@@ -49,11 +49,11 @@ export class TodayView {
     this.els.statusEl.className = `today-status${kind ? ` ${kind}` : ''}`;
   }
 
-  render({ profile, plan, done }) {
+  render({ profile, plan, done, retention = null }) {
     this.plan = plan;
     this._renderHead(profile, plan, done);
     this._renderPlan(plan, done);
-    this._renderNotes(profile);
+    this._renderNotes(profile, retention);
   }
 
   _renderHead(p, plan, done) {
@@ -94,7 +94,20 @@ export class TodayView {
       : '';
   }
 
-  _renderNotes(p) {
+  _renderNotes(p, retention) {
+    // What is fading, before anything else in the notes: it is the one line that
+    // says what today's plan is reacting to.
+    if (this.els.retentionEl) {
+      const r = retention;
+      this.els.retentionEl.innerHTML = r && r.total
+        ? `<span class="td-note-k">Retention</span>` +
+          `<span class="td-note-v"><strong>${r.mean}%</strong> held across ${r.total} track${r.total === 1 ? '' : 's'}` +
+          (r.due
+            ? ` — <em>${r.due} due</em>, weakest ${esc(r.worst.title)} at ${Math.round(r.worst.retention * 100)}%`
+            : ' — nothing due; all of it is holding') +
+          `</span>`
+        : '';
+    }
     const pr = p.mental.prognosis;
     this.els.mentalEl.innerHTML =
       `<span class="td-note-k">Mental track</span>` +

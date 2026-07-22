@@ -769,3 +769,39 @@ export function figExam(rows = [], nextId = null) {
   });
   return svg(W, H, 'Best score per kyu grade against the pass mark', body);
 }
+
+// --- Retention across every track (live) --------------------------------------
+// rows = src/review/skills.js output (already ordered most-faded first). One bar
+// per practised track, length = what the decay model says is still there, with
+// the review mark as a shu rule: everything left of it is due. The point of the
+// plate is the COMPARISON — a level, a deck and an anzan rung on one axis, which
+// is the only thing retention buys that the per-track counters could not.
+export function figRetention(rows = [], reviewAt = 0.7, max = 10) {
+  if (!rows.length) return `<div class="fig-empty">Nothing practised yet — every track you touch charts what is left of it here.</div>`;
+  const shown = rows.slice(0, max);
+  const RH = 20, W = 520, LM = 168, R = 52, T = 14;
+  const H = T + shown.length * RH + 24;
+  const trackW = W - LM - R;
+  const xw = r => Math.max(0, Math.min(1, r)) * trackW;
+
+  let body = '';
+  for (const v of [0, reviewAt, 1]) {
+    body += vline(LM + xw(v), T - 4, T + shown.length * RH - 4, v === reviewAt ? SHU : LINE, v === reviewAt ? 1.5 : 1);
+    body += txt(LM + xw(v), H - 8, v === reviewAt ? `review ${Math.round(reviewAt * 100)}%` : `${Math.round(v * 100)}%`,
+      { size: 8.5, fill: v === reviewAt ? SHU : FAINT });
+  }
+  shown.forEach((r, i) => {
+    const cy = T + i * RH + RH / 2;
+    const label = r.title.length > 22 ? `${r.title.slice(0, 21)}…` : r.title;
+    body += txt(LM - 10, cy + 3.5, label, { size: 9.5, fill: r.due ? INK : STONE, anchor: 'end', weight: r.due ? 600 : 400 });
+    body += hline(LM, LM + trackW, cy, LINE2);
+    body += bar(LM, cy - 4, xw(r.retention), 8, r.due ? SHU : DATA);
+    body += `<title>${r.title} — ${r.text}, ${r.activeDays} day${r.activeDays === 1 ? '' : 's'} practised, half-life ${r.halfLife}d</title>`;
+    body += txt(LM + trackW + 6, cy + 3.5, `${Math.round(r.retention * 100)}%`,
+      { size: 8.5, fill: r.due ? SHU : STONE, anchor: 'start' });
+  });
+  if (rows.length > shown.length) {
+    body += txt(LM, H - 8, `+${rows.length - shown.length} more`, { size: 8, fill: FAINT, anchor: 'start' });
+  }
+  return svg(W, H, 'What is left of each practised track', body);
+}

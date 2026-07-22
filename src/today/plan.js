@@ -20,6 +20,7 @@
 // ============================================================================
 import { hrefFor } from './deepLink.js';
 import { pickRung } from '../anzan/bridge.js';
+import { skillsFrom } from '../review/skills.js';
 
 // Read-the-prompt + settle overhead per rep, matching prognosis.js's OVERHEAD_MS.
 const OVERHEAD_MS = 4000;
@@ -33,7 +34,6 @@ const YOMIAGE_ROUNDS = 4;
 // Reps assumed per practice/trainer visit when the level's own shortfall is small
 // (you never do just one problem).
 const MIN_REPS = 4;
-const STALE_DAYS = 3;      // a deck untouched this long is "cold"
 // Days a failed kyu paper rests before the plan offers it again. Re-sitting the
 // same grade the next morning is not practice, it is hoping for a kinder paper.
 const EXAM_COOLDOWN = 2;
@@ -70,7 +70,31 @@ function modeTask(rule, mode, why) {
     minutesFor(MIN_REPS, mode.timeFloorMs || 30000), { floor: mode.floor, best: mode.best });
 }
 
-// The ladder. Order IS the priority; each build() returns a Task or null.
+function pacedTask(rule, page, lv, why, reps) {
+  return task(rule, page, page, lv.id, lv.title, why,
+    minutesFor(reps, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
+}
+
+// A retention row (src/review/skills.js) as a task on whichever page owns it.
+// The reason is the forecast's own sentence — "42% held · 6d overdue" says more
+// than any of the per-track counters could, and says the same thing for all of
+// them, which is the entire point of measuring retention.
+function skillTask(rule, s) {
+  const why = s.text;
+  if (s.page === 'practice') return levelTask(rule, s.src, why);
+  if (s.page === 'drills') return deckTask(rule, s.src, why);
+  if (s.page === 'trainer') return modeTask(rule, s.src, why);
+  if (s.page === 'anzan') return pacedTask(rule, 'anzan', s.src, why, ANZAN_ROUNDS);
+  if (s.page === 'yomiage') return pacedTask(rule, 'yomiage', s.src, why, YOMIAGE_ROUNDS);
+  return null;
+}
+
+// The ladder. Order IS the priority; each build() returns a Task, null, or — for
+// a rule that has a RANKED set of candidates rather than one answer — an array
+// in preference order, from which the planner takes the first that fits. The
+// retention rungs need that: their best candidate may live on a page an earlier
+// rung has already claimed, and yielding nothing in that case would silently
+// drop the whole schedule instead of falling to the next-most-faded thing.
 export const TASK_RULES = Object.freeze([
   // 1. A number is DUE. This outranks EVERYTHING, including the first-run rungs:
   //    it is the only work in the app with a deadline, it exists only because the
@@ -130,16 +154,25 @@ export const TASK_RULES = Object.freeze([
       return lv && !lv.cleared ? levelTask('unfinished-level', lv, `${lv.best}/${lv.floor} clean`) : null;
     } },
 
-  // 6. A deck with facts still below the floor, or one gone cold.
+  // 6. A deck with facts still below the floor. MASTERY only: whether it has
+  //    gone cold is retention's question now, and rung 7 asks it for every
+  //    track at once rather than this rule guessing with a flat day count.
   { id: 'due-deck', build: p => {
       const d = p.drills.weakest;
-      if (!d) return null;
-      if (d.dueFacts > 0) return deckTask('due-deck', d, `${d.dueFacts} due`);
-      if (d.daysSince != null && d.daysSince >= STALE_DAYS) return deckTask('due-deck', d, `${d.daysSince} days cold`);
-      return null;
+      return d && d.dueFacts > 0 ? deckTask('due-deck', d, `${d.dueFacts} due`) : null;
     } },
 
-  // 7. A kyu paper you have earned the right to sit. This is a CHECKPOINT, not
+  // 7. The most FADED thing you have practised, if it has fallen through the
+  //    review mark. This replaced a flat "untouched for 3 days = cold" flag,
+  //    which could not tell a skill drilled once from one drilled forty times
+  //    across a fortnight and sent the learner to the wrong one. Retention is
+  //    the one number that means the same thing on every track, so this rule
+  //    can rank a level against a deck against an anzan rung and simply take
+  //    the worst. It sits below the ladder rungs because a skill going soft is
+  //    a smaller emergency than one you never had.
+  { id: 'fading', build: p => skillsFrom(p).filter(s => s.due).map(s => skillTask('fading', s)) },
+
+  // 8. A kyu paper you have earned the right to sit. This is a CHECKPOINT, not
   //    daily work, so it sits BELOW the rung the ladder is on and the deck that
   //    is due: on a day with real practice owing, the practice wins. It is
   //    gated hard besides — the grade must be unpassed, the practice level it
@@ -162,13 +195,13 @@ export const TASK_RULES = Object.freeze([
       return task('exam', 'exam', 'exam', g.id, `${g.name} — the kyu paper`, why, Math.max(2, g.minutes));
     } },
 
-  // 8. Something new is open and untried — that pull is worth a slot.
+  // 9. Something new is open and untried — that pull is worth a slot.
   { id: 'next-unlock', build: p => p.practice.untouched
       ? levelTask('next-unlock', p.practice.untouched, 'newly unlocked') : null },
   { id: 'new-deck', build: p => p.drills.untouched
       ? deckTask('new-deck', p.drills.untouched, 'not yet drilled') : null },
 
-  // 9. Flash anzan — but only once the Mental stage is in reach. Offering it to
+  // 10. Flash anzan — but only once the Mental stage is in reach. Offering it to
   //    someone still at Beads is offering the exam before the course: the whole
   //    discipline is the mnemonic-mental track under time pressure.
   { id: 'anzan', build: p => {
@@ -188,11 +221,10 @@ export const TASK_RULES = Object.freeze([
       const why = lv.fastest ? `cleared at ${lv.fastest} ms — push it`
         : lv.rounds ? `${Math.round((lv.accuracy || 0) * 100)}% at ${lv.lastMs || lv.baseMs} ms`
         : 'mental, under time';
-      return task('anzan', 'anzan', 'anzan', lv.id, lv.title, why,
-        minutesFor(ANZAN_ROUNDS, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
+      return pacedTask('anzan', 'anzan', lv, why, ANZAN_ROUNDS);
     } },
 
-  // 10. Read-aloud. Gated on the carry being in hand — "minus sixty-three" has
+  // 11. Read-aloud. Gated on the carry being in hand — "minus sixty-three" has
   //     to reach the beads as a borrow, and a learner who cannot yet borrow is
   //     being asked to do the exercise and learn the rule at once. Unlike anzan
   //     it needs NO mental stage: the board does the remembering here, which is
@@ -207,31 +239,30 @@ export const TASK_RULES = Object.freeze([
       const why = lv.fastest ? `carried at ${lv.fastest} ms — shorten the gap`
         : lv.rounds ? `${Math.round((lv.accuracy || 0) * 100)}% at a ${lv.lastMs || lv.baseMs} ms gap`
         : 'called aloud, straight to the rods';
-      return task('yomiage', 'yomiage', 'yomiage', lv.id, lv.title, why,
-        minutesFor(YOMIAGE_ROUNDS, lv.terms * ((lv.lastMs || lv.baseMs) + 900) + 6000));
+      return pacedTask('yomiage', 'yomiage', lv, why, YOMIAGE_ROUNDS);
     } },
 
-  // 11. The rod method.
+  // 12. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 12. The village — its own advisor already knows what it wants.
+  // 13. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 13. Everything is cleared — keep the coldest thing warm.
+  // 14. Nothing is due and nothing is owed — keep the softest thing warm. Same
+  //     ranking as rung 7 without the due gate, so the fallback and the
+  //     scheduler agree about what "softest" means.
   { id: 'keep-warm', build: p => {
-      const cold = [...p.practice.levels.filter(l => l.unlocked), ...p.drills.decks.filter(d => d.sessions > 0)]
-        .filter(x => x.daysSince != null)
-        .sort((a, b) => b.daysSince - a.daysSince)[0];
-      if (!cold) return null;
-      return cold.floor != null
-        ? levelTask('keep-warm', cold, `${cold.daysSince} days cold`)
-        : deckTask('keep-warm', cold, `${cold.daysSince} days cold`);
+      const rows = skillsFrom(p);
+      // Strictly the nothing-is-due case. While anything is due, rung 7 owns the
+      // retention slot — two retention tasks in one plan would just be the same
+      // rung twice, and the second one is by definition the less urgent.
+      return rows.some(s => s.due) ? null : rows.map(s => skillTask('keep-warm', s));
     } },
 ]);
 
@@ -248,16 +279,20 @@ export function todaysPlan(profile, { max = 3, budgetMin = 10 } = {}) {
 
   for (const rule of TASK_RULES) {
     if (tasks.length >= max) break;
-    let t = null;
-    try { t = rule.build(profile); } catch { t = null; }       // a rule must never break the page
-    if (!t || pages.has(t.page)) continue;
-    // Always take the first task, even if it alone busts the budget — an empty
-    // plan is the one outcome this feature cannot afford.
-    if (tasks.length && totalMin + t.minutes > budgetMin) continue;
-    t.autoDone = wasDoneToday(profile, t);
-    tasks.push(t);
-    pages.add(t.page);
-    totalMin += t.minutes;
+    let built = null;
+    try { built = rule.build(profile); } catch { built = null; }  // a rule must never break the page
+    const candidates = (Array.isArray(built) ? built : [built]).filter(Boolean);
+    for (const t of candidates) {
+      if (pages.has(t.page)) continue;
+      // Always take the first task, even if it alone busts the budget — an empty
+      // plan is the one outcome this feature cannot afford.
+      if (tasks.length && totalMin + t.minutes > budgetMin) continue;
+      t.autoDone = wasDoneToday(profile, t);
+      tasks.push(t);
+      pages.add(t.page);
+      totalMin += t.minutes;
+      break;                                                     // one task per rule
+    }
   }
 
   return { date: profile.today, tasks, totalMin, message: messageFor(profile, tasks, totalMin) };
