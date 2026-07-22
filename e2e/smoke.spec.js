@@ -10,6 +10,7 @@ const PAGES = [
   ['trainer.html', 'Multiplication & division trainer — Place-Value Peg Soroban'],
   ['drills.html', 'Codec drills — Place-Value Peg Soroban'],
   ['anzan.html', 'Flash anzan — Place-Value Peg Soroban'],
+  ['vault.html', 'Vault — Place-Value Peg Soroban'],
   ['game.html', 'Soroban Village — Place-Value Peg Soroban'],
   ['reference.html', 'Reference — Place-Value Peg Soroban'],
 ];

@@ -6,6 +6,7 @@ import { DRILL_DECKS } from '../src/drill/decks.js';
 import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
+import { Vault } from '../src/vault/vaultStore.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -18,7 +19,7 @@ const TODAY = '2026-07-22';
 // Build a profile from plain blobs — the same shapes the real keys hold.
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, vault = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
@@ -30,6 +31,7 @@ function profileFrom({
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
     anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
+    vault: new Vault(new MemoryProgressStore(vault)),
     support, today,
   });
 }
@@ -270,4 +272,49 @@ test('anzan accuracy and staleness come through', () => {
 test('an anzan round is enough to stop being fresh', () => {
   const p = profileFrom({ anzan: { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 800, ok: true }], best: 1, fastest: null } } });
   assert.equal(p.fresh, false);
+});
+
+// --- vault ------------------------------------------------------------------
+const vaultBlob = entries => ({ v: 1, entries });
+const stored = (id, label, over = {}) => ({
+  id, label, radix: 10, mode: 'full', length: 10, seals: [6], code: '1415926535',
+  created: '2026-07-01T10:00', reviews: [], ease: 2.2, interval: 0, due: TODAY, ...over,
+});
+
+test('an empty vault reports zeros without throwing', () => {
+  const p = profileFrom();
+  assert.deepEqual(p.vault, { entries: [], total: 0, due: 0, next: null, digits: 0 });
+});
+
+test('the vault block counts what is stored and what is due', () => {
+  const p = profileFrom({ vault: vaultBlob([
+    stored('v1', 'π to 10'),
+    stored('v2', 'padlock', { due: '2026-08-01', interval: 10, mode: 'sealed', code: undefined }),
+  ]) });
+  assert.equal(p.vault.total, 2);
+  assert.equal(p.vault.due, 1);
+  assert.equal(p.vault.digits, 20);
+  assert.equal(p.vault.next.label, 'π to 10');
+});
+
+test('the most OVERDUE entry is the one named next', () => {
+  const p = profileFrom({ vault: vaultBlob([
+    stored('v1', 'recent', { due: TODAY }),
+    stored('v2', 'ancient', { due: '2026-07-12' }),
+    stored('v3', 'waiting', { due: '2026-09-01' }),
+  ]) });
+  assert.equal(p.vault.due, 2);
+  assert.equal(p.vault.next.label, 'ancient');
+  assert.equal(p.vault.next.daysUntil, -10);
+});
+
+test('a vault review counts as work — it stops the profile being fresh', () => {
+  const p = profileFrom({ vault: vaultBlob([
+    stored('v1', 'x', { reviews: [{ t: TODAY, ok: true, interval: 1 }] }),
+  ]) });
+  assert.equal(p.fresh, false);
+});
+
+test('merely storing a number is not yet work', () => {
+  assert.equal(profileFrom({ vault: vaultBlob([stored('v1', 'x')]) }).fresh, true);
 });

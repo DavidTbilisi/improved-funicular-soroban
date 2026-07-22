@@ -717,6 +717,66 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
   .drill-feedback .ok, .tut-feedback .ok { animation: none; }
 }
 
+/* ── Vault ────────────────────────────────────────────────────────────────
+   A list of held numbers and a recall stage. The one visual rule that carries
+   meaning: a SEALED entry is marked everywhere it appears, because it behaves
+   differently (no reveal, seal-checked recall) and the learner has to be able
+   to tell at a glance which of their numbers the app is actually holding. */
+.vault-head { display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center; padding-bottom: 13px; margin-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 0.76rem; color: var(--stone); }
+.vt-count { color: var(--ink); font-weight: 600; }
+.vt-due { color: var(--faint); }
+.vt-due.on { color: var(--shu); font-weight: 600; }
+.vt-digits, .vt-sealed { color: var(--faint); }
+
+.vault-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.vault-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--well); border: 1px solid var(--line); border-radius: 11px; }
+.vault-row.empty { color: var(--stone); font-size: 0.88rem; }
+.vault-row.due { border-left: 3px solid var(--shu); }
+.vt-label { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; font-size: 0.94rem; color: var(--ink); }
+.vt-meta { font-family: var(--mono); font-size: 0.64rem; color: var(--faint); }
+.vt-meta b { color: var(--violet); font-weight: 600; }
+.vt-streak { font-size: 0.5rem; color: var(--green); letter-spacing: 1px; white-space: nowrap; }
+.vt-status { font-family: var(--mono); font-size: 0.68rem; color: var(--faint); white-space: nowrap; min-width: 8ch; text-align: right; }
+.vt-status.due, .vt-status.overdue { color: var(--shu); font-weight: 600; }
+.vt-status.new { color: var(--data); }
+.vt-acts { display: flex; gap: 5px; }
+.vt-acts button { padding: 5px 10px; font-size: 0.72rem; }
+
+.vault-stage { margin-top: 16px; padding: 18px 20px; background: var(--well); border: 1px solid var(--line-2); border-radius: 14px; }
+.vault-stage[hidden] { display: none; }
+.vault-stage-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.vault-stage-title { font-family: var(--mono); font-size: 1rem; margin: 0; color: var(--ink); flex: 1; }
+.vault-close { padding: 4px 10px; font-size: 0.7rem; }
+.vault-stage-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); margin: 0 0 14px; }
+.vault-stage-meta b { color: var(--violet); }
+.vault-recall { display: flex; gap: 10px; align-items: flex-start; }
+.vault-recall[hidden] { display: none; }
+.vault-recall textarea { flex: 1; font-family: var(--mono); font-size: 1rem; letter-spacing: 2px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); resize: vertical; }
+.vault-recall textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242, 189, 78, 0.16); }
+.vault-verdict { min-height: 1.4em; margin-top: 12px; font-size: 0.9rem; color: var(--stone); }
+.vault-verdict.ok { color: var(--green); }
+.vault-verdict.bad { color: var(--shu); }
+.vt-loci { display: inline-flex; gap: 4px; margin-left: 10px; vertical-align: middle; }
+.vt-loci i { font-style: normal; font-family: var(--mono); font-size: 0.6rem; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 5px; }
+.vt-loci i.ok { background: var(--green); color: var(--paper); }
+.vt-loci i.bad { background: var(--shu); color: var(--paper); }
+.vault-grade { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.vault-grade[hidden] { display: none; }
+.vault-scenes { margin-top: 16px; }
+.vault-scenes[hidden] { display: none; }
+
+.vault-add { display: flex; flex-direction: column; gap: 11px; }
+.vault-add label { display: flex; flex-direction: column; gap: 5px; font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--faint); }
+.vault-add input[type="text"], .vault-add textarea { width: 100%; font-family: var(--mono); font-size: 0.95rem; padding: 9px 12px; background: var(--paper); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); letter-spacing: 1px; resize: vertical; }
+.vault-add input[type="text"]:focus, .vault-add textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242, 189, 78, 0.16); }
+.vault-add select { font-family: var(--mono); font-size: 0.8rem; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line-2); border-radius: 8px; color: var(--ink); }
+.vault-add-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.vault-sealed { flex-direction: row !important; align-items: center; gap: 7px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--sans) !important; font-size: 0.84rem !important; color: var(--stone) !important; }
+.vault-sealed input { accent-color: var(--violet); }
+.vault-status { font-size: 0.84rem; color: var(--stone); margin: 12px 0 0; min-height: 1.3em; }
+.vault-status.ok { color: var(--green); }
+.vault-status.bad { color: var(--shu); }
+
 /* ── Flash anzan ──────────────────────────────────────────────────────────
    The stage has one job: while a round runs, nothing on screen may compete
    with the number. .az-running BLANKS the chrome rather than dimming it —

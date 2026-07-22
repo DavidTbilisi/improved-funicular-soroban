@@ -693,3 +693,39 @@ export function figAnzan(rows = []) {
   body += txt(W - R, 11, 'faster →', { size: 8, fill: FAINT, anchor: 'end' });
   return svg(W, H, 'Fastest pace carried, per anzan rung', body);
 }
+
+// --- Vault retention (live) ---------------------------------------------------
+// One row per stored number, laid on a log day-axis: where its next review
+// falls. Overdue sits left of the "today" rule in shu; a long interval reaches
+// right. The bar runs from the last review to the next, so its length IS the
+// current interval — the thing the scheduler is actually moving.
+export function figVault(rows = [], todayKey = null) {
+  if (!rows.length) return `<div class="fig-empty">Nothing stored yet — a number you save charts its review schedule here.</div>`;
+  const W = 520, RH = 19, L = 116, R = 30, T = 22;
+  const H = T + rows.length * RH + 26;
+  const marks = [0, 1, 3, 7, 30, 120, 365];
+  const xFor = d => {
+    const c = Math.max(-7, Math.min(365, d));
+    return L + ((Math.log1p(Math.max(0, c)) / Math.log1p(365)) * 0.88 + (c < 0 ? -0.08 * (c / -7) : 0)) * (W - L - R);
+  };
+  let body = '';
+  for (const d of marks) {
+    body += vline(xFor(d), T - 6, T + rows.length * RH, d === 0 ? SHU : LINE, d === 0 ? 1.5 : 1);
+    body += txt(xFor(d), H - 10, d === 0 ? 'today' : d >= 365 ? '1y' : d >= 30 ? `${Math.round(d / 30)}mo` : `${d}d`,
+      { size: 8, fill: d === 0 ? SHU : FAINT });
+  }
+  rows.forEach((r, i) => {
+    const y = T + i * RH + RH / 2;
+    const label = r.label.length > 15 ? r.label.slice(0, 14) + '…' : r.label;
+    body += txt(L - 8, y + 3.5, label, { size: 9, fill: INK, anchor: 'end' });
+    const d = r.days == null ? 0 : r.days;
+    if (r.interval > 0) body += hline(xFor(Math.max(-7, d - r.interval)), xFor(d), y, LINE2, 2);
+    const over = d < 0 || r.days == null;
+    body += `<circle cx="${xFor(d)}" cy="${y}" r="4" fill="${over ? SHU : DATA}" stroke="${PAPER2}" stroke-width="1.5">` +
+      `<title>${r.label} — ${r.status}${r.interval ? `, interval ${r.interval}d` : ''}${r.sealed ? ', sealed' : ''}</title></circle>`;
+    if (r.sealed) body += txt(xFor(d) + 9, y + 3, '🔒', { size: 7, anchor: 'start', fill: FAINT });
+  });
+  body += txt(L, 13, `${rows.filter(r => (r.days ?? -1) <= 0).length} due · ${rows.length} stored`,
+    { size: 9.5, fill: STONE, anchor: 'start', weight: 600 });
+  return svg(W, H, 'When each stored number comes up for review', body);
+}

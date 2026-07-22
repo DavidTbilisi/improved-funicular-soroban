@@ -7,6 +7,7 @@
 // Interface:
 //   radix            number
 //   label            string  (button/UI label)
+//   encode(code)     -> { code, unitCount, unitNoun, loci }   raw code string in
 //   prepare(iv, fs)  -> { code, unitCount, unitNoun, fractionIgnored, loci }
 //   sealLabel(v)     -> string
 //   sealPercept(v)   -> emoji string
@@ -41,6 +42,13 @@ function groupLoci(scenes, digitsOf, sealOf, extra = {}) {
 class Codec {
   get radix() { throw new Error('abstract'); }
   get label() { throw new Error('abstract'); }
+  // encode() takes the code STRING; prepare() builds that string from a board
+  // value and delegates. The split exists because the board cannot express every
+  // code worth encoding: it caps at INT_COLS digits and, going through BigInt,
+  // silently drops leading zeros. Anything holding a code of its own (the vault)
+  // must encode the string directly or it would store a different number than
+  // the one it was given.
+  encode() { throw new Error('abstract'); }
   prepare() { throw new Error('abstract'); }
   sealLabel(v) { return String(v); }
   sealPercept() { throw new Error('abstract'); }
@@ -50,10 +58,13 @@ class Codec {
 export class DecimalCodec extends Codec {
   get radix() { return 10; }
   get label() { return 'Decimal'; }
+  encode(code) {
+    const loci = code ? groupLoci(deepPackScenes(code), s => s.digits, sealDigit) : [];
+    return { code, unitCount: code.length, unitNoun: 'digit', loci };
+  }
   prepare(intVal, fracStr) {
     const code = (!intVal && !fracStr) ? '' : String(intVal) + fracStr;  // !intVal: 0 or 0n
-    const loci = code ? groupLoci(deepPackScenes(code), s => s.digits, sealDigit) : [];
-    return { code, unitCount: code.length, unitNoun: 'digit', fractionIgnored: false, loci };
+    return { ...this.encode(code), fractionIgnored: false };
   }
   sealPercept(v) { return cubeEmojis(v); }
   sealExplain(locus) { return `digit-sum of ${locus.digits} mod 9 (0 written as 9) = ${locus.seal}`; }
@@ -62,11 +73,14 @@ export class DecimalCodec extends Codec {
 export class HexCodec extends Codec {
   get radix() { return 16; }
   get label() { return 'Hex'; }
+  encode(raw) {
+    const code = raw ? padHex(String(raw).toUpperCase()) : '';
+    const loci = code ? groupLoci(deepPackScenesHex(code), s => s.digits, sealHex, { radix: 16 }) : [];
+    return { code, unitCount: code.length / 2, unitNoun: 'byte', loci };
+  }
   prepare(intVal, fracStr) {
     const raw = !intVal ? '' : intVal.toString(16).toUpperCase();  // !intVal: 0 or 0n
-    const code = raw ? padHex(raw) : '';
-    const loci = code ? groupLoci(deepPackScenesHex(raw), s => s.digits, sealHex, { radix: 16 }) : [];
-    return { code, unitCount: code.length / 2, unitNoun: 'byte', fractionIgnored: !!fracStr, loci };
+    return { ...this.encode(raw), fractionIgnored: !!fracStr };
   }
   sealLabel(v) { return HEX_SYMS[v]; }
   sealPercept(v) { return sealPerceptHex(v); }

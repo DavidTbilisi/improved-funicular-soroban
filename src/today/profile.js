@@ -22,6 +22,7 @@ import { villageRank } from '../game/rank.js';
 import { nextGoal } from '../game/goals.js';
 import { nextHint } from '../game/advisor.js';
 import { dayKey, daysBetween } from './dayKey.js';
+import { isDue, daysUntilDue } from '../vault/schedule.js';
 
 // A deck fact counts as "due" while fewer than this share of its saved reps
 // landed under the floor — the same 90% bar automaticityForecast uses for a
@@ -67,7 +68,7 @@ function cleanRate(solves, window = 10) {
  */
 export function buildProfile({
   levels = [], decks = {}, modes = [], anzanRungs = [],
-  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog,
+  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault,
   support = 0, today = null,
 } = {}) {
   // --- Days ----------------------------------------------------------------
@@ -131,6 +132,26 @@ export function buildProfile({
     };
   });
   const currentAnzan = anzanLevels.find(l => !l.cleared) || anzanLevels[anzanLevels.length - 1] || null;
+
+  // --- Vault ---------------------------------------------------------------
+  // The only track whose work is scheduled by TIME rather than by mastery: a
+  // stored number decays whether or not you practise, so "due" here means a
+  // date has arrived, not that a threshold is unmet.
+  const vaultEntries = vault ? vault.all() : [];
+  const vaultDue = vaultEntries.filter(e => isDue(e, today));
+  const vaultOut = {
+    entries: vaultEntries.map(e => ({
+      id: e.id, label: e.label, length: e.length, radix: e.radix, mode: e.mode,
+      due: e.due, interval: e.interval, daysUntil: daysUntilDue(e, today),
+      reviews: (e.reviews || []).length,
+    })),
+    total: vaultEntries.length,
+    due: vaultDue.length,
+    // The most overdue entry — what the plan should name if it names one.
+    next: vaultDue.map(e => ({ id: e.id, label: e.label, daysUntil: daysUntilDue(e, today) }))
+      .sort((a, b) => (a.daysUntil ?? -999) - (b.daysUntil ?? -999))[0] || null,
+    digits: vaultEntries.reduce((n, e) => n + (e.length || 0), 0),
+  };
 
   // --- Drill decks ---------------------------------------------------------
   const drillDecks = Object.entries(decks).map(([id, deck]) => {
@@ -197,7 +218,8 @@ export function buildProfile({
   const totalSolves = practiceLevels.reduce((n, l) => n + l.solves, 0)
     + trainerModes.reduce((n, m) => n + m.solves, 0);
   const totalSessions = drillDecks.reduce((n, d) => n + d.sessions, 0)
-    + anzanLevels.reduce((n, l) => n + l.rounds, 0);
+    + anzanLevels.reduce((n, l) => n + l.rounds, 0)
+    + vaultOut.entries.reduce((n, e) => n + e.reviews, 0);
 
   return {
     today, days, streak,
@@ -220,6 +242,7 @@ export function buildProfile({
       weakest: weakestMode,
       solves: trainerModes.reduce((n, m) => n + m.solves, 0),
     },
+    vault: vaultOut,
     anzan: {
       levels: anzanLevels,
       total: anzanLevels.length,
