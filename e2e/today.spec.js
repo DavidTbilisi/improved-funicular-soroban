@@ -31,7 +31,7 @@ const seed = () => ({
 // localStorage is per-origin, so it has to be written from a page on the origin
 // before the page under test reads it — the pattern the other specs use.
 async function seeded(page) {
-  await page.goto('home.html');
+  await page.goto('index.html');
   await page.evaluate(blob => {
     localStorage.clear();
     for (const [k, v] of Object.entries(blob)) localStorage.setItem(k, v);
@@ -115,7 +115,7 @@ test('work done on another page comes back auto-ticked', async ({ page }) => {
     localStorage.setItem('npv-practice-history', JSON.stringify(log));
   });
 
-  await page.goto('home.html');
+  await page.goto('index.html');
   const first = page.locator('.today-task').first();
   await expect(first.locator('.tt-title')).toContainText('Big friend + (carry)');
   await expect(first).toHaveClass(/done/, { timeout: 5000 });
@@ -182,10 +182,19 @@ test('a malformed save is refused without touching what is stored', async ({ pag
   await expect(page.locator('#todayHead')).toContainText('3-day streak');
 });
 
+// Today shipped at home.html before it took over the root; the stub keeps that
+// published URL working. Without a test it would rot silently — nothing else
+// links to it any more.
+test('the old home.html URL still lands on Today', async ({ page }) => {
+  await page.goto('home.html');
+  await expect(page).toHaveURL(/\/index\.html$/);
+  await expect(page.locator('#todayHead')).toBeVisible();
+});
+
 test('a first-run browser gets an onboarding plan, not an empty page', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e));
-  await page.goto('home.html');
+  await page.goto('index.html');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 

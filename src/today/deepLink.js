@@ -21,8 +21,8 @@ export const TARGET_PARAM = Object.freeze({
 });
 
 export const PAGE_HREF = Object.freeze({
-  home: 'home.html',
-  explore: 'index.html',
+  today: 'index.html',
+  explore: 'explore.html',
   practice: 'practice.html',
   trainer: 'trainer.html',
   drills: 'drills.html',

@@ -4,8 +4,8 @@
 // (separate .html pages), so it works as a static site on GitHub Pages.
 // ============================================================================
 const PAGES = [
-  ['home', 'home.html', 'Today'],
-  ['explore', 'index.html', 'Explore'],
+  ['today', 'index.html', 'Today'],
+  ['explore', 'explore.html', 'Explore'],
   ['practice', 'practice.html', 'Guided practice'],
   ['trainer', 'trainer.html', 'Mult / Div trainer'],
   ['drills', 'drills.html', 'Codec drills'],

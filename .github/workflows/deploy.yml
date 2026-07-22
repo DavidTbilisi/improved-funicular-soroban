@@ -25,7 +25,7 @@ jobs:
         uses: actions/configure-pages@v6
 
       # The app is native ES modules; Pages serves over HTTPS, so no bundling
-      # is needed — publish the site as-is (index.html + styles.css + src/).
+      # is needed — publish the site as-is (the .html shells + styles.css + src/).
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
