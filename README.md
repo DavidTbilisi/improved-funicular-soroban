@@ -59,6 +59,10 @@ engine rejects illegal moves, landing on the right answer is proof you used the 
 complement — so a level only has to check the final value. `Hint` shows the move,
 `Show answer` reveals it and resets the streak.
 
+The panel also forecasts **how much more practice until you can drop the beads** and work
+on imagined rods — and once it says you can, it names the **flash-anzan rung** your level
+and your record point at, so the runway does not simply end at "Mental".
+
 ### Today, and your saved progress
 
 Every page writes its own progress to this browser's `localStorage` — nothing is sent

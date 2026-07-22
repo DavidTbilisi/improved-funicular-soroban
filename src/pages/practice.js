@@ -16,6 +16,10 @@ import { SolveLog } from '../tutorial/solveLog.js';
 import { FaultLog, fumbleRows } from '../tutorial/faultLog.js';
 import { prognose } from '../tutorial/prognosis.js';
 import { DayLog } from '../today/dayLog.js';
+import { ANZAN_LEVELS } from '../anzan/levels.js';
+import { AnzanLog } from '../anzan/anzanLog.js';
+import { suggestRung } from '../anzan/bridge.js';
+import { hrefFor } from '../today/deepLink.js';
 import { targetFromSearch } from '../today/deepLink.js';
 
 const $ = id => document.getElementById(id);
@@ -32,6 +36,9 @@ const solveLog = new SolveLog(new LocalStorageProgressStore(window.localStorage,
 const faultLog = new FaultLog(new LocalStorageProgressStore(window.localStorage, 'npv-fault-log'));
 // The day axis behind the Today page's streak — marked on real work only.
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// Read-only here: the practice page never writes anzan, it only asks what the
+// learner has carried so the prognosis can point somewhere specific.
+const anzanLog = new AnzanLog(new LocalStorageProgressStore(window.localStorage, 'npv-anzan'));
 
 const tutorial = new TutorialSession({
   levels: TUTORIAL_LEVELS,
@@ -69,12 +76,29 @@ const renderTimes = () => {
 // one-line readout beside the Board control.
 const prognosisNow = () => prognose(curLevel ? solveLog.solves(curLevel.id) : [],
   { floorMs: curLevel ? curLevel.timeFloorMs : 0, support });
+// Where Mental leads. The runway used to end at a station with nothing beyond
+// it; the bridge turns "you may drop the beads" into one named anzan rung.
+const rungState = () => ANZAN_LEVELS.map(l => ({
+  id: l.id, cleared: anzanLog.fastest(l.id) !== null, fastest: anzanLog.fastest(l.id),
+}));
 const renderProg = () => {
   const p = prognosisNow();
+  const onward = suggestRung({
+    levelId: curLevel ? curLevel.id : null, support, prognosis: p, rungs: rungState(),
+  });
   $('figProg').innerHTML = figure(3,
-    'Estimated time to “mental mode”, from your automaticity at the current board support. The gauge fills toward the 80% drop line; the runway steps Beads → Percept → Mental.',
-    figPrognosis(p));
+    'Estimated time to “mental mode”, from your automaticity at the current board support. The gauge fills toward the 80% drop line; the runway steps Beads → Percept → Mental' +
+    (onward ? ' — and past it to the flash-anzan rung your level and your record point at.' : '.'),
+    figPrognosis(p, onward));
   if ($('stProg')) $('stProg').textContent = p.message;
+
+  const el = $('stAnzan');
+  if (el) {
+    el.hidden = !onward;
+    el.innerHTML = onward
+      ? `→ <a href="${hrefFor('anzan', onward.id)}">⚡ ${onward.title}</a> <em>${onward.why}</em>`
+      : '';
+  }
 };
 const renderFumbles = () => {
   const c = faultLog.counts();

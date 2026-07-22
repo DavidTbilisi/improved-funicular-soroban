@@ -7,6 +7,7 @@ import { TUTORIAL_LEVELS } from '../src/tutorial/levels.js';
 import { DRILL_DECKS } from '../src/drill/decks.js';
 import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
+import { suggestRung } from '../src/anzan/bridge.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
@@ -324,28 +325,49 @@ test('fading the board past Beads unlocks the anzan rung', () => {
   const p = midLadder({ support: 1 });
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
   assert.ok(t, 'once the board is fading, anzan is on the table');
-  assert.equal(t.targetId, 'warm');
-  assert.equal(t.href, 'anzan.html?level=warm');
+  // The rung follows the LEVEL in hand, not the bottom of the ladder: midLadder
+  // is working big-add, which LEVEL_RUNG maps to the 5 × 1-digit rung.
+  assert.equal(p.practice.current.id, 'big-add');
+  assert.equal(t.targetId, 'five1');
+  assert.equal(t.href, 'anzan.html?level=five1');
   assert.equal(t.why, 'mental, under time');
 });
 
+// The plan and the practice page must never name different rungs.
+test('the plan agrees with the prognosis bridge about which rung', () => {
+  for (const over of [{}, { support: 2 }, { anzan: { five1: { rounds: [{ t: '2026-07-20T10:00', ms: 800, ok: true }], best: 5, fastest: 800 } } }]) {
+    const p = midLadder({ support: 2, ...over });
+    const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+    const bridge = suggestRung({
+      levelId: p.practice.current ? p.practice.current.id : null,
+      support: p.mental.support, prognosis: p.mental.prognosis, rungs: p.anzan.levels,
+    });
+    assert.ok(t && bridge);
+    assert.equal(t.targetId, bridge.id, JSON.stringify(over));
+  }
+});
+
 test('anzan history alone qualifies — someone already doing it keeps being offered it', () => {
-  const p = midLadder({ anzan: { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 1600, ok: true }], best: 1, fastest: null } } });
+  // Deliberately at Beads: the plan's gate is looser than the practice page's,
+  // so someone who has put the board back up still gets their rung.
+  const p = midLadder({ anzan: { five1: { rounds: [{ t: '2026-07-20T10:00', ms: 1300, ok: true }], best: 1, fastest: null } } });
   assert.equal(p.mental.support, 0);
+  assert.equal(suggestRung({ levelId: 'big-add', support: 0, prognosis: p.mental.prognosis, rungs: p.anzan.levels }), null,
+    'the practice page would show nothing here');
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
-  assert.ok(t);
-  assert.match(t.why, /100% at 1600 ms/, 'and it quotes the pace actually run, not the rung default');
+  assert.ok(t, 'but the plan still offers it');
+  assert.match(t.why, /100% at 1300 ms/, 'and it quotes the pace actually run, not the rung default');
 });
 
 test('a carried rung is reported by the pace it was carried at', () => {
   const p = midLadder({
     support: 2,
     anzan: {
-      warm: { rounds: [{ t: '2026-07-20T10:00', ms: 650, ok: true }], best: 5, fastest: 650 },
+      five1: { rounds: [{ t: '2026-07-20T10:00', ms: 650, ok: true }], best: 5, fastest: 650 },
     },
   });
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
-  assert.equal(t.targetId, 'five1', 'it moves on to the next uncarried rung');
+  assert.equal(t.targetId, 'ten1', 'it moves on to the next uncarried rung');
   assert.equal(t.why, 'mental, under time');
 
   // ...and a rung carried but still current reports its record.
@@ -360,7 +382,7 @@ test('the anzan reason quotes the pace last run, not the rung default', () => {
   const p = midLadder({
     support: 1,
     // Run at 500 ms, well off the rung's 1600 ms default.
-    anzan: { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 500, ok: false }], best: 0, fastest: null } },
+    anzan: { five1: { rounds: [{ t: '2026-07-20T10:00', ms: 500, ok: false }], best: 0, fastest: null } },
   });
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
   assert.equal(t.why, '0% at 500 ms');
@@ -369,7 +391,7 @@ test('the anzan reason quotes the pace last run, not the rung default', () => {
 test('an anzan round today auto-ticks its task', () => {
   const p = midLadder({
     support: 1,
-    anzan: { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 1600, ok: true }], best: 1, fastest: null } },
+    anzan: { five1: { rounds: [{ t: `${TODAY}T10:00`, ms: 1300, ok: true }], best: 1, fastest: null } },
   });
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
   assert.equal(t.autoDone, true);
