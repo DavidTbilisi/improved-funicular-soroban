@@ -134,6 +134,22 @@ Today's plan choose between them instead of guessing from a flat "untouched for 
 the file names and leaves the rest untouched — a partial or older export merges rather
 than wipes — and downloads a safety copy of your current save first.
 
+### On a phone
+
+Every bead move is a home-row key, and a phone has no home row — so on a coarse pointer the
+board grows a **touch pad**, and it is the same object the keyboard is: the **die cross**,
+one hand each side, right adding and left subtracting, each cell in its fixed position
+(centre 1, left 2, top 3, bottom 4, right 5 = the rose). A tap runs the same handler a key
+does, so an illegal move is refused with the same complement to compose. The one thing it
+cannot copy is the chord: 6–9 are two keys held together, a finger cannot hold two cells,
+so they get their own row — still labelled with both faces, so the compound stays visible.
+
+The nav becomes one horizontally-scrolling row (eleven pages wrapped is a four-line wall),
+the page you are on is scrolled into view, and the village cockpit — which never scrolls on
+a desktop — becomes an ordinary scrolling column, because a 412 px screen cannot hold the
+diorama, the side panel and the contract strip at once and `overflow: hidden` on a layout
+that does not fit only makes half of it unreachable.
+
 ### Offline, and installable
 
 The app is a **static shell with a service worker**: on the first visit it precaches every

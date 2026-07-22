@@ -15,6 +15,7 @@ import { digitFromFaces } from './domain/faces.js';
 import { AbacusStore } from './state/abacusStore.js';
 import { CommandBus, SetValueCommand, StepIntCommand, AddAtColumnCommand, ToggleSkyCommand, ClickEarthCommand } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
+import { mountTouchPad } from './view/touchPad.js';
 import { ReadoutView } from './view/readoutView.js';
 import { SoundService } from './view/soundService.js';
 import { Metronome } from './view/metronome.js';
@@ -26,6 +27,7 @@ const SHELL_HTML = `
   </div>
   <div class="panel" id="shellBoard">
     <div class="soroban-wrap"><div class="soroban" id="soroban"></div></div>
+    <div class="touchpad" id="touchPad"></div>
     <div class="coach" id="coach"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add ·die cross</b> <kbd>K</kbd>1 <kbd>J</kbd>2 <kbd>I</kbd>3 <kbd>,</kbd>4 <kbd>L</kbd>5 · <kbd>U</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>D</kbd>1 <kbd>S</kbd>2 <kbd>E</kbd>3 <kbd>C</kbd>4 <kbd>F</kbd>5 · <kbd>R</kbd> −10</span><span class="kbg"><b class="kbl">chords</b> <kbd>L+J</kbd>7 <kbd>L+I</kbd>8 <kbd>L+,</kbd>9 <kbd>L+K</kbd>6</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
     <div class="sound-row">
       <button id="soundBtn" class="sound-toggle">🔊 Sound on</button>
@@ -146,7 +148,16 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   // indicator — e.g. the practice page's rod rail. Fires on every focus change,
   // keyboard or programmatic.
   let focusHook = () => {};
-  const setFocus = e => { focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e)); soroban.highlightColumn(focus); focusHook(focus); };
+  // The shell's own focus watchers (the touch pad's rod label) run beside the
+  // page's hook rather than through it, so a page that sets its own hook cannot
+  // accidentally silence the pad.
+  let shellFocusHooks = [];
+  const setFocus = e => {
+    focus = Math.max(MIN_EXP, Math.min(MAX_EXP, e));
+    soroban.highlightColumn(focus);
+    for (const fn of shellFocusHooks) fn(focus);
+    focusHook(focus);
+  };
 
   // A page (e.g. the tutorial) can register a fault sink; a rejected move or a
   // reset is reported to it so the page can spoil a "clean" solve — and with
@@ -266,6 +277,27 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     fitBoard();
   }
 
+  // --- The touch pad --------------------------------------------------------
+  // The same handlers the keyboard calls, so a tap is a keypress in every way
+  // that matters — including being rejected with the complement to compose.
+  // Skipped on the one-screen game cockpit, which has no room for it and whose
+  // board is a popup over the village.
+  let pad = null;
+  if (!document.body.classList.contains('page-game')) {
+    pad = mountTouchPad($('touchPad'), {
+      applyDigit,
+      applyCarry,
+      stepFocus: dir => setFocus(focus + dir),
+      reset: () => { faultHook({ kind: 'reset' }); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); },
+    });
+  } else {
+    const slot = $('touchPad');
+    if (slot) slot.remove();
+  }
+  // The pad's rod label follows the same focus hook a page would use, without
+  // taking it: setFocusHook is the page's, this is the shell's own.
+  const paintFocus = e => { if (pad) pad.setFocusLabel(`place ${placeName(e)}`); };
+
   return {
     store, dispatch, bus, soroban, readout, sound, metronome, coachEl,
     setFocus, refreshUndo,
@@ -283,6 +315,6 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
       board.remove();
     },
     // Paint once after a page has attached its own store subscribers.
-    start() { store.notify(store); refreshUndo(); setFocus(0); },
+    start() { shellFocusHooks.push(paintFocus); store.notify(store); refreshUndo(); setFocus(0); },
   };
 }
