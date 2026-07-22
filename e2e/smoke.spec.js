@@ -4,6 +4,7 @@
 import { test, expect } from '@playwright/test';
 
 const PAGES = [
+  ['home.html', 'Today — Place-Value Peg Soroban'],
   ['index.html', 'Place-Value Peg Soroban — explore the board'],
   ['practice.html', 'Guided practice — Place-Value Peg Soroban'],
   ['trainer.html', 'Multiplication & division trainer — Place-Value Peg Soroban'],

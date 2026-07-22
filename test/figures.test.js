@@ -4,8 +4,9 @@ import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
-  figNineFold, figFingerFacts, figChisanbop,
+  figNineFold, figFingerFacts, figChisanbop, figStreak,
 } from '../src/view/figures.js';
+import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
 import { fumbleRows } from '../src/tutorial/faultLog.js';
 import { buildMultiplication, buildDivision } from '../src/domain/mulDiv.js';
@@ -289,4 +290,42 @@ test('prognosis figure: empty state, an ETA plate, and the Mental celebration', 
   const mental = figPrognosis(prognose([s({ support: 2 })], { floorMs: 4000, support: 2 }));
   assert.ok(mental.includes('🧠 Mental'));
   assert.ok(!mental.includes('drops to go'));
+});
+
+test('figStreak draws a weekday-aligned day ribbon', () => {
+  const TODAY = '2026-07-22'; // a Wednesday
+  const days = ['2026-07-20', '2026-07-21', '2026-07-22'];
+  const plate = figStreak(days, TODAY, 4);
+
+  assert.ok(plate.includes('<svg'));
+  // one cell per day in the window, each with its date in the tooltip
+  for (const d of days) assert.ok(plate.includes(`<title>${d} — practised</title>`), `${d} lit`);
+  assert.ok(plate.includes('<title>2026-07-19</title>'), 'an unpractised day is drawn, unlit');
+
+  // rows are real weekdays: the window starts on a Monday
+  const first = /<title>(\d{4}-\d{2}-\d{2})/.exec(plate)[1];
+  assert.equal(new Date(`${first}T00:00:00Z`).getUTCDay(), 1, 'the grid starts on a Monday');
+
+  assert.ok(plate.includes('3-day streak'));
+  assert.ok(plate.includes('3 days practised'));
+  assert.ok(plate.includes('best run 3'));
+});
+
+test('figStreak names an unfed but living streak, and a broken one', () => {
+  const TODAY = '2026-07-22';
+  const unfed = figStreak([shiftDay(TODAY, -2), shiftDay(TODAY, -1)], TODAY, 4);
+  assert.ok(unfed.includes('2-day streak — not yet fed today'));
+
+  const broken = figStreak([shiftDay(TODAY, -9), shiftDay(TODAY, -8)], TODAY, 4);
+  assert.ok(broken.includes('streak broken'));
+});
+
+test('figStreak handles an empty history and a missing today', () => {
+  const empty = figStreak([], '2026-07-22', 4);
+  assert.ok(empty.includes('<svg'), 'the empty grid still draws — the point is the holes');
+  assert.ok(empty.includes('no practice days yet'));
+
+  const noToday = figStreak(['2026-07-22'], null);
+  assert.ok(noToday.includes('fig-empty'));
+  assert.ok(!noToday.includes('<svg'));
 });

@@ -18,6 +18,7 @@ import { CUBE_FACES } from '../domain/pegs.js';
 import { CUBE_LAYOUT, cubeFaceValues, cubeName } from '../domain/faces.js';
 import { fingerPlan, nineFoldPlan } from '../domain/fingers.js';
 import { chisanbopAdd, chisanbopSub, handOf, actionValue } from '../domain/chisanbop.js';
+import { shiftDay, daysBetween, weekdayIndex, streakOf } from '../today/dayKey.js';
 
 // A digit as a die face: each face-emoji in its fixed cell (taxi center, alien
 // top, tangerine left, rose right, wave bottom), lit when the digit contains it
@@ -593,4 +594,47 @@ export function figPrognosis(prog) {
     body += txt(18, 60, `readiness ${pctR}% — hold and drill your fumble pairs`, { size: 10.5, fill: STONE, anchor: 'start' });
   }
   return svg(W, H, 'Estimated practice time until you can work mentally', body);
+}
+
+// --- Practice-day ribbon (live) ----------------------------------------------
+// The day axis the rest of the app never had: one cell per calendar day over a
+// trailing window, filled when work was logged. Read left-to-right in weeks, so
+// a habit shows as a solid block and a lapse as a hole — the same reason a
+// wall calendar beats a number. Today carries the shu ring; the run touching
+// today (or yesterday — an unfed streak is still alive) is drawn as one band.
+export function figStreak(dayKeys = [], todayKey = null, weeks = 12) {
+  if (!todayKey) return `<div class="fig-empty">No practice days recorded yet — solve anything and today lights up.</div>`;
+  const S = 11, GAP = 3, ROWS = 7;               // cell, gutter, days per column
+  const L = 22, T = 18, B = 20;
+
+  // Rows ARE weekdays (Mon…Sun), so the columns line up like a wall calendar:
+  // back up the window's first day to the Monday on or before it.
+  const first = shiftDay(todayKey, -(weeks * ROWS - 1));
+  const start = shiftDay(first, -weekdayIndex(first));
+  const total = daysBetween(start, todayKey) + 1;
+  const cols = Math.ceil(total / ROWS);
+  const W = L + cols * (S + GAP) + 8, H = T + ROWS * (S + GAP) + B;
+
+  const have = new Set(dayKeys);
+  let body = '';
+  for (const [i, label] of [[0, 'M'], [2, 'W'], [4, 'F']]) {
+    body += txt(L - 5, T + i * (S + GAP) + S - 2, label, { size: 7.5, fill: FAINT, anchor: 'end' });
+  }
+  for (let i = 0; i < total; i++) {
+    const key = shiftDay(start, i);
+    const on = have.has(key), isToday = key === todayKey;
+    const x = L + Math.floor(i / ROWS) * (S + GAP), y = T + (i % ROWS) * (S + GAP);
+    body += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="2.5" fill="${on ? DATA : PAPER2}"` +
+      `${on ? '' : ` stroke="${LINE}" stroke-width="1"`}><title>${key}${on ? ' — practised' : ''}</title></rect>`;
+    if (isToday) body += `<rect x="${x - 2}" y="${y - 2}" width="${S + 4}" height="${S + 4}" rx="4" fill="none" stroke="${SHU}" stroke-width="1.5"/>`;
+  }
+
+  const s = streakOf(dayKeys, todayKey);
+  const head = s.current
+    ? `${s.current}-day streak${s.activeToday ? '' : ' — not yet fed today'}`
+    : (s.total ? 'streak broken — start a new one today' : 'no practice days yet');
+  body += txt(L, 11, head, { size: 10, fill: s.current ? INK : STONE, anchor: 'start', weight: 600 });
+  body += txt(L, H - 6, `${s.total} day${s.total === 1 ? '' : 's'} practised · best run ${s.longest}`,
+    { size: 8.5, fill: FAINT, anchor: 'start' });
+  return svg(W, H, 'Calendar days practised', body);
 }

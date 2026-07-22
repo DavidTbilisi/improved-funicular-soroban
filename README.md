@@ -13,8 +13,20 @@ checksum seals, in decimal or hex.
 npm run dev     # serve at http://localhost:8139 (ES-module dev build)
 ```
 
-Open `http://localhost:8139/index.html`. A static server is needed because the app is
+Open `http://localhost:8139/home.html`. A static server is needed because the app is
 built from native ES modules, which browsers refuse to import over `file://`.
+
+### The pages
+
+| Page | What it is |
+|---|---|
+| `home.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, your mental-track stage, the complement pairs you fumble, and save export/import |
+| `index.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
+| `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
+| `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
+| `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
+| `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
+| `reference.html` | **Reference** — the frozen peg, face and hex tables |
 
 ### Keyboard arithmetic
 
@@ -46,27 +58,59 @@ engine rejects illegal moves, landing on the right answer is proof you used the 
 complement — so a level only has to check the final value. `Hint` shows the move,
 `Show answer` reveals it and resets the streak.
 
+### Today, and your saved progress
+
+Every page writes its own progress to this browser's `localStorage` — nothing is sent
+anywhere, and nothing is shared between browsers. **Today** (`home.html`) is the one
+page that reads all of it at once:
+
+| Key | Written by | Holds |
+|---|---|---|
+| `npv-days` | every page, on each solve / graded rep | the calendar days you practised — the streak |
+| `npv-today` | Today | which of today's plan tasks you have ticked (clears at midnight, UTC) |
+| `npv-tutorial-progress` | Guided practice | the unlock ladder + best clean streak per level |
+| `npv-practice-history` | Guided practice | per-level solve records `{t, ms, clean, support}` |
+| `npv-trainer-progress` | Mult / Div trainer | the same, per rod-trainer mode |
+| `npv-drill-stats` | Codec drills | per-deck sessions, bests, and per-fact tallies |
+| `npv-fault-log` | practice · trainer · village | rejected moves, counted by the complement pair they needed |
+| `npv-game-save` | Soroban Village | the village |
+| `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
+| `npv-support`, `npv-sound`, `npv-bpm` | board pages | mnemonic-mental fade level, sound, metronome tempo |
+
+Days are keyed in **UTC**, matching every timestamp the app already writes, so the day
+boundary is the same wherever you practise.
+
+**Export** writes all of it as one versioned JSON file. **Import** writes back every key
+the file names and leaves the rest untouched — a partial or older export merges rather
+than wipes — and downloads a safety copy of your current save first.
+
 ## Develop
 
 ```sh
-npm test                        # run the full suite (node:test, zero deps)
+npm test                        # unit suite (node:test, zero deps)
 node --test test/codec.test.js  # run one file
+npm run test:e2e                # Playwright browser suite (the one dependency)
 ```
 
-The domain, codec, command, drill-session and stats layers are DOM-free and fully unit
-tested. See [CLAUDE.md](CLAUDE.md) for the architecture (layered ESM, Observer/Command/
-Strategy/Factory/Adapter) and the conventions that keep it that way.
+The domain, codec, command, drill-session, tutorial, game and today layers are DOM-free
+and fully unit tested. See [CLAUDE.md](CLAUDE.md) for the architecture (layered ESM,
+Observer/Command/Strategy/Factory/Adapter) and the conventions that keep it that way.
 
 ## Layout
 
 ```
-index.html          thin shell — loads styles.css + src/app.js
-styles.css          extracted stylesheet
+*.html              thin shells — each loads styles.css + its own src/pages/*.js
+styles.css          the one stylesheet
 src/
-  domain/           pure logic: pegs, faces, rods, number parsing, codec/
+  domain/           pure logic: pegs, faces, rods, number parsing, complements, codec/
   state/            AbacusStore (Observable) + Commands (undo)
   drill/            decks, modes, session state machine, stats persistence, rng
-  view/             one class per panel (observers of the store/session)
-  app.js            composition root (the only module that touches the DOM)
+  tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts
+  game/             the Soroban Village economy, contracts, goals, achievements
+  today/            the day axis, the unified profile, the plan ladder, save transfer
+  view/             one class per panel (observers of the store/session) + figures.js
+  pages/            one composition root per page
+  boardShell.js     the reusable live board (store + soroban + readout + keyboard)
 test/               node:test suites for the DOM-free layers
+e2e/                Playwright specs for what a DOM-free test can't see
 ```
