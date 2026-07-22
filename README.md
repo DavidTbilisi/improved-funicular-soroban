@@ -23,7 +23,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `index.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, **what is fading** across every track, your mental-track stage, the complement pairs you fumble, and save export/import |
 | `explore.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
-| `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
+| `trainer.html` | **Mult · Div · √** — the authentic rod-placement methods, stepped out over eight modes, including 開平法, the square root |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
 | `yomiage.html` | **Read-aloud** (読上算) — the numbers are *spoken* and never shown: set each one on the beads as you hear it and hand in what the board reads. The third modality, and the one exercise where the board does the remembering |
@@ -80,6 +80,18 @@ the kyu paper's 見取算 column — same generator, same rules.
 
 If the browser has no speech voice installed (many Linux boxes, most CI containers) the page
 says so and shows the words instead: a soundless caller is still a usable exercise.
+
+### 開平法 — the square root
+
+Where the kyu ladder stops and the abacus keeps going. Pair the radicand's digits **from the
+ones** (5476 → 54|76): one pair, one root digit. Take the largest `d` with `d² ≤` the first
+pair, subtract it, bring the next pair down — then **double the root so far** to make the
+trial divisor: the largest `d` with `(20·root + d)·d ≤` the remainder.
+
+The doubling is not a rule to memorise: `(10r + d)² = 100r² + (20r + d)·d`, and the `100r²`
+is exactly what the earlier rounds already took off the board. The rod trainer walks it the
+same way it walks multiplication and division — the board must read the right value after
+every step, so it verifies your **rod placement**, not just the answer.
 
 ### The kyu exam
 
@@ -217,7 +229,7 @@ offline-manifest.json  the precache list — generated, and checked by npm test
 manifest.webmanifest   installable-app metadata; icons/ holds its PNGs
 scripts/            maintenance scripts (the manifest, the icons) — never shipped
 src/
-  domain/           pure logic: pegs, faces, rods, number parsing, complements, codec/
+  domain/           pure logic: pegs, faces, rods, number parsing, complements, ×/÷/√, codec/
   state/            AbacusStore (Observable) + Commands (undo)
   drill/            decks, modes, session state machine, stats persistence, rng
   tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts

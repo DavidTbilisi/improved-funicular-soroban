@@ -48,6 +48,16 @@ const IMPORT_RE = /(?:^|[\s;}])(?:import|export)\s+(?:[\s\S]*?\sfrom\s+)?["']([^
 
 const matches = (src, re) => [...src.matchAll(re)].map(m => m[1]);
 
+// Comments come off before imports are read. This repo's modules open with long
+// prose headers, and prose contains quotation marks — one `"√n is …"` inside a
+// comment was enough for the specifier regex to walk from an `export` keyword
+// into the wrong string and precache a file called `src/domain/√n is …`. Only
+// comments that START a line are stripped, so a `'https://…'` inside real code
+// survives intact.
+const stripComments = src => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^[ \t]*\/\/.*$/gm, '');
+
 // Resolve a specifier written inside `fromFile` to a repo-relative path.
 function resolveFrom(fromFile, spec) {
   if (/^[a-z]+:/i.test(spec) || spec.startsWith('//')) return null;   // external
@@ -79,7 +89,7 @@ export function collectAssets() {
   while (queue.length) {
     const file = queue.shift();
     let src;
-    try { src = read(file); } catch { continue; }        // a missing import is the smoke test's business
+    try { src = stripComments(read(file)); } catch { continue; }   // a missing import is the smoke test's business
     for (const spec of matches(src, IMPORT_RE)) {
       const p = resolveFrom(file, spec);
       if (!p || seen.has(p) || p.startsWith('..')) continue;
