@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DRILL_DECKS } from '../src/drill/decks.js';
-import { SequenceRng } from '../src/drill/rng.js';
+import { SequenceRng, MathRng } from '../src/drill/rng.js';
 
 test('every deck has the strategy shape', () => {
   for (const [id, deck] of Object.entries(DRILL_DECKS)) {
@@ -93,5 +93,47 @@ test('typed decks always expose at least one accepted answer', () => {
     if (deck.mode !== 'type') continue;
     const item = deck.gen(rng);
     assert.ok(item.answers.length >= 1);
+  }
+});
+
+// --- the point decks --------------------------------------------------------
+test('every point question places to the value the arithmetic gives', () => {
+  const rng = new MathRng();
+  for (const id of ['pointMul', 'pointDiv']) {
+    for (let i = 0; i < 300; i++) {
+      const item = DRILL_DECKS[id].gen(rng);
+      const [a, op, b] = item.prompt.split(' ');
+      const expected = op === '×' ? Number(a) * Number(b) : Number(a) / Number(b);
+      const given = Number(item.answers[0]);
+      assert.ok(Math.abs(given - expected) < 1e-9,
+        `${item.prompt} → ${item.answers[0]}, arithmetic says ${expected}`);
+    }
+  }
+});
+
+test('a point question hands over the digits and asks only for the placement', () => {
+  const rng = new MathRng();
+  for (const id of ['pointMul', 'pointDiv']) {
+    for (let i = 0; i < 100; i++) {
+      const item = DRILL_DECKS[id].gen(rng);
+      const digits = /<b>(\d+)<\/b>/.exec(item.sub)[1];
+      // The answer is those digits, with a point put in or zeros added — never
+      // a different number.
+      assert.equal(item.answers[item.answers.length - 1].replace(/[.]/g, '').replace(/0+$/, '').replace(/^0+/, ''),
+        digits.replace(/0+$/, '').replace(/^0+/, ''), `${item.prompt} changed the digits`);
+      assert.ok(item.reveal && item.reveal.length > 10, 'the rule is revealed');
+    }
+  }
+});
+
+test('the point decks never deal a written trailing zero — it would be an ambiguous question', () => {
+  const rng = new MathRng();
+  for (const id of ['pointMul', 'pointDiv']) {
+    for (let i = 0; i < 200; i++) {
+      const item = DRILL_DECKS[id].gen(rng);
+      for (const operand of item.prompt.split(' ').filter(t => /\d/.test(t))) {
+        if (operand.includes('.')) assert.ok(!/0$/.test(operand), `${item.prompt} deals ${operand}`);
+      }
+    }
   }
 });

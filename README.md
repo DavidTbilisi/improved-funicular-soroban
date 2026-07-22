@@ -24,7 +24,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `explore.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
 | `trainer.html` | **Mult · Div · √** — the authentic rod-placement methods, stepped out over eight modes, including 開平法, the square root |
-| `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
+| `drills.html` | **Codec drills** — 19 timed recall decks (pegs → cells → scenes → seals), the finger times-table track, and the two **decimal-point** decks |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
 | `yomiage.html` | **Read-aloud** (読上算) — the numbers are *spoken* and never shown: set each one on the beads as you hear it and hand in what the board reads. The third modality, and the one exercise where the board does the remembering |
 | `exam.html` | **Kyu exam** — a timed paper (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades, from 10級 to 三段. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down. Dan papers add 開平 and a 暗算 section with the board faded out |
@@ -80,6 +80,26 @@ the kyu paper's 見取算 column — same generator, same rules.
 
 If the browser has no speech voice installed (many Linux boxes, most CI containers) the page
 says so and shows the words instead: a soundless caller is still a usable exercise.
+
+### Where the point goes
+
+A soroban does not know where the decimal point is. The rods hold digits; the point is a
+decision you make before starting and honour at the end — which is why it is the thing that
+loses marks on a real paper, not the arithmetic, which the beads do for you.
+
+So it is drilled as its own skill. The two **point decks** hand you the digits — the part the
+board would have given you — and ask only for the placement:
+
+```
+12.4 × 0.35     the board gives you 4340     → 4.340      (1 rod + 2 rods = 3)
+84 ÷ 0.7        the board gives you 12       → 120        (0 − 1 = −1: a zero, not a point)
+```
+
+Multiplying, the answer sits as many rods right of the point as the two operands do together.
+Dividing, you first shift both until the divisor is whole — what an operator physically does
+— and the quotient carries whatever decimals the dividend has left. When that count goes
+**negative** the digits gain zeros instead of a point, and that is the case most marks are
+lost on, so the deck deals it as often as the others.
 
 ### 開平法 — the square root
 

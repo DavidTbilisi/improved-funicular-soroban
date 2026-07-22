@@ -11,7 +11,7 @@ import { DrillSession } from '../drill/drillSession.js';
 import { automaticityForecast } from '../drill/forecast.js';
 import { DrillView } from '../view/drillView.js';
 import {
-  figure, figDeckBests, figSessions, figFingerTrick, figNineFold, figFingerFacts, figChisanbop,
+  figure, figDeckBests, figSessions, figFingerTrick, figNineFold, figFingerFacts, figChisanbop, figPoint,
 } from '../view/figures.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
@@ -58,6 +58,11 @@ $('figNineFold').innerHTML = figure(2,
 $('figChisanbop').innerHTML = figure(3,
   'The friend rules on the hands — chisanbop. A hand is a rod: the thumb is the 5-bead, the four fingers the earth beads, so two hands read a number 0–99 and inked beads are pressed down. The same complement moves drill on the board here as presses: blocked from adding straight, press the thumb (+5) and lift the difference (small friend), or carry a ten to the left hand (big friend) and pay it back. Worked here: 6 + 7.',
   figChisanbop(6, '+', 7));
+// The fourth plate is not a hand method — it is the thing the hands and the
+// beads both refuse to do for you. Worked here: 12.4 × 0.35.
+$('figPoint').innerHTML = figure(4,
+  'Where the point goes. A soroban holds digits and nothing else: the point is a decision you make before starting and honour at the end. Multiplying, the answer sits as many rods right of the point as the two operands do together — 1 + 2 = 3 here. Dividing, you first shift both until the divisor is whole, and the quotient carries whatever decimals the dividend has left; when that count goes negative the digits gain zeros instead (drawn in red), which is the placement most marks are lost on.',
+  figPoint('4340', 3, '12.4 × 0.35'));
 
 const deckIds = Object.keys(DRILL_DECKS);
 // Default the trend to the most-drilled deck; switch it as decks are started.

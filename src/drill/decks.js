@@ -23,6 +23,7 @@ import {
   nineFoldPlan, nineFoldStory,
 } from '../domain/fingers.js';
 import { stripStoryDigits } from './text.js';
+import { placement, digitsOf } from '../domain/decimalPoint.js';
 
 // The fact spaces of the finger decks: the hard 6–9 corner of the times table
 // (both operand orders — recognizing 6×9 and 9×6 are separate skills) and the
@@ -217,4 +218,62 @@ export const DRILL_DECKS = {
       };
     },
   },
+  // --- Where the point goes ------------------------------------------------
+  // A soroban does not know where the point is: the rods hold digits, and the
+  // point is a decision the operator makes and honours at the end. So these two
+  // decks hand over the DIGITS — the part the board would have given you — and
+  // ask only for the placement. It is the one thing on a real paper that the
+  // beads cannot do for you, and the reason 4級 marks get lost.
+  pointMul: {
+    label: 'Point: ×', floorMs: 5000, mode: 'type',
+    gen(rng) {
+      const a = decimalOperand(rng), b = decimalOperand(rng);
+      const digits = String(Number(digitsOf(a)) * Number(digitsOf(b)));
+      const p = placement('×', a, b, digits);
+      return {
+        prompt: `${a} × ${b}`,
+        sub: `the board gives you <b>${p.digits}</b> — type it with the point in`,
+        answers: p.accepted,
+        reveal: p.rule,
+      };
+    },
+  },
+  pointDiv: {
+    label: 'Point: ÷', floorMs: 5000, mode: 'type',
+    gen(rng) {
+      // Built from an exact digit division, then each operand is given a point:
+      // the digits are always clean, so the question is only ever the placement.
+      // The dividend's digits may not end in 0 — writing 490 as "4.90" makes the
+      // trailing zero load-bearing (it IS a rod here), and a question whose
+      // meaning depends on spotting that is testing typography, not placement.
+      let bd = 2 + rng.int(8), qd = 2 + rng.int(97);  // divisor 2..9, quotient 2..98
+      for (let k = 0; k < 40 && (bd * qd) % 10 === 0; k++) qd = 2 + rng.int(97);
+      const a = withPoint(String(bd * qd), rng), b = withPoint(String(bd), rng);
+      const p = placement('÷', a, b, String(qd));
+      return {
+        prompt: `${a} ÷ ${b}`,
+        sub: `the board gives you <b>${p.digits}</b> — type it with the point in`,
+        answers: p.accepted,
+        reveal: p.rule,
+      };
+    },
+  },
 };
+
+// --- helpers for the point decks --------------------------------------------
+// A written operand with 0–2 decimals. Trailing zeros are never generated: a
+// written "12.40" is a legitimate operand but an ambiguous QUESTION, since the
+// learner cannot tell it from 12.4 without being told the zero is deliberate.
+function decimalOperand(rng) {
+  const digits = String(2 + rng.int(98));             // 2..99, no trailing zero
+  return withPoint(digits.replace(/0$/, '4'), rng);
+}
+
+// Put a point 0, 1 or 2 rods from the right of a digit string.
+function withPoint(digits, rng) {
+  const places = rng.int(3);
+  if (!places) return digits;
+  const padded = digits.padStart(places + 1, '0');
+  const cut = padded.length - places;
+  return `${padded.slice(0, cut)}.${padded.slice(cut)}`;
+}
