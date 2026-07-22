@@ -1,6 +1,6 @@
 // ============================================================================
 // Explore page — the live board with number entry and the L3 Deep Pack codec
-// scenes for the current number. Composition root for index.html.
+// scenes for the current number. Composition root for explore.html.
 // ============================================================================
 import { mountNav } from '../nav.js';
 import { mountBoardShell } from '../boardShell.js';

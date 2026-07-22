@@ -3,54 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Place-Value Peg Soroban — explore the board</title>
+<title>Today — Place-Value Peg Soroban</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <div class="app">
   <h1>Place-Value Peg Soroban</h1>
-  <p class="subtitle">Every column is a food (horizontal axis: <em>which place</em>). Upright = integer place, <span style="color:#b898e8">flipped = decimal place</span>. Cube faces name the digit (vertical axis: <em>which value</em>) — 🌹 rose is the sky bead. <strong>New here, or coming back?</strong> Start at <a href="home.html">Today</a> — it reads your progress across every page and gives you three things to do.</p>
+  <p class="subtitle">Today — where you are across the ladder, the decks, the rod method and the village, and the ten minutes that move it.</p>
   <div id="nav"></div>
 
-  <!-- board shell injects: readout + soroban + set-number/presets -->
-  <div id="boardMount"></div>
-
-  <div class="panel">
-    <h2>Reading the board</h2>
-    <div class="fig-grid">
-      <div id="figPlace"></div>
-      <div id="figDigits"></div>
+  <div class="panel today-card">
+    <div class="today-head" id="todayHead"></div>
+    <h2>Today's ten minutes</h2>
+    <p class="today-msg" id="todayMsg"></p>
+    <ol class="today-plan" id="todayPlan"></ol>
+    <p class="today-total" id="todayTotal"></p>
+    <div class="today-notes">
+      <div class="today-note" id="todayMental"></div>
+      <div class="today-note" id="todayFaults"></div>
+      <div class="today-note" id="todayVillage"></div>
     </div>
   </div>
 
   <div class="panel-row">
   <div class="panel">
-    <h2>Working the board</h2>
-    <p class="help">
-      Click any bead to move it. Each column has <strong>1 sky bead</strong> (worth <code>5</code>) and <strong>4 earth beads</strong> (worth <code>1</code> each). Integer places sit <strong>left</strong> of the green point with <strong>upright</strong> pegs (Apple = ones, Banana = tens…). Decimal places sit <span class="fr">right</span> of the point with <span class="fr">flipped</span> pegs reusing the same foods (flipped Apple = tenths, flipped Banana = hundredths…). Under each column the <strong>cube faces</strong> show the digit as one percept: earth beads = 🚕🍊👽🌊, sky bead = 🌹, so <code>8</code> is 🌹👽 (rose + alien).
-    </p>
-    <p class="help" style="margin-top:10px;">
-      <strong>Keyboard arithmetic.</strong> Each key is a <strong>literal bead move</strong>, laid out as the digit's <strong>die face</strong> — center <code>1</code>, left <code>2</code>, top <code>3</code>, bottom <code>4</code>, right <code>5</code> (the rose/heaven bead). Use <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>G</kbd>/<kbd>H</kbd>) to focus any column — <strong>integer or decimal</strong>; a carry out of the tenths crosses the point into the ones. <kbd>Q</kbd> resets to 0. The <strong>right hand adds</strong> the die cross — <kbd>K</kbd>=<code>1</code> (center), <kbd>J</kbd>=<code>2</code> (left), <kbd>I</kbd>=<code>3</code> (top), <kbd>,</kbd>=<code>4</code> (bottom) push earth beads, <kbd>L</kbd>=<code>5</code> (right) sets the heaven bead, and <kbd>U</kbd> = carry (<code>+10</code>). The <strong>left hand subtracts</strong> the same cross — <kbd>D</kbd> <kbd>S</kbd> <kbd>E</kbd> <kbd>C</kbd> pull <code>1</code>–<code>4</code>, <kbd>F</kbd> clears the heaven bead, <kbd>R</kbd> = borrow (<code>−10</code>). <strong>Chords:</strong> hold the cells together to place <code>6</code>–<code>9</code> in one gesture, exactly as the die lights them — <kbd>L</kbd>+<kbd>J</kbd> = <code>7</code>, <kbd>L</kbd>+<kbd>I</kbd> = <code>8</code>, <kbd>L</kbd>+<kbd>,</kbd> = <code>9</code>, <kbd>L</kbd>+<kbd>K</kbd> = <code>6</code>. A move that can’t be made directly on the current rod is <span style="color:#ff6b6b">rejected and flagged</span>, with the correct complement suggested — you compose it yourself, e.g. <code>+3</code> on a 4 → <kbd>L</kbd> then <kbd>S</kbd> (<code>+5 −2</code>). Every move is undoable with the <strong>Undo</strong> button.
-      <br><strong>Input mode:</strong> just start typing a number — press any digit (or <kbd>.</kbd>) to jump into the value field, then <kbd>Enter</kbd> to place it on the soroban (<kbd>Esc</kbd> to cancel). The number row types numbers; the home row moves beads.
-    </p>
+    <h2>Practice days</h2>
+    <div class="fig-grid">
+      <div id="figStreak"></div>
+      <div id="figLadder"></div>
+    </div>
+    <p class="help" style="margin-top:12px;">A day lights when you land a solve or a graded drill rep on any page — guided practice, the rod trainer, the codec drills, or a village contract. Days are recorded in UTC, so the boundary is the same wherever you practise. The ladder beside it is your best clean streak per level against the streak each level demands.</p>
   </div>
 
   <div class="panel">
-    <h2>L3 Deep Pack — scenes for the current number</h2>
-    <p class="help" style="margin-bottom:12px;">The <strong>number-codec-ladder</strong>'s archival codec (candidate): the digit string is chunked into <code>[cell][action][cell]</code> scenes of 5 digits — a cell is a peg-matrix percept (audio peg = tens, visual peg = units), the action digit comes from the cube faces (<code>0</code> = static contact, <code>1–4</code> = drive-through / splatter / abduct / drench, <code>5</code> = thorn-wrap, <code>6–9</code> = the same four <strong>flaming</strong> 🔥). Two scenes + a <strong>checksum seal</strong> (digit-sum mod 9, remainder 0 written as 9) = one locus = 10 digits. Partial tails use shorter grammar (4 = cell·action·face, 3 = cell·action, 2 = cell, 1 = face). Seals are in scope at <strong>≥8 digits</strong> — below that they render dimmed, practice only. <strong>Hex mode</strong> packs the integer part as <strong>bytes</strong> from the 16×16 matrix (2 byte-cells per scene, contact binder, 4 bytes + seal per locus); the hex seal is the nibble-sum mod 15, 0 written as <code>F</code> (registered convention — the seal's base-general form, mod b−1 with weighted tier mod 17).</p>
-    <div class="input-row" style="margin-bottom:10px;">
-      <label>Radix:</label>
-      <button id="radixDec" class="primary">Decimal</button>
-      <button id="radixHex">Hex (bytes)</button>
+    <h2>Carry your progress</h2>
+    <p class="help" style="margin-bottom:14px;">Everything here lives in this browser's local storage and nowhere else — clearing site data, switching machines, or using a private window loses it. Export writes one JSON file holding every key: the unlock ladder, solve histories, drill stats and per-fact tallies, fumble counts, the village, achievements, your day log and your preferences. Importing writes back every key the file names and <strong>leaves the rest untouched</strong>, so a partial or older export merges rather than wipes. A safety copy of your current save downloads automatically before any import.</p>
+    <div class="today-transfer">
+      <button id="todayExport" class="primary">⬇ Export save</button>
+      <label class="today-file">📂 Choose a file<input type="file" id="todayImportFile" accept="application/json,.json"></label>
     </div>
-    <div class="pack-digits-line" id="packDigitsLine"></div>
-    <div class="locus-list" id="packLoci"></div>
+    <textarea id="todayImport" class="today-paste" rows="3" placeholder="…or paste the exported JSON here"></textarea>
+    <div class="today-transfer">
+      <button id="todayImportBtn">⬆ Import pasted save</button>
+    </div>
+    <p class="today-status" id="todayStatus"></p>
   </div>
   </div>
 </div>
 
-<script type="module" src="src/pages/explore.js"></script>
+<script type="module" src="src/pages/today.js"></script>
 
 </body>
 </html>

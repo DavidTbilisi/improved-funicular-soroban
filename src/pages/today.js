@@ -1,5 +1,5 @@
 // ============================================================================
-// Today page — composition root for home.html, the app's front door.
+// Today page — composition root for index.html, the app's front door.
 //
 // It is the only page that reads EVERY store at once, and the only one that
 // mounts no board: nothing here is practised, so there is no soroban, no
@@ -28,7 +28,7 @@ import { TodayView } from '../view/todayView.js';
 import { figure, figStreak, figLadder } from '../view/figures.js';
 
 const $ = id => document.getElementById(id);
-mountNav('home');
+mountNav('today');
 
 const LS = window.localStorage;
 const store = key => new LocalStorageProgressStore(LS, key);

@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 
 // Board-driven pages whose soroban is visible at load (the game page hides its
 // board until a contract, so it's covered by its own one-screen fitBoard).
-const PAGES = ['index.html', 'practice.html', 'trainer.html'];
+const PAGES = ['explore.html', 'practice.html', 'trainer.html'];
 
 // Widths that all force a fit (the natural board is ~1350px): a roomy desktop
 // and a narrow window that exercises the resize-driven refit.

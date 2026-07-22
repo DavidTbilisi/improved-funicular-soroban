@@ -13,15 +13,15 @@ checksum seals, in decimal or hex.
 npm run dev     # serve at http://localhost:8139 (ES-module dev build)
 ```
 
-Open `http://localhost:8139/home.html`. A static server is needed because the app is
+Open `http://localhost:8139/`. A static server is needed because the app is
 built from native ES modules, which browsers refuse to import over `file://`.
 
 ### The pages
 
 | Page | What it is |
 |---|---|
-| `home.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, your mental-track stage, the complement pairs you fumble, and save export/import |
-| `index.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
+| `index.html` | **Today** — the front door: your day streak, one ~10-minute plan of three concrete tasks with a reason and a deep link each, your mental-track stage, the complement pairs you fumble, and save export/import |
+| `explore.html` | **Explore** — the free-play 23-rod board, the live place-value chart, and the L3 deep-pack scenes |
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
@@ -61,7 +61,7 @@ complement — so a level only has to check the final value. `Hint` shows the mo
 ### Today, and your saved progress
 
 Every page writes its own progress to this browser's `localStorage` — nothing is sent
-anywhere, and nothing is shared between browsers. **Today** (`home.html`) is the one
+anywhere, and nothing is shared between browsers. **Today** (`index.html`) is the one
 page that reads all of it at once:
 
 | Key | Written by | Holds |
