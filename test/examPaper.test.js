@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { genMitori, genKake, genWari, genPaper, gradePaper, normalizeAnswer } from '../src/exam/paper.js';
+import { genMitori, genKake, genWari, genKaihei, genQuestion, genPaper, gradePaper, normalizeAnswer } from '../src/exam/paper.js';
 import { EXAM_GRADES, gradeById, PASS_MARK } from '../src/exam/grades.js';
 import { MathRng, SequenceRng } from '../src/drill/rng.js';
 
@@ -150,4 +150,49 @@ test('4 of 5 is 80 and passes; 3 of 5 is 60 and does not', () => {
   assert.ok(gradePaper(paper, four).passed);
   assert.equal(gradePaper(paper, three).sections[0].score, 60);
   assert.equal(gradePaper(paper, three).passed, false);
+});
+
+// --- past 1級: the two sections a kyu paper never has ------------------------
+test('開平 deals perfect squares, built from the root', () => {
+  for (const digits of [2, 3]) {
+    for (let i = 0; i < 150; i++) {
+      const q = genKaihei({ digits }, rng);
+      assert.equal(q.kind, 'kaihei');
+      assert.equal(q.answer * q.answer, q.a, `√${q.a}`);
+      assert.equal(String(q.answer).length, digits, `${q.answer} is ${digits} digits`);
+      assert.ok(q.answer >= 4, 'a root of 1, 2 or 3 answers itself');
+    }
+  }
+});
+
+test('暗算 is the same column as 見取算 — one generator, no drift', () => {
+  const spec = { kind: 'anzan', terms: 5, digits: 2, minus: false, count: 4, seconds: 180 };
+  for (let i = 0; i < 100; i++) {
+    const q = genQuestion(spec, rng);
+    assert.equal(q.kind, 'anzan', 'the section owns the kind');
+    assert.equal(q.terms.length, 5);
+    let run = 0;
+    for (const t of q.terms) {
+      assert.equal(String(Math.abs(t)).length, 2);
+      run += t;
+      assert.ok(run >= 0);
+    }
+    assert.equal(run, q.answer);
+  }
+});
+
+test('a dan paper carries every section its grade declares, and marks like any other', () => {
+  const grade = gradeById('shodan');
+  const paper = genPaper(grade, rng);
+  assert.deepEqual(paper.sections.map(s => s.kind), ['mitori', 'kake', 'wari', 'kaihei', 'anzan']);
+  const right = paper.sections.map(s => s.questions.map(q => String(q.answer)));
+  const perfect = gradePaper(paper, right);
+  assert.equal(perfect.score, 100);
+  assert.ok(perfect.passed);
+  // Fail only the root section: five sections, and every one still has to pass.
+  const noRoot = right.map((sec, i) => (i === 3 ? sec.map(() => '1') : sec));
+  const r = gradePaper(paper, noRoot);
+  assert.equal(r.passed, false);
+  assert.equal(r.sections[3].score, 0);
+  assert.equal(r.sections[4].passed, true);
 });

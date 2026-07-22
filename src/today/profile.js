@@ -195,7 +195,8 @@ export function buildProfile({
     const attempts = examLog ? examLog.attempts(g.id) : [];
     const lastDay = lastDayOf(attempts);
     return {
-      id: g.id, name: g.name, kyu: g.kyu, needs: g.needs, desc: describeGrade(g),
+      id: g.id, name: g.name, kyu: g.kyu, dan: g.dan || null,
+      needs: g.needs, needsMode: g.needsMode || null, desc: describeGrade(g),
       minutes: Math.round(totalSeconds(g) / 60),
       best: examLog ? examLog.best(g.id) : null,
       passed: passedSet.has(g.id),

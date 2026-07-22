@@ -47,6 +47,7 @@ const view = new ExamView({
   clockEl: $('examClock'), questionEl: $('examQuestion'), answerEl: $('examAnswer'),
   submitBtn: $('examSubmit'), skipBtn: $('examSkip'), abandonBtn: $('examAbandon'),
   expiredEl: $('examExpired'), paperEl: $('examPaper'), sheetEl: $('examSheet'),
+  mentalEl: $('examMental'),
 }, session, {
   onStart: id => { clearBoard(); session.start(id); },
   onSubmit: () => handIn(),
@@ -85,7 +86,13 @@ document.addEventListener('keydown', e => {
 setInterval(() => session.tick(), 250);
 
 // --- Rendering ---------------------------------------------------------------
+// The 暗算 section fades the beads to the mnemonic-mental track's Mental stage
+// — imagined rods, hidden by `visibility` so nothing reflows. This is the one
+// exam condition a paper cannot enforce and this page can: the keys still move
+// the rods, you simply cannot read them. Everything else restores the board.
 session.subscribe(e => {
+  if (e.type === 'section') shell.soroban.setSupport(e.kind === 'anzan' ? 2 : 0);
+  if (e.type === 'finished' || e.type === 'abandoned') shell.soroban.setSupport(0);
   if (e.type === 'finished') { dayLog.mark(); render(); }
 });
 
@@ -109,7 +116,7 @@ function render() {
   view.renderGrades(r, focusId);
 
   $('figExam').innerHTML = figure(1,
-    'Best score on each grade against the 70-point pass mark, hardest at the top. A filled mark on the rule means the grade is held — every one of its sections reached 70 in the same sitting. Grades you have not sat keep their row, so the climb stays in view.',
+    'Best score on each grade against the 70-point pass mark, hardest at the top — ten kyu grades and then the dan ones. A filled mark on the rule means the grade is held: every one of its sections reached 70 in the same sitting. Grades you have not sat keep their row, so the whole climb stays in view.',
     figExam(r, focusId));
 
   const history = log.attempts().slice(-8).reverse();

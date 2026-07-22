@@ -44,8 +44,24 @@ const kake = (count, seconds, a, b) =>
   ({ kind: 'kake', title: '掛算 · multiplication', count, seconds, a, b });
 const wari = (count, seconds, a, b) =>
   ({ kind: 'wari', title: '割算 · division', count, seconds, a, b });
+// The two sections that only appear past 1級.
+const kaihei = (count, seconds, digits) =>
+  ({ kind: 'kaihei', title: '開平 · square root', count, seconds, digits });
+const anzan = (count, seconds, terms, digits, minus) =>
+  ({ kind: 'anzan', title: '暗算 · mental', count, seconds, terms, digits, minus });
 
-// Easiest first (10級 → 1級), so index order is ladder order everywhere.
+// Easiest first (10級 → 三段), so index order is ladder order everywhere: which
+// grade is next, and which is the highest held, are both read off this order and
+// never off the kyu number — which runs DOWN and then stops.
+//
+// PAST 1級 THE LADDER CHANGES SHAPE, and so does this table. A dan paper adds
+// the two sections a kyu paper never has:
+//   開平 — the square root, the method the rod trainer teaches as 開平法;
+//   暗算 — the same column with no board, which is the one thing a paper exam
+//          cannot enforce and this one can (the exam page fades the beads).
+// Dan papers are longer (five sections, four questions each) because that is
+// what they are: the grade is as much about sitting twenty minutes as about
+// any single method.
 export const EXAM_GRADES = Object.freeze([
   {
     id: 'kyu10', kyu: 10, name: '10級', needs: 'small-add',
@@ -97,6 +113,30 @@ export const EXAM_GRADES = Object.freeze([
     teach: 'Six-digit terms, four-by-four products, seven-by-three division. At this shape the paper is no longer testing whether you know the rules.',
     sections: [mitori(5, 400, 10, 6, true), kake(5, 300, 4, 4), wari(5, 300, 7, 3)],
   },
+
+  // --- 段位 · past the kyu ladder -------------------------------------------
+  // `needsMode` is a ROD_MODES id rather than a practice level: what a dan paper
+  // needs is the METHOD (開平法), and the rod trainer is where that is learned.
+  {
+    id: 'jun-shodan', kyu: 0, dan: 0.5, name: '準初段', needs: 'divide', needsMode: 'sqrt-2',
+    teach: 'The first paper past 1級, and the first with a <b>開平</b> section: pair the digits from the ones, double the root so far for the trial divisor. The other three sections are 1級\'s, unchanged — which is the point. What makes a dan is the new method and the length of the sitting, not a wider column.',
+    sections: [mitori(4, 300, 10, 6, true), kake(4, 240, 4, 4), wari(4, 250, 7, 3), kaihei(4, 200, 2)],
+  },
+  {
+    id: 'shodan', kyu: 0, dan: 1, name: '初段', needs: 'divide', needsMode: 'sqrt-2',
+    teach: 'The <b>暗算</b> section arrives: the same column, with the board faded out. The rods are still there and your keys still move them — you simply cannot read them, which is the Mental stage of the guided-practice track, sat under exam conditions.',
+    sections: [mitori(4, 300, 10, 6, true), kake(4, 240, 4, 4), wari(4, 250, 7, 3), kaihei(4, 220, 3), anzan(4, 180, 5, 2, false)],
+  },
+  {
+    id: 'nidan', kyu: 0, dan: 2, name: '二段', needs: 'divide', needsMode: 'sqrt-3',
+    teach: 'Wider products, a four-digit divisor, and a mental column with three-digit terms. At this point the limit is rarely the method.',
+    sections: [mitori(4, 300, 10, 6, true), kake(4, 250, 5, 4), wari(4, 260, 8, 4), kaihei(4, 220, 3), anzan(4, 190, 5, 3, false)],
+  },
+  {
+    id: 'sandan', kyu: 0, dan: 3, name: '三段', needs: 'divide', needsMode: 'sqrt-3',
+    teach: 'Seven-digit terms, five-by-five products, and ten mental terms. Twenty minutes of unbroken accuracy — the grade is the endurance as much as the arithmetic.',
+    sections: [mitori(4, 320, 10, 7, true), kake(4, 260, 5, 5), wari(4, 270, 9, 4), kaihei(4, 220, 3), anzan(4, 200, 10, 3, false)],
+  },
 ].map(g => Object.freeze({ ...g, sections: Object.freeze(g.sections.map(Object.freeze)) })));
 
 export const gradeById = id => EXAM_GRADES.find(g => g.id === id) || null;
@@ -130,8 +170,12 @@ export function describeSection(s) {
     return `${s.terms} terms × ${s.digits} digit${s.digits === 1 ? '' : 's'}` +
       (s.minus ? ', with subtraction' : ', addition only');
   }
+  if (s.kind === 'anzan') {
+    return `${s.terms} terms × ${s.digits} digit${s.digits === 1 ? '' : 's'}, no board`;
+  }
   if (s.kind === 'kake') return `${s.a} digit${s.a === 1 ? '' : 's'} × ${s.b} digit${s.b === 1 ? '' : 's'}`;
   if (s.kind === 'wari') return `${s.a} digits ÷ ${s.b} digit${s.b === 1 ? '' : 's'}, exact`;
+  if (s.kind === 'kaihei') return `${s.digits}-digit root, perfect square`;
   return '';
 }
 

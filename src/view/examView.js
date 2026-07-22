@@ -27,12 +27,15 @@ export function clockText(ms) {
 // and reformatting it as "12 + 34 − 5" would be teaching a different exercise.
 export function questionHTML(q) {
   if (!q) return '';
-  if (q.kind === 'mitori') {
+  // 暗算 is the same column as 見取算 — it is printed the same because it IS the
+  // same question; what differs is that the board is faded while it runs.
+  if (q.kind === 'mitori' || q.kind === 'anzan') {
     return `<ol class="ex-col">${q.terms.map((t, i) =>
       `<li><span class="ex-sign">${i === 0 ? '' : t < 0 ? '−' : '+'}</span><span class="ex-term">${group(Math.abs(t))}</span></li>`).join('')}</ol>`;
   }
   if (q.kind === 'kake') return `<div class="ex-sum">${group(q.a)} <span class="ex-op">×</span> ${group(q.b)}</div>`;
   if (q.kind === 'wari') return `<div class="ex-sum">${group(q.a)} <span class="ex-op">÷</span> ${group(q.b)}</div>`;
+  if (q.kind === 'kaihei') return `<div class="ex-sum"><span class="ex-op">√</span> ${group(q.a)}</div>`;
   return '';
 }
 
@@ -88,6 +91,15 @@ export class ExamView {
         `<span class="${i === e.si ? 'on' : i < e.si ? 'done' : ''}">${esc(s.title.split(' · ')[0])}</span>`).join('');
       E.descEl.textContent = `${e.title.split(' · ')[1] || e.title} — ${e.desc}`;
       E.expiredEl.hidden = true;
+      // The mental section says so where the learner is looking, because the
+      // board going quiet is otherwise indistinguishable from the board breaking.
+      E.stageEl.classList.toggle('ex-mental', e.kind === 'anzan');
+      if (E.mentalEl) {
+        E.mentalEl.hidden = e.kind !== 'anzan';
+        E.mentalEl.textContent = e.kind === 'anzan'
+          ? '暗算 — the board is faded out. The rods are still there and your keys still move them; you just cannot read them.'
+          : '';
+      }
     }
     if (e.type === 'question') {
       E.counterEl.textContent = `${e.qi + 1} / ${e.count}`;
@@ -157,9 +169,10 @@ export class ExamView {
   // would bury the scores it is there to explain.
   markQuestion(q) {
     if (!q) return '';
-    if (q.kind === 'mitori') return q.terms.map((t, i) => (i === 0 ? group(t) : signed(t))).join(' ');
+    if (q.terms) return q.terms.map((t, i) => (i === 0 ? group(t) : signed(t))).join(' ');
     if (q.kind === 'kake') return `${group(q.a)} × ${group(q.b)}`;
     if (q.kind === 'wari') return `${group(q.a)} ÷ ${group(q.b)}`;
+    if (q.kind === 'kaihei') return `√${group(q.a)}`;
     return '';
   }
 

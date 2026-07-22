@@ -639,3 +639,38 @@ test('spacing shows in the plan: the crammed deck is the one that has gone', () 
   assert.equal(t.page, 'drills');
   assert.equal(t.targetId, 'digitToFace');
 });
+
+// --- past 1級 ---------------------------------------------------------------
+const allKyu = () => ({ attempts: EXAM_GRADES.slice(0, 10).map((g, i) => ({
+  t: `2026-0${1 + (i % 6)}-0${1 + (i % 8)}T10:00`, gradeId: g.id, kyu: g.kyu, score: 90, passed: true, ms: 1, sections: [],
+})) });
+
+const clearedLadder = (over = {}) => {
+  const cleared = {};
+  TUTORIAL_LEVELS.forEach(l => { cleared[l.id] = l.floor; });
+  return profileFrom({
+    tutorial: { v: 2, unlocked: TUTORIAL_LEVELS.length, best: cleared },
+    practice: Object.fromEntries(TUTORIAL_LEVELS.map(l => [l.id, { solves: solves(l.floor, { day: TODAY }) }])),
+    drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], TODAY) }])),
+    exam: allKyu(),
+    ...over,
+  });
+};
+
+test('a dan paper waits for the method its extra section is built on', () => {
+  // Every kyu grade passed and the whole practice ladder cleared — but 開平法
+  // is taught on the rod trainer, and it has not been cleared.
+  const p = clearedLadder();
+  assert.equal(p.exam.next.id, 'jun-shodan');
+  assert.equal(p.exam.next.needsMode, 'sqrt-2');
+  assert.ok(!todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.some(t => t.page === 'exam'));
+});
+
+test('clearing 開平法 opens the dan ladder, and the reason names it', () => {
+  const trainer = Object.fromEntries(ROD_MODES.map(m => [m.id, { solves: solves(3, { day: TODAY }), best: m.floor ?? 3 }]));
+  const t = todaysPlan(clearedLadder({ trainer }), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'exam');
+  assert.ok(t, 'the paper is offered');
+  assert.equal(t.targetId, 'jun-shodan');
+  assert.equal(t.href, 'exam.html?grade=jun-shodan');
+  assert.match(t.why, /Square root: 2-digit root is clear/);
+});

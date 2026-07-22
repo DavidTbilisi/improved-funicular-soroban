@@ -978,6 +978,11 @@ body.ex-sitting .ex-grades { display: none; }
 .ex-sections span.on { color: var(--on-gold); background: var(--gold); border-color: var(--gold-2); font-weight: 600; }
 .ex-sections span.done { color: var(--stone); border-color: var(--line-2); }
 .ex-desc { font-family: var(--mono); font-size: 0.68rem; color: var(--data); margin: 0 0 14px; letter-spacing: 0.02em; }
+/* The mental section announces itself: a board that has gone quiet is otherwise
+   indistinguishable from a board that has broken. */
+.ex-mental-note { font-size: 0.8rem; color: var(--violet); margin: 0 0 12px; }
+.ex-mental-note[hidden] { display: none; }
+.ex-stage.ex-mental .ex-question { border-color: var(--violet); }
 
 .ex-paper { display: grid; grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.6fr); gap: 20px; align-items: start; }
 .ex-paper[hidden] { display: none; }

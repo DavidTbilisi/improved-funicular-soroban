@@ -189,8 +189,14 @@ export const TASK_RULES = Object.freeze([
       if (!satToday && g.attempts > 0 && (g.daysSince == null || g.daysSince < EXAM_COOLDOWN)) return null;
       const needs = p.practice.levels.find(l => l.id === g.needs);
       if (!needs || !needs.cleared) return null;
+      // A dan paper also needs the METHOD its extra section is built on: 開平法
+      // is taught on the rod trainer, not on the practice ladder, so the grade
+      // names a mode and the gate looks there too.
+      const mode = g.needsMode ? p.trainer.modes.find(m => m.id === g.needsMode) : null;
+      if (g.needsMode && (!mode || !mode.cleared)) return null;
       const why = g.attempts
         ? `retake — best ${g.best}/100, 70 needed in every section`
+        : mode ? `${mode.title || mode.label} is clear — sit the paper`
         : `${needs.title} is clear — sit the paper`;
       return task('exam', 'exam', 'exam', g.id, `${g.name} — the kyu paper`, why, Math.max(2, g.minutes));
     } },

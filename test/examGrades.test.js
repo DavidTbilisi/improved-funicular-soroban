@@ -5,12 +5,21 @@ import {
   nextGrade, highestPassed, totalQuestions, totalSeconds, describeSection, describeGrade,
 } from '../src/exam/grades.js';
 import { TUTORIAL_LEVELS } from '../src/tutorial/levels.js';
+import { ROD_MODES } from '../src/domain/mulDiv.js';
 
-test('the ladder runs 10級 down to 1級, easiest first', () => {
-  assert.equal(EXAM_GRADES.length, 10);
-  assert.deepEqual(EXAM_GRADES.map(g => g.kyu), [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+test('the ladder runs 10級 down to 1級 and then into the dan grades', () => {
+  assert.equal(EXAM_GRADES.length, 14);
+  assert.deepEqual(EXAM_GRADES.slice(0, 10).map(g => g.kyu), [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
   assert.equal(EXAM_GRADES[0].id, 'kyu10');
   assert.equal(gradeIndex('kyu1'), 9);
+  assert.deepEqual(EXAM_GRADES.slice(10).map(g => g.name), ['準初段', '初段', '二段', '三段']);
+  // Order IS the ladder: the kyu number runs down and then stops, so nothing
+  // may sort by it.
+  let prevDan = 0;
+  for (const g of EXAM_GRADES.slice(10)) {
+    assert.ok(g.dan > prevDan, `${g.id} does not advance`);
+    prevDan = g.dan;
+  }
 });
 
 test('the tables are frozen — a grade is a contract, not a knob', () => {
@@ -25,6 +34,30 @@ test('every grade names a guided-practice level that exists', () => {
   const ids = new Set(TUTORIAL_LEVELS.map(l => l.id));
   for (const g of EXAM_GRADES) {
     assert.ok(ids.has(g.needs), `${g.id} needs '${g.needs}', which is not a level`);
+  }
+});
+
+test('the extra sections arrive past 1級 and never leave', () => {
+  const kyu = EXAM_GRADES.filter(g => !g.dan);
+  for (const g of kyu) {
+    assert.ok(!g.sections.some(s => s.kind === 'kaihei' || s.kind === 'anzan'), `${g.id} is a kyu paper`);
+  }
+  const dan = EXAM_GRADES.filter(g => g.dan);
+  for (const g of dan) {
+    assert.ok(g.sections.some(s => s.kind === 'kaihei'), `${g.id} has no 開平 section`);
+    assert.ok(g.needsMode, `${g.id} names no method to have learned first`);
+  }
+  // 暗算 arrives one grade later than 開平 and stays.
+  const firstAnzan = EXAM_GRADES.findIndex(g => g.sections.some(s => s.kind === 'anzan'));
+  for (const g of EXAM_GRADES.slice(firstAnzan)) {
+    assert.ok(g.sections.some(s => s.kind === 'anzan'), `${g.id} lost its mental section`);
+  }
+});
+
+test('every dan grade names a rod-trainer mode that exists', () => {
+  const ids = new Set(ROD_MODES.map(m => m.id));
+  for (const g of EXAM_GRADES.filter(g => g.needsMode)) {
+    assert.ok(ids.has(g.needsMode), `${g.id} needs '${g.needsMode}', which is not a mode`);
   }
 });
 
@@ -53,10 +86,12 @@ test('minus terms and division both arrive, and never leave', () => {
   }
 });
 
-test('a paper is short enough to sit in one go', () => {
+test('a paper is short enough to sit in one go — a dan one is longer by design', () => {
   for (const g of EXAM_GRADES) {
-    assert.ok(totalQuestions(g) <= 15, `${g.id} paper is ${totalQuestions(g)} questions`);
-    assert.ok(totalSeconds(g) <= 17 * 60, `${g.id} runs ${totalSeconds(g)}s`);
+    const cap = g.dan ? 20 : 15;
+    const mins = g.dan ? 22 : 17;
+    assert.ok(totalQuestions(g) <= cap, `${g.id} paper is ${totalQuestions(g)} questions`);
+    assert.ok(totalSeconds(g) <= mins * 60, `${g.id} runs ${totalSeconds(g)}s`);
   }
 });
 
@@ -71,12 +106,15 @@ test('nextGrade walks the ladder and stops when it runs out', () => {
   // Out of order: the LOWEST unpassed is still the one you owe.
   assert.equal(nextGrade(['kyu9']).id, 'kyu10');
   assert.equal(nextGrade(EXAM_GRADES.map(g => g.id)), null);
+  // Past 1級 the ladder keeps going.
+  assert.equal(nextGrade(EXAM_GRADES.slice(0, 10).map(g => g.id)).id, 'jun-shodan');
 });
 
 test('highestPassed is the smallest kyu number held', () => {
   assert.equal(highestPassed([]), null);
   assert.equal(highestPassed(['kyu10', 'kyu9', 'kyu8']).id, 'kyu8');
   assert.equal(highestPassed(['kyu3', 'kyu10']).id, 'kyu3');
+  assert.equal(highestPassed(['kyu1', 'shodan']).id, 'shodan', 'a dan outranks every kyu');
   assert.equal(highestPassed(['nope']), null);
 });
 
