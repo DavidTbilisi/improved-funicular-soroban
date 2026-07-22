@@ -1,0 +1,19 @@
+{
+  "name": "Place-Value Peg Soroban",
+  "short_name": "Soroban",
+  "description": "A Japanese-abacus trainer for a mnemonic number system: a 23-rod board, a leveled bead-arithmetic ladder, flash anzan, read-aloud dictation, kyu papers and a codec vault.",
+  "lang": "en",
+  "start_url": ".",
+  "scope": ".",
+  "id": "npv-soroban",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16141f",
+  "theme_color": "#16141f",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icons/soroban-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/soroban-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/soroban-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -134,12 +134,38 @@ Today's plan choose between them instead of guessing from a flat "untouched for 
 the file names and leaves the rest untouched — a partial or older export merges rather
 than wipes — and downloads a safety copy of your current save first.
 
+### Offline, and installable
+
+The app is a **static shell with a service worker**: on the first visit it precaches every
+page, module and stylesheet it has — the whole app, the village included — so it opens with
+no network at all. That is the point of a trainer you do daily: the train is exactly where
+you have ten minutes and no signal.
+
+Every response is **stale-while-revalidate**. There is no build step and so no content
+hashes, which means there is no safe way to know a cached file is current; the cache
+answers first and the network refreshes it behind the answer. The cost is being at most
+**one load behind** after a deploy, and the nav bar offers a reload when a new version has
+landed. Your progress lives in `localStorage`, which the cache never touches, so a stale
+shell can never cost you a day's practice.
+
+The precache list is **derived, not hand-written**: `scripts/offline-manifest.mjs` walks
+each page's stylesheet and entry module and follows the import graph, and `npm test` fails
+if `offline-manifest.json` has drifted from it. A page added without regenerating would
+work online and break only offline, which is the one failure nobody would notice.
+
+`manifest.webmanifest` makes it installable — Add to Home Screen on a phone, or install it
+as a desktop app. Both the manifest and the service worker use **relative** paths, so the
+same files work at a domain root and under the `/improved-funicular-soroban/` subpath on
+GitHub Pages.
+
 ## Develop
 
 ```sh
 npm test                        # unit suite (node:test, zero deps)
 node --test test/codec.test.js  # run one file
 npm run test:e2e                # Playwright browser suite (the one dependency)
+npm run offline:manifest        # regenerate the precache list (after adding a page/module)
+npm run icons                   # redraw the app icons (PNGs, encoded with node's zlib)
 ```
 
 The domain, codec, command, drill-session, tutorial, game and today layers are DOM-free
@@ -151,6 +177,10 @@ Observer/Command/Strategy/Factory/Adapter) and the conventions that keep it that
 ```
 *.html              thin shells — each loads styles.css + its own src/pages/*.js
 styles.css          the one stylesheet
+sw.js               the offline shell: precache + stale-while-revalidate
+offline-manifest.json  the precache list — generated, and checked by npm test
+manifest.webmanifest   installable-app metadata; icons/ holds its PNGs
+scripts/            maintenance scripts (the manifest, the icons) — never shipped
 src/
   domain/           pure logic: pegs, faces, rods, number parsing, complements, codec/
   state/            AbacusStore (Observable) + Commands (undo)
