@@ -1195,6 +1195,37 @@ body.ex-sitting .ex-grades { display: none; }
   .ck-focused .ck-strip-mid { min-width: 0; }
 }
 
+
+/* ── Reduced motion ───────────────────────────────────────────────────────
+   Not a nicety on THIS app: the flash-anzan stage throws numbers on and off the
+   screen, the cue pulses, beads slide, the village tweens. A learner who asks
+   the OS for reduced motion is asking for a reason — vestibular disorder,
+   migraine, photosensitivity — and a trainer that ignores it is a trainer they
+   cannot use. Transitions and animations go; nothing that carries meaning goes
+   with them, because every state here is also colour, position or text.
+   The flash itself is untouched: a number appearing and vanishing IS the
+   exercise, and it never fades, so there is no motion in it to reduce. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .bead { transition: none !important; }
+  .ym-cue.pulse, .metro-beat.pulse { animation: none !important; }
+}
+
+/* Say-the-board, beside the sound toggle: the board in words, for a screen
+   reader, for a learner who cannot see it, and for anyone drilling with their
+   eyes shut on purpose. */
+.say-board { font-size: 0.76rem; }
+
+/* A visible focus ring everywhere, in the app's own gold. Keyboard is the
+   primary input here — the whole arithmetic is a home-row layout — so losing
+   the focus outline is losing the plot. */
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+
 /* Narrow screens */
 @media (max-width: 720px) {
   body { padding: 14px 12px 56px; }

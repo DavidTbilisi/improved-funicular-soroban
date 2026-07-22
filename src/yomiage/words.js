@@ -23,7 +23,12 @@
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
   'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-const SCALES = [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']];
+// Scale names by three-digit group, smallest first. The board holds nineteen
+// integer digits, so this has to reach quintillion — and it has to get there
+// WITHOUT arithmetic, since anything past 2^53 is not exactly a Number. So the
+// grouping walks the digit STRING, which is exact at any length and lets the
+// spoken board share the caller's grammar (src/a11y/boardSpeech.js).
+const SCALES = ['', 'thousand', 'million', 'billion', 'trillion', 'quadrillion', 'quintillion'];
 
 function under100(n) {
   if (n < 20) return ONES[n];
@@ -38,19 +43,40 @@ function under1000(n) {
   return r ? `${h} ${under100(r)}` : h;
 }
 
+// The digits of |n|, as a string, for a Number, a BigInt or an already-digit
+// string. Everything downstream works on this rather than on arithmetic, so a
+// nineteen-digit board value is exact.
+function digitsOf(n) {
+  if (typeof n === 'bigint') return (n < 0n ? -n : n).toString();
+  if (typeof n === 'string') {
+    const d = n.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+    return d || '0';
+  }
+  const v = Math.abs(Math.round(Number(n) || 0));
+  return Number.isFinite(v) ? String(v) : '0';
+}
+
 // A non-negative integer in words. The sign is the CALLER's job (a term is
 // announced as "plus …" or "minus …"), so this never says "negative".
+// Accepts a Number, a BigInt or a digit string.
 export function words(n) {
-  let v = Math.abs(Math.round(Number(n) || 0));
-  if (v < 1000) return under1000(v);
+  const digits = digitsOf(n);
+  if (digits === '0') return 'zero';
+
+  // Three-digit groups, most significant first.
+  const groups = [];
+  for (let end = digits.length; end > 0; end -= 3) groups.unshift(digits.slice(Math.max(0, end - 3), end));
+
   const parts = [];
-  for (const [size, name] of SCALES) {
-    if (v >= size) {
-      parts.push(`${under1000(Math.floor(v / size))} ${name}`);
-      v %= size;
-    }
-  }
-  if (v) parts.push(under1000(v));
+  groups.forEach((g, i) => {
+    const v = Number(g);
+    if (!v) return;                                   // a zero group is silent
+    const scale = SCALES[groups.length - 1 - i];
+    // Past quintillion there is no name anyone would recognise, and the board
+    // cannot hold one — but a hand-edited save could, so it degrades to the
+    // bare group rather than saying "undefined".
+    parts.push(scale === undefined || scale === '' ? under1000(v) : `${under1000(v)} ${scale}`);
+  });
   return parts.join(' ');
 }
 

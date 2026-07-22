@@ -150,6 +150,25 @@ a desktop — becomes an ordinary scrolling column, because a 412 px screen cann
 diorama, the side panel and the contract strip at once and `overflow: hidden` on a layout
 that does not fit only makes half of it unreachable.
 
+### The board, in words
+
+This whole app argues that a soroban is something you eventually stop looking at — the
+mnemonic-mental track fades the beads, flash anzan takes the board away, read-aloud reaches
+the rods through the ear. So the board itself can be **read aloud** at any time: press
+<kbd>V</kbd> (or the **🗣 Say the board** button) and it says what it holds —
+
+> Board reads one hundred twenty-three point four five. hundreds 1, tens 2, ones 3, tenths 4,
+> hundredths 5. focus ones, 3, 3 earth beads up.
+
+Every rod also carries that same sentence as its accessible name, so a screen reader reads
+one description per rod instead of walking five positioned `<div>`s that say nothing — and
+the digit, die face, peg and place printed under each rod are hidden from it, being the same
+fact drawn again for the eye. Down and up are the instrument's directions: both mean *toward
+the bar*, which is the only place a bead counts.
+
+`prefers-reduced-motion` is honoured throughout. On a page that throws numbers on and off
+the screen that is not a nicety.
+
 ### Offline, and installable
 
 The app is a **static shell with a service worker**: on the first visit it precaches every
@@ -207,6 +226,7 @@ src/
   exam/             the kyu ladder, the paper generators + marking, the attempt log
   vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements
+  a11y/             the board in words — place names, bead phrases, spoken readings
   review/           retention: the decay model, and every track on one axis
   today/            the day axis, the unified profile, the plan ladder, save transfer
   view/             one class per panel (observers of the store/session) + figures.js
