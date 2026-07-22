@@ -387,6 +387,24 @@ export class VillageScene extends Phaser.Scene {
     }
   }
 
+  // Achievement unlocked: a trophy-and-sparkle ring bursts from the banner
+  // spot over the village. Unlike celebrate(), it needs no shrine on the board.
+  achievementBurst() {
+    const cx = this.scale.width / 2, cy = this.oy + 70;
+    for (let k = 0; k < 12; k++) {
+      const a = (Math.PI * 2 * k) / 12;
+      const glyph = k % 3 === 0 ? '🏆' : '✨';
+      const t = this._emojiText(cx, cy, glyph, 18).setDepth(11).setAlpha(0);
+      this.tweens.add({
+        targets: t, x: cx + Math.cos(a) * 92, y: cy + Math.sin(a) * 70, alpha: 1,
+        duration: 480, ease: 'Cubic.easeOut',
+        onComplete: () => this.tweens.add({
+          targets: t, alpha: 0, y: '-=20', duration: 520, onComplete: () => t.destroy(),
+        }),
+      });
+    }
+  }
+
   // Milestone burst of sparkles around every shrine.
   celebrate() {
     for (const [i, spr] of this.sprites) {

@@ -471,7 +471,9 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-title { font-family: var(--mono); font-size: 1rem; font-weight: 700; margin: 0; white-space: nowrap; }
 .page-game .topnav { position: static; margin: 0; padding: 4px; box-shadow: none; flex-wrap: nowrap; }
 .page-game .topnav a { padding: 4px 10px; font-size: 0.7rem; white-space: nowrap; }
-.page-game .game-res { margin-left: auto; flex-wrap: nowrap; }
+/* Nowrap keeps the chips one line when they fit; min-width:0 lets the bar
+   shrink and wrap under pressure so the header actions never get clipped. */
+.page-game .game-res { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
 .ck-actions { display: flex; gap: 6px; }
 .ck-actions button { padding: 5px 10px; font-size: 0.74rem; color: var(--stone); }
 
@@ -590,6 +592,43 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .ck-goals { display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem; color: var(--stone); }
 .ck-goals .done { color: var(--green); }
 .ck-goals .g-next { color: var(--ink); font-weight: 600; }
+
+/* The Village Rank card — the endless-climb spine, in the sidebar with a bar. */
+.ck-rank { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 6px; }
+.ck-rank .rank-head { display: flex; align-items: center; gap: 9px; }
+.ck-rank .rank-badge { font-size: 1.3rem; line-height: 1; }
+.ck-rank .rank-name { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.ck-rank .rank-name b { color: var(--violet); font-family: var(--mono); font-size: 0.95rem; }
+.ck-rank .rank-name > span { color: var(--stone); font-size: 0.72rem; }
+.ck-rank .rank-bar { position: relative; height: 6px; border-radius: 3px; background: var(--line-2); overflow: hidden; }
+.ck-rank .rank-bar i { position: absolute; inset: 0 auto 0 0; background: var(--violet); border-radius: 3px; }
+.ck-rank .rank-foot { color: var(--faint); font-family: var(--mono); font-size: 0.66rem; font-variant-numeric: tabular-nums; }
+
+/* Achievements panel (reuses .ck-help positioning) + the unlock toast. */
+.ach-list { display: flex; flex-direction: column; gap: 8px; }
+.ach-tally { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.4px; color: var(--stone); margin-bottom: 2px; }
+.ach-row { display: grid; grid-template-columns: auto 1fr; gap: 11px; align-items: center; padding: 8px 11px; background: var(--paper); border: 1px solid var(--line); border-radius: 11px; }
+.ach-row.done { border-color: var(--gold); background: rgba(242, 189, 78, 0.06); }
+.ach-row.silver.done { border-color: var(--stone); background: rgba(168, 159, 146, 0.06); }
+.ach-emoji { font-size: 1.4rem; line-height: 1; filter: grayscale(0.75) opacity(0.55); }
+.ach-row.done .ach-emoji { filter: none; }
+.ach-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ach-text b { color: var(--ink); font-size: 0.9rem; }
+.ach-desc { color: var(--stone); font-size: 0.76rem; }
+.ach-when { color: var(--green); font-size: 0.74rem; font-weight: 600; margin-top: 2px; }
+.ach-bar { position: relative; height: 5px; border-radius: 3px; background: var(--line-2); overflow: hidden; margin-top: 4px; }
+.ach-bar i { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: 3px; }
+.ach-prog { color: var(--faint); font-family: var(--mono); font-size: 0.67rem; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.ck-toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 24px); z-index: 80;
+  display: flex; align-items: center; gap: 13px; padding: 12px 18px; max-width: min(440px, calc(100vw - 32px));
+  background: var(--paper-2); border: 1px solid var(--gold); border-radius: 14px; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
+.ck-toast.on { opacity: 1; transform: translate(-50%, 0); }
+.ck-toast .toast-badge { font-size: 1.7rem; line-height: 1; }
+.ck-toast .toast-body { display: flex; flex-direction: column; gap: 1px; }
+.ck-toast .toast-body b { color: var(--gold); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.4px; }
+.ck-toast .toast-body > span { color: var(--ink); font-size: 0.94rem; }
 
 /* The sidebar's own copy of the ladder rides the bottom of the side panel,
    turning its dead space into the scoreboard. Hidden on short viewports so

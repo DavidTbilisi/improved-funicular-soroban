@@ -12,12 +12,14 @@ import { displayString } from '../domain/number.js';
 import { MathRng } from '../drill/rng.js';
 import { GameSession } from '../game/gameSession.js';
 import { GameSave } from '../game/saveStore.js';
+import { AchievementTracker } from '../game/achievementTracker.js';
 import { buildingById } from '../game/buildings.js';
 import { goalStates } from '../game/goals.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { FaultLog } from '../tutorial/faultLog.js';
 import { mountGameCanvas } from '../view/game/gameCanvas.js';
 import { GameHudView } from '../view/game/hudView.js';
+import { AchievementsView } from '../view/game/achievementsView.js';
 
 const $ = id => document.getElementById(id);
 mountNav('game');
@@ -60,6 +62,16 @@ shell.setFaultHook(info => {
   else if (info && info.rule) faultLog.recordIllegal(info.rule, info.amount);
 });
 
+// Achievements ride their OWN store (npv-achievements), so razing the village
+// never wipes earned badges or lifetime counters. Seed once from the loaded
+// village (silent backfill of anything already earned), then observe the
+// session so live solves/placements unlock the rest.
+const achievements = new AchievementTracker(
+  new LocalStorageProgressStore(window.localStorage, 'npv-achievements'),
+);
+achievements.seed(session.village);
+achievements.observe(session);
+
 // The page owns the armed-placement state and fans it out to canvas + HUD.
 let placementId = null;
 const setPlacement = id => {
@@ -85,7 +97,7 @@ const hud = new GameHudView({
   noticeEl: $('gameNotice'), stageEl: $('gameStage'), promptEl: $('gamePrompt'),
   subEl: $('gameSub'), payEl: $('gamePay'), feedbackEl: $('gameFeedback'),
   abandonBtn: $('gameAbandon'), resetBtn: $('gameReset'), goalEl: $('gameGoal'), hintEl: $('gameHint'),
-  festivalBtn: $('gameFestival'),
+  festivalBtn: $('gameFestival'), rankEl: $('gameRank'),
 }, session, {
   onPickBuilding: id => setPlacement(placementId === id ? null : id),
   onTakeContract: id => session.startChallenge(id),
@@ -94,7 +106,7 @@ const hud = new GameHudView({
 $('gameAbandon').addEventListener('click', () => session.abandonChallenge());
 $('gameFestival').addEventListener('click', () => session.lightFestival());
 $('gameReset').addEventListener('click', () => {
-  if (window.confirm('Raze the village and start over? Your sp and buildings will be lost.')) session.resetSave();
+  if (window.confirm('Raze the village and start over? Your sp and buildings will be lost. (Achievements are kept.)')) session.resetSave();
 });
 
 // The goal ladder renders in two places: the sidebar checklist (repainted on
@@ -119,12 +131,31 @@ const paintSideGoals = () => {
 };
 session.subscribe(() => paintSideGoals());
 paintSideGoals();
+const achieveCard = $('achieveCard');
 const toggleHelp = show => {
+  if (show !== false) achieveCard.hidden = true; // one overlay at a time
   helpCard.hidden = show === undefined ? !helpCard.hidden : !show;
   if (!helpCard.hidden) paintHelpGoals();
 };
 $('helpBtn').addEventListener('click', () => toggleHelp());
 $('helpClose').addEventListener('click', () => toggleHelp(false));
+
+// The unlock toast + browsable achievements panel. onShow adds the juice: the
+// level-up chime and a trophy sparkle over the village (fires even with no
+// shrine on the board). The panel clones the help overlay's hidden-toggle.
+const achieveView = new AchievementsView(
+  { toastEl: $('gameToast'), listEl: $('achieveList') }, achievements,
+);
+achieveView.onShow = () => { shell.sound.levelUp(); canvas.achievementBurst(); };
+const toggleAchieve = show => {
+  if (show !== false) helpCard.hidden = true; // one overlay at a time
+  achieveCard.hidden = show === undefined ? !achieveCard.hidden : !show;
+  if (!achieveCard.hidden) achieveView.paintPanel(session.village);
+};
+$('achieveBtn').addEventListener('click', () => toggleAchieve());
+$('achieveClose').addEventListener('click', () => toggleAchieve(false));
+// Keep an open panel live so a fresh unlock ticks its bars/tally immediately.
+session.subscribe(() => { if (!achieveCard.hidden) achieveView.paintPanel(session.village); });
 
 // Focus mode: a live contract lifts the strip + board into a popup (CSS does
 // the lifting off body.ck-focused; the nodes never move). After a solve the
@@ -193,6 +224,7 @@ session.subscribe(evt => {
 document.addEventListener('keydown', e => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.key === 'Escape' && !helpCard.hidden) { toggleHelp(false); return; }
+  if (e.key === 'Escape' && !achieveCard.hidden) { toggleAchieve(false); return; }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === '?') { e.preventDefault(); toggleHelp(); return; }
   if (e.code !== 'KeyN') return;

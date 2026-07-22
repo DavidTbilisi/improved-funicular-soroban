@@ -8,6 +8,7 @@ import { BUILDINGS, buildingById, RES_EMOJI } from '../../game/buildings.js';
 import { CHALLENGE_TIERS, tierById, payout } from '../../game/challenges.js';
 import { isUnlocked, canAfford, shrineBonus, upgradeCost, festivalBonus, festivalCost, FESTIVAL_SOLVES } from '../../game/economy.js';
 import { nextGoal } from '../../game/goals.js';
+import { villageRank } from '../../game/rank.js';
 import { nextHint, costText } from '../../game/advisor.js';
 
 const REFUSED = {
@@ -22,7 +23,7 @@ const REFUSED = {
 
 export class GameHudView {
   constructor(els, session, { onPickBuilding, onTakeContract, isChaining = () => false }) {
-    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl?, hintEl?, festivalBtn? }
+    this.els = els; // { resEl, paletteEl, contractsEl, noticeEl, stageEl, promptEl, subEl, payEl, feedbackEl, abandonBtn, resetBtn, goalEl?, hintEl?, festivalBtn?, rankEl? }
     this.session = session;
     this.onPickBuilding = onPickBuilding;
     this.onTakeContract = onTakeContract;
@@ -70,6 +71,7 @@ export class GameHudView {
 
   _paintAll() {
     this._paintRes();
+    this._paintRank();
     this._paintPalette();
     this._paintContracts();
     this._paintGoal();
@@ -81,6 +83,20 @@ export class GameHudView {
   _paintHint() {
     if (!this.els.hintEl) return;
     this.els.hintEl.textContent = nextHint(this._v()).msg;
+  }
+
+  // The Village Rank card — the always-climbing "how big is my village" spine
+  // that makes the endless building levels legible (rank.js). Lives in the
+  // sidebar with a progress bar, not the crowded header chip row.
+  _paintRank() {
+    if (!this.els.rankEl) return;
+    const r = villageRank(this._v());
+    const pct = r.next ? Math.round((100 * r.cur) / r.next) : 100;
+    this.els.rankEl.innerHTML =
+      `<div class="rank-head"><span class="rank-badge">🏙️</span>` +
+      `<span class="rank-name"><b>Rank ${r.n}</b><span>${r.title}</span></span></div>` +
+      `<div class="rank-bar"><i style="width:${pct}%"></i></div>` +
+      `<div class="rank-foot">${r.cur} / ${r.next} to Rank ${r.n + 1}</div>`;
   }
 
   _paintRes() {
