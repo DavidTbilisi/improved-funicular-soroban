@@ -12,6 +12,7 @@
     "manifest.webmanifest",
     "practice.html",
     "reference.html",
+    "src/a11y/boardSpeech.js",
     "src/anzan/anzanLog.js",
     "src/anzan/anzanSession.js",
     "src/anzan/bridge.js",

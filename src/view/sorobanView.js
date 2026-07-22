@@ -9,6 +9,7 @@ import { rodValue } from '../domain/rod.js';
 import { ALPHABET_PEGS } from '../domain/pegs.js';
 import { cubeName } from '../domain/faces.js';
 import { cubeFaceGrid } from './figures.js';
+import { placeName, beadPhrase } from '../a11y/boardSpeech.js';
 
 export class SorobanView {
   constructor(containerEl, { onToggleSky, onClickEarth }) {
@@ -46,25 +47,32 @@ export class SorobanView {
     // like a standard soroban — ones/thousands/millions… on the integer side and
     // the thousandths on the fraction side — so long numbers read in groups of 3.
     const isUnit = kind === 'int' ? (idx % 3 === 0) : (idx === 2);
+    const exp = kind === 'int' ? idx : -(idx + 1);       // the rod's power of ten
     const rodEl = document.createElement('div');
     rodEl.className = 'rod' + (kind === 'frac' ? ' frac' : '') + (isUnit ? ' unit' : '');
     rodEl.dataset.kind = kind;
     rodEl.dataset.place = idx;
     let earthHTML = '';
     for (let b = 0; b < 4; b++) earthHTML += `<div class="bead earth" id="bead-${kind}-earth-${idx}-${b}" data-kind="${kind}" data-idx="${idx}" data-earth="${b}"></div>`;
+    // The beads are a picture of a number, so the frame carries ONE label
+    // rather than letting a screen reader walk five positioned <div>s that say
+    // nothing. Everything under the frame — the digit, the die face, the peg,
+    // the place — is the same fact drawn again for the eye, so it is hidden
+    // from the reader instead of repeated four times per rod.
     rodEl.innerHTML = `
-      <div class="rod-frame" data-kind="${kind}" data-idx="${idx}">
+      <div class="rod-frame" role="img" data-kind="${kind}" data-idx="${idx}"
+           aria-label="${placeName(exp)} rod, 0, clear">
         <div class="bar"></div>
         ${isUnit ? '<div class="unit-dot"></div>' : ''}
         <div class="bead sky" id="bead-${kind}-sky-${idx}" data-kind="${kind}" data-idx="${idx}"></div>
         ${earthHTML}
       </div>
-      <div class="rod-value" id="rod-${kind}-value-${idx}">0</div>
-      <div class="rod-cube bare" id="rod-${kind}-cube-${idx}">·</div>
-      <div class="rod-peg">${peg.emoji}</div>
-      <div class="rod-letter">${L}</div>
-      <div class="rod-word">${peg.word}</div>
-      <div class="rod-place">${place}</div>`;
+      <div class="rod-value" id="rod-${kind}-value-${idx}" aria-hidden="true">0</div>
+      <div class="rod-cube bare" id="rod-${kind}-cube-${idx}" aria-hidden="true">·</div>
+      <div class="rod-peg" aria-hidden="true">${peg.emoji}</div>
+      <div class="rod-letter" aria-hidden="true">${L}</div>
+      <div class="rod-word" aria-hidden="true">${peg.word}</div>
+      <div class="rod-place" aria-hidden="true">${place}</div>`;
     return rodEl;
   }
 
@@ -125,6 +133,10 @@ export class SorobanView {
           bEl.className = `bead earth${isActive ? ' active' : ''}`;
         }
         const d = rodValue(rod);
+        // The label is the rod in words — the same sentence the "say the board"
+        // key speaks, so what is read and what is heard cannot disagree.
+        const frame = this.el.querySelector(`.rod-frame[data-kind="${kind}"][data-idx="${i}"]`);
+        if (frame) frame.setAttribute('aria-label', `${placeName(kind === 'int' ? i : -(i + 1))} rod, ${d}, ${beadPhrase(d)}`);
         document.getElementById(`rod-${kind}-value-${i}`).textContent = d;
         const cubeEl = document.getElementById(`rod-${kind}-cube-${i}`);
         cubeEl.innerHTML = d === 0 ? '·' : cubeFaceGrid(d); // die face: each emoji in its fixed cell

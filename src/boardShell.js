@@ -16,21 +16,24 @@ import { AbacusStore } from './state/abacusStore.js';
 import { CommandBus, SetValueCommand, StepIntCommand, AddAtColumnCommand, ToggleSkyCommand, ClickEarthCommand } from './state/commands.js';
 import { SorobanView } from './view/sorobanView.js';
 import { mountTouchPad } from './view/touchPad.js';
+import { VoiceService } from './view/voiceService.js';
+import { boardSpeech } from './a11y/boardSpeech.js';
 import { ReadoutView } from './view/readoutView.js';
 import { SoundService } from './view/soundService.js';
 import { Metronome } from './view/metronome.js';
 
 const SHELL_HTML = `
   <div class="readout" id="shellReadout">
-    <div class="num-box"><div class="label">Number</div><div class="value" id="numValue">0</div></div>
+    <div class="num-box"><div class="label">Number</div><div class="value" id="numValue" role="status" aria-live="polite">0</div></div>
     <div class="decode" id="decode"></div>
   </div>
   <div class="panel" id="shellBoard">
-    <div class="soroban-wrap"><div class="soroban" id="soroban"></div></div>
+    <div class="soroban-wrap"><div class="soroban" id="soroban" role="group" aria-label="Soroban board"></div></div>
     <div class="touchpad" id="touchPad"></div>
-    <div class="coach" id="coach"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add ·die cross</b> <kbd>K</kbd>1 <kbd>J</kbd>2 <kbd>I</kbd>3 <kbd>,</kbd>4 <kbd>L</kbd>5 · <kbd>U</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>D</kbd>1 <kbd>S</kbd>2 <kbd>E</kbd>3 <kbd>C</kbd>4 <kbd>F</kbd>5 · <kbd>R</kbd> −10</span><span class="kbg"><b class="kbl">chords</b> <kbd>L+J</kbd>7 <kbd>L+I</kbd>8 <kbd>L+,</kbd>9 <kbd>L+K</kbd>6</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
+    <div class="coach" id="coach" role="status" aria-live="polite"><span class="kbg"><b class="kbl">column</b> <kbd>←</kbd><kbd>→</kbd> or <kbd>G</kbd><kbd>H</kbd></span><span class="kbg"><b class="kbl">add ·die cross</b> <kbd>K</kbd>1 <kbd>J</kbd>2 <kbd>I</kbd>3 <kbd>,</kbd>4 <kbd>L</kbd>5 · <kbd>U</kbd> +10</span><span class="kbg"><b class="kbl">sub</b> <kbd>D</kbd>1 <kbd>S</kbd>2 <kbd>E</kbd>3 <kbd>C</kbd>4 <kbd>F</kbd>5 · <kbd>R</kbd> −10</span><span class="kbg"><b class="kbl">chords</b> <kbd>L+J</kbd>7 <kbd>L+I</kbd>8 <kbd>L+,</kbd>9 <kbd>L+K</kbd>6</span><span class="kbg"><b class="kbl">reset</b> <kbd>Q</kbd></span><span class="kbg"><b class="kbl">say the board</b> <kbd>V</kbd></span><span class="kbg"><b class="kbl">number</b> type <kbd>0</kbd>–<kbd>9</kbd></span></div>
     <div class="sound-row">
       <button id="soundBtn" class="sound-toggle">🔊 Sound on</button>
+      <button id="sayBtn" class="say-board" title="Say the board (V)">🗣 Say the board</button>
       <span class="metro">
         <button id="metroBtn" class="metro-toggle">▶ Metronome</button>
         <span class="metro-beat" id="metroBeat" aria-hidden="true"></span>
@@ -248,6 +251,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     if (e.code === 'ArrowLeft' || e.code === 'KeyG') { e.preventDefault(); setFocus(focus + 1); return; }
     if (e.code === 'ArrowRight' || e.code === 'KeyH') { e.preventDefault(); setFocus(focus - 1); return; }
     if (e.code === 'KeyQ') { e.preventDefault(); faultHook({ kind: 'reset' }); dispatch(new SetValueCommand(store, '0')); coachEl.textContent = 'reset — cleared to 0'; sound.reset(); return; }
+    if (e.code === 'KeyV') { e.preventDefault(); sayBoard(); return; }
     if (e.code === 'KeyU') { e.preventDefault(); applyCarry(+1); return; }
     if (e.code === 'KeyR') { e.preventDefault(); applyCarry(-1); return; }
   });
@@ -277,6 +281,22 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     fitBoard();
   }
 
+  // --- Saying the board -----------------------------------------------------
+  // The same voice the read-aloud caller uses, and the same sentence the rods'
+  // aria-labels carry — so the board reads identically whether you hear it,
+  // read it with a screen reader, or press V because you have your eyes shut on
+  // purpose, which is what half of this app is training you to do.
+  const voice = new VoiceService({ rate: parseFloat(localStorage.getItem('npv-voice-rate')) || 1 });
+  function sayBoard() {
+    const said = boardSpeech(store, { focus });
+    coachEl.textContent = said.text;          // aria-live announces it; the eye gets it too
+    voice.cancel();
+    voice.speak(said.text);
+    return said;
+  }
+  const sayBtn = $('sayBtn');
+  if (sayBtn) sayBtn.addEventListener('click', () => sayBoard());
+
   // --- The touch pad --------------------------------------------------------
   // The same handlers the keyboard calls, so a tap is a keypress in every way
   // that matters — including being rejected with the complement to compose.
@@ -300,7 +320,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
 
   return {
     store, dispatch, bus, soroban, readout, sound, metronome, coachEl,
-    setFocus, refreshUndo,
+    setFocus, refreshUndo, sayBoard,
     setFaultHook(fn) { faultHook = fn; },
     setFocusHook(fn) { focusHook = fn; },
     // The shell's three top-level chunks, so a page can rearrange them (e.g.
