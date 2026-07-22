@@ -47,7 +47,7 @@ test('the picker lists every grade and starting one opens the paper', async ({ p
   page.on('pageerror', e => errors.push(e));
   await page.goto('exam.html');
 
-  await expect(page.locator('#examGrades button')).toHaveCount(10);
+  await expect(page.locator('#examGrades button')).toHaveCount(14);
   await expect(page.locator('#examStage')).toBeHidden();
   // 10級 is the one on offer first.
   await expect(page.locator('#examGrades button[data-id="kyu10"]')).toHaveClass(/next/);
@@ -135,4 +135,53 @@ test('a deep link highlights the grade without starting the clock', async ({ pag
   await page.goto('exam.html?grade=kyu8');
   await expect(page.locator('#examGrades button[data-id="kyu8"]')).toHaveClass(/next/);
   await expect(page.locator('#examStage')).toBeHidden();
+});
+
+// --- past 1級 ---------------------------------------------------------------
+// Walking a whole dan paper is twenty questions; these tests hand in whatever
+// the board says and watch the SECTIONS, which is what the dan grades add.
+async function skipTo(page, sectionIndex, perSection = 4) {
+  for (let i = 0; i < sectionIndex * perSection; i++) {
+    await page.locator('#examSubmit').click();
+  }
+}
+
+test('a dan paper adds the square-root section, printed as a root', async ({ page }) => {
+  await page.goto('exam.html');
+  await page.locator('#examGrades button[data-id="shodan"]').click();
+  await expect(page.locator('#examTitle')).toContainText('初段');
+  await expect(page.locator('#examSection')).toContainText('開平');
+
+  await skipTo(page, 3);                       // past 見取算, 掛算, 割算
+  await expect(page.locator('#examDesc')).toContainText('perfect square');
+  await expect(page.locator('#examQuestion')).toContainText('√');
+});
+
+test('the mental section fades the board out, and gives it back afterwards', async ({ page }) => {
+  await page.goto('exam.html');
+  await page.locator('#examGrades button[data-id="shodan"]').click();
+
+  // Not before: the board is fully there for the written sections.
+  await expect(page.locator('#soroban')).not.toHaveClass(/sup-2/);
+
+  await skipTo(page, 4);                       // into 暗算
+  await expect(page.locator('#examDesc')).toContainText('no board');
+  await expect(page.locator('#examMental')).toBeVisible();
+  await expect(page.locator('#examMental')).toContainText('faded out');
+  // The Mental stage of the mnemonic-mental track — the rods are imagined.
+  await expect(page.locator('#soroban')).toHaveClass(/sup-2/);
+
+  // …and the paper hands the board back when it is over.
+  await skipTo(page, 1);
+  await expect(page.locator('#examSheet')).toBeVisible();
+  await expect(page.locator('#soroban')).not.toHaveClass(/sup-2/);
+});
+
+test('leaving a dan paper mid-mental restores the board too', async ({ page }) => {
+  await page.goto('exam.html');
+  await page.locator('#examGrades button[data-id="shodan"]').click();
+  await skipTo(page, 4);
+  await expect(page.locator('#soroban')).toHaveClass(/sup-2/);
+  await page.click('#examAbandon');
+  await expect(page.locator('#soroban')).not.toHaveClass(/sup-2/);
 });

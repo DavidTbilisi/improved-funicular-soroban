@@ -27,7 +27,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
 | `yomiage.html` | **Read-aloud** (読上算) — the numbers are *spoken* and never shown: set each one on the beads as you hear it and hand in what the board reads. The third modality, and the one exercise where the board does the remembering |
-| `exam.html` | **Kyu exam** — a timed paper in three sections (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down |
+| `exam.html` | **Kyu exam** — a timed paper (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades, from 10級 to 三段. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down. Dan papers add 開平 and a 暗算 section with the board faded out |
 | `vault.html` | **Vault** — store a real number, encode it to scenes, and be tested on recall over expanding intervals. Entries can be **sealed**: only the length and seals are kept, so the app never holds the digits |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
@@ -100,6 +100,12 @@ invented. Ten grades from 10級 to 1級, each three sections: **見取算** a co
 added and subtracted in order, **掛算** multiplication, **割算** division. Each section is
 scored out of 100 with its own clock, and **every section must reach 70 on its own** — an
 average would let a perfect column carry a failed division.
+
+**Past 1級 the ladder keeps going.** A **dan** paper adds 開平 — the square root the rod
+trainer teaches — and then 暗算: the same column with the board *faded out*. The rods are
+still there and your keys still move them; you simply cannot read them. That is the one exam
+condition a paper cannot enforce and this one can, and it is the Mental stage of the
+guided-practice track, sat under exam conditions.
 
 You work each question on the beads and hand in what the board reads. The paper does not
 mark as you go: every other page here answers you immediately because that is what practice

@@ -24,6 +24,7 @@
 // trainer owns and this page deliberately does not re-litigate.
 // ============================================================================
 import { SECTION_POINTS, PASS_MARK } from './grades.js';
+import { isqrt } from '../domain/sqrt.js';
 
 // A number of exactly `d` digits. One-digit operands start at 2 in the ×/÷
 // sections: a 1 or a 0 there is a question that answers itself.
@@ -84,9 +85,25 @@ export function genWari(spec, rng) {
   return fallback || { kind: 'wari', a: loA, b: 1, answer: loA };
 }
 
-const GENERATORS = { mitori: genMitori, kake: genKake, wari: genWari };
+// --- 開平 -------------------------------------------------------------------
+// A perfect square, built from its root — the same restriction the rod trainer's
+// √ modes carry, and for the same reason: a root with a remainder is a different
+// question from "√n is …", and this paper has one right answer per line.
+export function genKaihei(spec, rng) {
+  const lo = spec.digits === 1 ? 4 : 10 ** (spec.digits - 1);
+  const hi = 10 ** spec.digits - 1;
+  const root = lo + rng.int(hi - lo + 1);
+  return { kind: 'kaihei', a: root * root, answer: root };
+}
 
-export const genQuestion = (section, rng) => GENERATORS[section.kind](section, rng);
+// 暗算 is the same COLUMN as 見取算 — the difference is that the board is faded
+// out while it runs, which is the exam page's business, not the generator's.
+// One generator, so a mental column cannot drift from a written one.
+const GENERATORS = { mitori: genMitori, kake: genKake, wari: genWari, kaihei: genKaihei, anzan: genMitori };
+
+// The section owns the kind: `anzan` deals a mitori column and must still be
+// marked, printed and reported as the section it belongs to.
+export const genQuestion = (section, rng) => ({ ...GENERATORS[section.kind](section, rng), kind: section.kind });
 
 /**
  * A whole paper: every section's questions, generated up front.
