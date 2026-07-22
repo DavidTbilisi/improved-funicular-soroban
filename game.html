@@ -18,6 +18,7 @@
     <div id="nav"></div>
     <div class="game-res" id="gameRes"></div>
     <div class="ck-actions">
+      <button id="achieveBtn" title="Achievements">🏆</button>
       <button id="helpBtn" title="How the village works">?</button>
       <button id="gameReset" title="Raze the village and start over">Reset</button>
     </div>
@@ -26,6 +27,7 @@
   <main class="ck-main">
     <div class="game-canvas" id="gameMount"></div>
     <aside class="ck-side">
+      <div class="ck-rank" id="gameRank"></div>
       <div>
         <div class="game-h">Contracts <span class="h-tail">· solve on the beads to earn sp</span></div>
         <div class="game-contracts" id="gameContracts"></div>
@@ -86,6 +88,16 @@
     <h2 style="margin-top:16px;">The goal ladder</h2>
     <div class="ck-goals" id="helpGoals"></div>
   </div>
+
+  <div class="ck-help panel" id="achieveCard" hidden>
+    <button class="ck-help-close" id="achieveClose" aria-label="Close achievements">✕</button>
+    <h2>Achievements</h2>
+    <div class="ach-list" id="achieveList"></div>
+  </div>
+
+  <!-- Unlock toast: fixed above the focus backdrop, so a badge earned during a
+       live contract still shows without disturbing the no-scroll cockpit. -->
+  <div class="ck-toast" id="gameToast" hidden></div>
 
 </div>
 

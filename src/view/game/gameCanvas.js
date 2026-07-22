@@ -38,6 +38,7 @@ export function mountGameCanvas(parentEl, { onCellTap }) {
     flashPayout: (text, ok) => call(() => scene.flashPayout(text, ok)),
     pulseDay: () => call(() => scene.pulseDay()),
     celebrate: () => call(() => scene.celebrate()),
+    achievementBurst: () => call(() => scene.achievementBurst()),
     festival: () => call(() => scene.festivalBurst()),
     destroy: () => game.destroy(true),
   };
