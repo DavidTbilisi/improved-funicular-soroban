@@ -163,3 +163,87 @@ test('the ladder figure renders and marks a carried rung', async ({ page }) => {
   await expect(page.locator('button[data-level="warm"]')).toHaveClass(/cleared/);
   await expect(page.locator('button[data-level="warm"] .az-pb')).toHaveText('650ms');
 });
+
+// The reverse bridge: a stalling rung points back at the board. The unit suite
+// covers which level and pair are named; what a browser adds is that the line
+// is GATED — it must stay away while a learner is doing fine, and while a round
+// is running — and that its link lands on a started level.
+async function seedRung(page, { rounds, faults = {} }) {
+  await page.goto('anzan.html');
+  await page.evaluate(({ rounds, faults }) => {
+    localStorage.setItem('npv-anzan', JSON.stringify({
+      five1: { rounds, best: 0, fastest: null },
+    }));
+    localStorage.setItem('npv-fault-log', JSON.stringify({ pairs: faults, resets: 0 }));
+    localStorage.setItem('npv-tutorial-progress', JSON.stringify({ v: 2, unlocked: 11, best: {} }));
+    localStorage.setItem('npv-anzan-speed:five1', '2000');
+  }, { rounds, faults });
+  await page.goto('anzan.html?level=five1');
+}
+
+const roundsOf = (n, okShare) => Array.from({ length: n }, (_, i) =>
+  ({ t: '2026-07-20T10:00', ms: 1300, ok: i < Math.round(n * okShare) }));
+
+// Deep-linking starts a round at once, so every assertion below waits for the
+// round to settle first — otherwise `hidden` would be ambiguous between "not
+// offered" and "blanked because a round is running", and the negative tests
+// would pass for the wrong reason.
+const settle = page => expect(page.locator('#azInput')).toBeEnabled({ timeout: 15000 });
+
+test('a rung being answered well is never nagged', async ({ page }) => {
+  await seedRung(page, { rounds: roundsOf(10, 0.9), faults: { 'big:3-7': 9 } });
+  await settle(page);
+  await expect(page.locator('#azStage')).not.toHaveClass(/az-running/);
+  await expect(page.locator('#azDiagnose')).toBeHidden();
+  await expect(page.locator('#azDiagnose')).toBeEmpty();
+});
+
+test('a barely-tried rung is not diagnosed either', async ({ page }) => {
+  await seedRung(page, { rounds: roundsOf(2, 0), faults: { 'big:3-7': 9 } });
+  await settle(page);
+  await expect(page.locator('#azDiagnose')).toBeHidden();
+});
+
+test('a stalling rung names the board level and the pair behind it', async ({ page }) => {
+  await seedRung(page, { rounds: roundsOf(10, 0.2), faults: { 'big:3-7': 9 } });
+  await settle(page);
+
+  const line = page.locator('#azDiagnose');
+  await expect(line).toBeVisible();
+  await expect(line).toContainText('Big friend + (carry)');
+  await expect(line).toContainText('3 ↔ 7');
+  await expect(line).toContainText('ten-trades');
+  // It must claim a standing weakness, never a cause of the miss.
+  await expect(line).not.toContainText('caused');
+
+  await line.locator('a').click();
+  await expect(page).toHaveURL(/practice\.html\?level=big-add$/);
+  await expect(page.locator('#tutPrompt')).not.toBeEmpty();
+});
+
+test('with no fumble record it says so instead of inventing a pair', async ({ page }) => {
+  await seedRung(page, { rounds: roundsOf(10, 0.2), faults: {} });
+  await settle(page);
+  await expect(page.locator('#azDiagnose')).toContainText('no fumble pattern on record');
+  await expect(page.locator('#azDiagnose')).not.toContainText('↔');
+});
+
+test('a pair the rung does not drill is not pinned on it', async ({ page }) => {
+  // five1 leans on ten-trades; a five-pair fumble is not what is going wrong.
+  await seedRung(page, { rounds: roundsOf(10, 0.2), faults: { 'small:2-3': 9 } });
+  await settle(page);
+  await expect(page.locator('#azDiagnose')).toContainText('does not lean on');
+  await expect(page.locator('#azDiagnose')).not.toContainText('↔');
+});
+
+test('the diagnosis is blanked while a round is running', async ({ page }) => {
+  await seedRung(page, { rounds: roundsOf(10, 0.2), faults: { 'big:3-7': 9 } });
+
+  // The deep link starts a round immediately: nothing but the number on screen.
+  await expect(page.locator('#azStage')).toHaveClass(/az-running/, { timeout: 10000 });
+  await expect(page.locator('#azDiagnose')).toBeHidden();
+
+  // ...and it comes back once the round is over.
+  await settle(page);
+  await expect(page.locator('#azDiagnose')).toBeVisible();
+});

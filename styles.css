@@ -764,11 +764,19 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .az-feedback.ok { color: var(--green); }
 .az-feedback.bad { color: var(--shu); }
 
+/* The way back to the board, shown only when a rung is genuinely stalling. */
+.az-diagnose { margin-top: 10px; text-align: center; font-size: 0.82rem; color: var(--stone); }
+.az-diagnose[hidden] { display: none; }
+.az-diagnose a { color: var(--gold); text-decoration: none; font-weight: 600; }
+.az-diagnose a:hover { text-decoration: underline; }
+.az-diagnose em { font-style: normal; color: var(--faint); }
+
 /* Round in flight: the number and nothing else. */
 .az-stage.az-running .az-teach,
 .az-stage.az-running .az-pace-row,
 .az-stage.az-running .az-answer,
-.az-stage.az-running .az-feedback { visibility: hidden; }
+.az-stage.az-running .az-feedback,
+.az-stage.az-running .az-diagnose { visibility: hidden; }
 .az-stage.az-running .az-screen { border-color: var(--gold-edge); }
 /* The rung ladder sits outside the stage, so it needs reaching from the panel.
    `visibility` and not `display`: the row keeps its space, so the number cannot
