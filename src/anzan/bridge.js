@@ -110,3 +110,87 @@ export function suggestRung({ levelId = null, support = 0, prognosis = {}, rungs
 }
 
 const pick = l => ({ id: l.id, title: l.title, terms: l.terms, digits: l.digits, baseMs: l.baseMs, floor: l.floor });
+
+// ============================================================================
+// The reverse direction: a stalling rung → the board work that fixes it.
+//
+// ONE HONESTY CONSTRAINT SHAPES ALL OF THIS. The fault log records rejected
+// moves on a BOARD — practice, trainer, village. Flash anzan has no board, so
+// an anzan miss produces no fault entry and the log can never say what caused
+// one. Anything claiming "this miss was your 3↔7 trade" would be invented.
+//
+// What can be said honestly is a different, weaker, still-useful sentence: this
+// rung leans on a particular family of trades, AND your board record already
+// shows which pair in that family you fumble. That is a standing weakness the
+// rung happens to exercise — evidence gathered elsewhere, not a diagnosis of
+// the miss. The wording below is chosen to claim exactly that and no more.
+//
+// The candidate levels come from inverting LEVEL_RUNG, so the two directions
+// cannot drift apart and no second mapping has to be maintained.
+// ============================================================================
+
+const MIN_ROUNDS = 5;    // fewer than this and "stalling" is just noise
+const STALL = 0.6;       // correct share below which a rung reads as stalled
+const PAIR_FLOOR = 3;    // fumbles on a pair below this are noise, not a pattern
+
+// rungId → the practice levels that map to it (LEVEL_RUNG, inverted).
+export const RUNG_LEVELS = Object.freeze(
+  Object.entries(LEVEL_RUNG).reduce((acc, [levelId, rungId]) => {
+    (acc[rungId] = acc[rungId] || []).push(levelId);
+    return acc;
+  }, {}));
+
+// A rung is stalling when there is enough evidence AND the evidence is bad.
+export function isStalling({ rounds = 0, accuracy = null } = {}) {
+  return rounds >= MIN_ROUNDS && accuracy !== null && accuracy < STALL;
+}
+
+/**
+ * @param rungId   the rung in hand
+ * @param rounds   how many rounds are on record for it
+ * @param accuracy its recent correct share (0..1), or null
+ * @param faults   fumbleRows(counts) output: [{ key: 'big:3-7', label, count }]
+ * @param levels   practice level state: [{ id, title, unlocked, cleared }]
+ * @returns { levelId, title, pair, pairLabel, count, why } | null
+ */
+export function diagnoseRung({ rungId, rounds = 0, accuracy = null, faults = [], levels = [] } = {}) {
+  if (!isStalling({ rounds, accuracy })) return null;
+
+  const byId = new Map(levels.map(l => [l.id, l]));
+  // The practice ladder stops mapping part-way up the anzan ladder — nothing
+  // maps to the 3-digit rungs, because the board levels run out first. So walk
+  // DOWN to the nearest rung that does have levels: the arithmetic a 3-digit
+  // round leans on is the 2-digit arithmetic, just with a third rod along.
+  let candidates = [];
+  for (let i = Math.max(0, rungIndex(rungId)); i >= 0; i--) {
+    const ids = RUNG_LEVELS[ANZAN_LEVELS[i].id] || [];
+    candidates = ids.map(id => byId.get(id)).filter(l => l && l.unlocked !== false);
+    if (candidates.length) break;
+  }
+  if (!candidates.length) return null;
+
+  // The learner's worst fumbled pair that one of these levels actually drills.
+  const ranked = [...faults].filter(f => f.count >= PAIR_FLOOR).sort((a, b) => b.count - a.count);
+  for (const f of ranked) {
+    const family = String(f.key).split(':')[0];             // 'small' | 'big'
+    const hit = candidates.find(l => l.id.startsWith(family));
+    if (!hit) continue;
+    const pairLabel = String(f.label || '').split(' · ')[0]; // '3 ↔ 7'
+    return {
+      levelId: hit.id, title: hit.title, pair: f.key, pairLabel, count: f.count,
+      // Deliberately "the trades this rung leans on", not "the cause of your miss".
+      why: `this rung leans on the ${family === 'small' ? 'five' : 'ten'}-trades, and your board record fumbles ${pairLabel} ${f.count}×`,
+    };
+  }
+
+  // Nothing this rung drills is in the fault record. Two different situations,
+  // and conflating them would misreport one of them: no pattern at all, versus
+  // a pattern in trades this rung does not lean on.
+  const hit = candidates.find(l => !l.cleared) || candidates[candidates.length - 1];
+  return {
+    levelId: hit.id, title: hit.title, pair: null, pairLabel: null, count: 0,
+    why: ranked.length
+      ? 'drop back to the board for this shape — your fumbles are on trades this rung does not lean on'
+      : 'drop back to the board for this shape — no fumble pattern on record to point at',
+  };
+}

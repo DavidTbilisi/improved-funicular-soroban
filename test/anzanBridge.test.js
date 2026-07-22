@@ -136,3 +136,129 @@ test('the suggestion carries what a link needs to render itself', () => {
     assert.ok(s[k] !== undefined, `missing ${k}`);
   }
 });
+
+// --- the reverse direction: a stalling rung → the board work that fixes it ---
+import { RUNG_LEVELS, isStalling, diagnoseRung } from '../src/anzan/bridge.js';
+import { fumbleRows } from '../src/tutorial/faultLog.js';
+
+const allLevels = (over = {}) => TUTORIAL_LEVELS.map(l => ({
+  id: l.id, title: l.title, unlocked: true, cleared: false, ...(over[l.id] || {}),
+}));
+const faultsFor = pairs => fumbleRows({ pairs, resets: 0 });
+
+test('RUNG_LEVELS is exactly LEVEL_RUNG inverted — the two directions cannot drift', () => {
+  for (const [levelId, rungId] of Object.entries(LEVEL_RUNG)) {
+    assert.ok(RUNG_LEVELS[rungId].includes(levelId), `${rungId} → ${levelId}`);
+  }
+  for (const [rungId, ids] of Object.entries(RUNG_LEVELS)) {
+    for (const id of ids) assert.equal(LEVEL_RUNG[id], rungId);
+  }
+});
+
+test('a rung only reads as stalling with enough evidence AND bad evidence', () => {
+  assert.equal(isStalling({ rounds: 10, accuracy: 0.3 }), true);
+  assert.equal(isStalling({ rounds: 10, accuracy: 0.9 }), false, 'doing fine');
+  assert.equal(isStalling({ rounds: 2, accuracy: 0.0 }), false, 'two bad rounds is noise');
+  assert.equal(isStalling({ rounds: 10, accuracy: null }), false, 'no data is not bad data');
+  assert.equal(isStalling(), false);
+});
+
+test('a healthy or barely-tried rung is diagnosed as nothing — no nagging', () => {
+  const args = { rungId: 'five1', faults: faultsFor({ 'big:3-7': 9 }), levels: allLevels() };
+  assert.equal(diagnoseRung({ ...args, rounds: 10, accuracy: 0.9 }), null);
+  assert.equal(diagnoseRung({ ...args, rounds: 2, accuracy: 0 }), null);
+  assert.equal(diagnoseRung(), null);
+});
+
+test('a stalling rung names the pair its own trades belong to', () => {
+  const d = diagnoseRung({
+    rungId: 'five1', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 9, 'small:1-4': 4 }), levels: allLevels(),
+  });
+  assert.equal(d.levelId, 'big-add');
+  assert.equal(d.pair, 'big:3-7');
+  assert.equal(d.pairLabel, '3 ↔ 7');
+  assert.equal(d.count, 9);
+  assert.match(d.why, /ten-trades/);
+});
+
+// The honesty constraint: anzan has no board, so a miss produces no fault entry.
+// The wording must claim a standing weakness, never a cause.
+test('the wording claims a standing weakness, not a cause of the miss', () => {
+  const d = diagnoseRung({
+    rungId: 'five1', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 9 }), levels: allLevels(),
+  });
+  assert.match(d.why, /this rung leans on/, 'it describes what the rung exercises');
+  assert.match(d.why, /your board record/, 'and where the evidence came from');
+  assert.ok(!/caused|because of|due to/i.test(d.why), 'and never asserts causation');
+});
+
+test('a pair the rung does not drill is not pinned on it', () => {
+  // warm is a 3-term 1-digit rung: ten-crossings are rare, so a ten-pair fumble
+  // is not what is going wrong here.
+  const d = diagnoseRung({
+    rungId: 'warm', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 9 }), levels: allLevels(),
+  });
+  assert.equal(d.pair, null);
+  assert.match(d.why, /trades this rung does not lean on/);
+});
+
+test('no fault record at all says so, rather than inventing a pair', () => {
+  const d = diagnoseRung({ rungId: 'five1', rounds: 10, accuracy: 0.3, faults: faultsFor({}), levels: allLevels() });
+  assert.equal(d.pair, null);
+  assert.equal(d.levelId, 'big-add');
+  assert.match(d.why, /no fumble pattern on record/);
+});
+
+test('a fumble count below the noise floor is not a pattern', () => {
+  const d = diagnoseRung({
+    rungId: 'five1', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 2 }), levels: allLevels(),
+  });
+  assert.equal(d.pair, null);
+});
+
+test('every rung resolves to a level, including the ones nothing maps to', () => {
+  for (const l of ANZAN_LEVELS) {
+    const d = diagnoseRung({
+      rungId: l.id, rounds: 10, accuracy: 0.3,
+      faults: faultsFor({ 'big:3-7': 9 }), levels: allLevels(),
+    });
+    assert.ok(d, `${l.id} produced no diagnosis`);
+    assert.ok(TUTORIAL_LEVELS.some(t => t.id === d.levelId), `${l.id} → ${d.levelId} is a real level`);
+  }
+});
+
+test('the 3-digit rungs fall back to the nearest mapped rung, not to nothing', () => {
+  // Nothing maps to three3/five3/ten3 — the board ladder runs out first.
+  assert.ok(!RUNG_LEVELS.ten3);
+  const d = diagnoseRung({
+    rungId: 'ten3', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 9 }), levels: allLevels(),
+  });
+  assert.equal(d.levelId, 'divide', 'the highest mapped board level');
+});
+
+test('a locked level is never proposed', () => {
+  const locked = allLevels({ 'big-add': { unlocked: false }, 'big-sub': { unlocked: false } });
+  const d = diagnoseRung({
+    rungId: 'five1', rounds: 10, accuracy: 0.3,
+    faults: faultsFor({ 'big:3-7': 9 }), levels: locked,
+  });
+  // five1's own levels are locked, so it walks down to warm's.
+  assert.ok(['read', 'direct', 'small-add', 'small-sub'].includes(d.levelId), d.levelId);
+});
+
+test('with no level state at all there is nothing to propose', () => {
+  assert.equal(diagnoseRung({ rungId: 'five1', rounds: 10, accuracy: 0.3, faults: faultsFor({ 'big:3-7': 9 }), levels: [] }), null);
+});
+
+test('an uncleared candidate is preferred over a cleared one', () => {
+  const d = diagnoseRung({
+    rungId: 'warm', rounds: 10, accuracy: 0.3, faults: faultsFor({}),
+    levels: allLevels({ read: { cleared: true }, direct: { cleared: true } }),
+  });
+  assert.equal(d.levelId, 'small-add', 'read and direct are done; small-add is not');
+});

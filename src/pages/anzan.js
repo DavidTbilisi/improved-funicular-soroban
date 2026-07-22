@@ -13,9 +13,12 @@ import { ANZAN_LEVELS, SPEEDS, speedStep } from '../anzan/levels.js';
 import { AnzanSession } from '../anzan/anzanSession.js';
 import { AnzanLog } from '../anzan/anzanLog.js';
 import { AnzanView } from '../view/anzanView.js';
-import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
-import { targetFromSearch } from '../today/deepLink.js';
+import { targetFromSearch, hrefFor } from '../today/deepLink.js';
+import { diagnoseRung } from '../anzan/bridge.js';
+import { TUTORIAL_LEVELS } from '../tutorial/levels.js';
+import { LocalStorageProgressStore, TutorialProgress } from '../tutorial/progressStore.js';
+import { FaultLog, fumbleRows } from '../tutorial/faultLog.js';
 import { figure, figAnzan, figSessions, figComplements } from '../view/figures.js';
 
 const $ = id => document.getElementById(id);
@@ -24,6 +27,11 @@ mountNav('anzan');
 const log = new AnzanLog(new LocalStorageProgressStore(window.localStorage, 'npv-anzan'));
 // The day axis behind the Today page's streak — marked on real work only.
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// Read-only: the anzan page never writes either of these. It reads the unlock
+// ladder so it can't send you to a locked level, and the fault log so a stalling
+// rung can name a weakness you demonstrably have on the board.
+const progress = new TutorialProgress(new LocalStorageProgressStore(window.localStorage));
+const faultLog = new FaultLog(new LocalStorageProgressStore(window.localStorage, 'npv-fault-log'));
 
 const session = new AnzanSession({
   levels: ANZAN_LEVELS,
@@ -101,11 +109,34 @@ $('figFive').innerHTML = figure(3,
   'The five-complements — the trades every single-digit rung is really drilling. Each pair sums to five: out of earth beads, +3 becomes +5 −2.',
   figComplements(5));
 
+// A stalling rung points back at the board. It appears only on a result — there
+// is nothing to diagnose before you have tried — and only when the rung really
+// is stalling, so a learner having a good session is never nagged.
+const renderDiagnosis = () => {
+  const el = $('azDiagnose');
+  if (!el) return;
+  const d = activeId ? diagnoseRung({
+    rungId: activeId,
+    rounds: log.rounds(activeId).length,
+    accuracy: log.accuracy(activeId),
+    faults: fumbleRows(faultLog.counts()),
+    levels: TUTORIAL_LEVELS.map((l, i) => ({
+      id: l.id, title: l.title, unlocked: progress.isUnlocked(i), cleared: progress.best(l.id) >= l.floor,
+    })),
+  }) : null;
+  el.hidden = !d;
+  el.innerHTML = d
+    ? `🧮 Stalling? <a href="${hrefFor('practice', d.levelId)}">${d.title}</a> on the board — <em>${d.why}</em>`
+    : '';
+};
+
 session.subscribe(evt => {
   if (evt.type === 'result') {
     dayLog.mark(); // a completed round is work: today counts toward the streak
     render();
+    renderDiagnosis();
   }
+  if (evt.type === 'started' || evt.type === 'stopped') renderDiagnosis();
 });
 
 // Deep link from the Today plan: anzan.html?level=five2 opens that rung.

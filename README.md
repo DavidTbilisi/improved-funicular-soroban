@@ -25,7 +25,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
-| `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum |
+| `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
 
