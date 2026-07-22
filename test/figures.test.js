@@ -4,7 +4,7 @@ import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
-  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan, figRetention,
+  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan, figRetention, figPoint,
 } from '../src/view/figures.js';
 import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
@@ -396,4 +396,31 @@ test('figRetention caps its rows and says how many it dropped', () => {
 
 test('figRetention says so rather than throwing when nothing is practised', () => {
   assert.match(figRetention([]), /Nothing practised yet/);
+});
+
+// --- Fig: where the point goes ----------------------------------------------
+test('figPoint draws the digits on rods and marks where the point falls', () => {
+  const p = figPoint('4340', 3, '12.4 × 0.35');
+  assert.match(p, /3 rods right of the point/);
+  assert.ok(p.includes('>4</text>') && p.includes('>0</text>'));
+  assert.match(p, /12\.4 × 0\.35/, 'the question is on the plate');
+});
+
+test('a negative placement is drawn as added rods, not as a point', () => {
+  const p = figPoint('12', -1);
+  assert.match(p, /\+1 rod, no point/);
+  assert.ok(!p.includes('right of the point'));
+  // The added zero is marked in shu — it is the thing being taught.
+  assert.match(p, /stroke="var\(--shu\)"/);
+});
+
+test('a whole answer says the digits are the answer', () => {
+  assert.match(figPoint('2592', 0), /the digits are the answer/);
+});
+
+test('a placement wider than the digits draws the leading zero', () => {
+  const p = figPoint('5', 2);          // 0.05
+  assert.match(p, /2 rods right of the point/);
+  // 0.05 — the ones rod and the tenths rod are both drawn zeros.
+  assert.equal((p.match(/>0<\/text>/g) || []).length, 2);
 });

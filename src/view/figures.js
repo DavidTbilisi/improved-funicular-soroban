@@ -808,3 +808,41 @@ export function figRetention(rows = [], reviewAt = 0.7, max = 10) {
   }
   return svg(W, H, 'What is left of each practised track', body);
 }
+
+// --- Where the point goes -----------------------------------------------------
+// The digits the board hands you, laid on rods, with the point where the rule
+// puts it — the violet mark the live board uses, in the same place it would sit
+// there. `decimals` may be NEGATIVE, and that is the case worth drawing: the
+// answer gains zero rods on the right rather than a point on the left, which is
+// the placement people get wrong.
+export function figPoint(digits, decimals, caption = '') {
+  const d = String(digits).replace(/[^0-9]/g, '') || '0';
+  const pad = decimals < 0 ? '0'.repeat(-decimals) : '';
+  const cells = (d + pad).split('');
+  // Where the point falls, counted from the right of the drawn cells.
+  const fromRight = Math.max(0, decimals);
+  const lead = Math.max(0, fromRight - cells.length + 1);   // 0.05 needs a drawn "0"
+  const all = Array(lead).fill('0').concat(cells);
+  const pointAt = all.length - fromRight;                   // gap index the point sits in
+
+  const cw = 30, H = 86, W = 20 + all.length * cw + 30;
+  let body = '';
+  all.forEach((ch, i) => {
+    const x = 10 + i * cw;
+    const added = i >= all.length - pad.length && pad.length > 0;
+    body += `<rect x="${x}" y="14" width="${cw - 5}" height="34" rx="4" fill="${PAPER2}" stroke="${added ? SHU : LINE2}"/>`;
+    body += txt(x + (cw - 5) / 2, 38, ch, { size: 16, fill: added ? SHU : INK, weight: 600 });
+  });
+  if (fromRight > 0) {
+    const px = 10 + pointAt * cw - 3;
+    body += `<circle cx="${px}" cy="52" r="3.5" fill="${VIOLET}"/>`;
+    body += vline(px, 12, 50, VIOLET, 1.5);
+    body += txt(px, 70, `${fromRight} rod${fromRight === 1 ? '' : 's'} right of the point`, { size: 9, fill: VIOLET });
+  } else if (pad.length) {
+    body += txt(10 + (all.length - pad.length / 2) * cw, 70, `+${pad.length} rod${pad.length === 1 ? '' : 's'}, no point`, { size: 9, fill: SHU });
+  } else {
+    body += txt(W / 2, 70, 'the digits are the answer', { size: 9, fill: STONE });
+  }
+  if (caption) body += txt(10, 10, caption, { size: 9, fill: FAINT, anchor: 'start' });
+  return svg(W, H, `Placing the point: ${caption || d}`, body);
+}

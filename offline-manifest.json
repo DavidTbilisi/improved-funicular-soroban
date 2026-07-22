@@ -23,6 +23,7 @@
     "src/domain/codec/codec.js",
     "src/domain/codec/scene.js",
     "src/domain/config.js",
+    "src/domain/decimalPoint.js",
     "src/domain/faces.js",
     "src/domain/fingers.js",
     "src/domain/movePlan.js",
