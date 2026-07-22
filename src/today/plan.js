@@ -1,8 +1,9 @@
 // ============================================================================
 // Today's plan — one short, concrete practice session, chosen from the profile.
 //
-// The app has eight pages and 43-plus things to practise (11 levels, 17 decks,
-// 6 rod modes, 9 anzan rungs, the village, and however many numbers are stored). A returning learner's real question is not "what is
+// The app has nine pages and 50-plus things to practise (11 levels, 17 decks,
+// 6 rod modes, 9 anzan rungs, 10 kyu grades, the village, and however many
+// numbers are stored). A returning learner's real question is not "what is
 // available" but "what should I do for the next ten minutes" — so this turns
 // the whole profile into three tasks with a reason and a deep link each.
 //
@@ -30,6 +31,9 @@ const ANZAN_ROUNDS = 6;
 // (you never do just one problem).
 const MIN_REPS = 4;
 const STALE_DAYS = 3;      // a deck untouched this long is "cold"
+// Days a failed kyu paper rests before the plan offers it again. Re-sitting the
+// same grade the next morning is not practice, it is hoping for a kinder paper.
+const EXAM_COOLDOWN = 2;
 const FAULT_FLOOR = 3;     // fumbles on a pair below this are noise, not a pattern
 
 // The complement pair a fumble names → the ladder level that drills it. The key
@@ -132,13 +136,36 @@ export const TASK_RULES = Object.freeze([
       return null;
     } },
 
-  // 7. Something new is open and untried — that pull is worth a slot.
+  // 7. A kyu paper you have earned the right to sit. This is a CHECKPOINT, not
+  //    daily work, so it sits BELOW the rung the ladder is on and the deck that
+  //    is due: on a day with real practice owing, the practice wins. It is
+  //    gated hard besides — the grade must be unpassed, the practice level it
+  //    leans on must be cleared, and a failed attempt has to cool off — so when
+  //    it does fire it is worth the ten minutes it costs.
+  { id: 'exam', build: p => {
+      const g = p.exam && p.exam.next;
+      if (!g) return null;
+      // A paper sat today is still EMITTED — wasDoneToday ticks it, and a task
+      // that comes back ticked reads as "you did that" where a task that
+      // silently vanishes reads as a plan that forgot. Only an older failed
+      // attempt is suppressed, and only until it has cooled off.
+      const satToday = !!g.lastDay && g.lastDay === p.today;
+      if (!satToday && g.attempts > 0 && (g.daysSince == null || g.daysSince < EXAM_COOLDOWN)) return null;
+      const needs = p.practice.levels.find(l => l.id === g.needs);
+      if (!needs || !needs.cleared) return null;
+      const why = g.attempts
+        ? `retake — best ${g.best}/100, 70 needed in every section`
+        : `${needs.title} is clear — sit the paper`;
+      return task('exam', 'exam', 'exam', g.id, `${g.name} — the kyu paper`, why, Math.max(2, g.minutes));
+    } },
+
+  // 8. Something new is open and untried — that pull is worth a slot.
   { id: 'next-unlock', build: p => p.practice.untouched
       ? levelTask('next-unlock', p.practice.untouched, 'newly unlocked') : null },
   { id: 'new-deck', build: p => p.drills.untouched
       ? deckTask('new-deck', p.drills.untouched, 'not yet drilled') : null },
 
-  // 8. Flash anzan — but only once the Mental stage is in reach. Offering it to
+  // 9. Flash anzan — but only once the Mental stage is in reach. Offering it to
   //    someone still at Beads is offering the exam before the course: the whole
   //    discipline is the mnemonic-mental track under time pressure.
   { id: 'anzan', build: p => {
@@ -162,19 +189,19 @@ export const TASK_RULES = Object.freeze([
         minutesFor(ANZAN_ROUNDS, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
     } },
 
-  // 9. The rod method.
+  // 10. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 10. The village — its own advisor already knows what it wants.
+  // 11. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 11. Everything is cleared — keep the coldest thing warm.
+  // 12. Everything is cleared — keep the coldest thing warm.
   { id: 'keep-warm', build: p => {
       const cold = [...p.practice.levels.filter(l => l.unlocked), ...p.drills.decks.filter(d => d.sessions > 0)]
         .filter(x => x.daysSince != null)
@@ -233,6 +260,10 @@ function wasDoneToday(profile, t) {
   if (t.page === 'anzan') {
     const a = profile.anzan.levels.find(x => x.id === t.targetId);
     return !!a && a.lastDay === profile.today;
+  }
+  if (t.page === 'exam') {
+    const g = (profile.exam ? profile.exam.grades : []).find(x => x.id === t.targetId);
+    return !!g && g.lastDay === profile.today;
   }
   return false; // the village carries no wall-clock stamp to check against
 }

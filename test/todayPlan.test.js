@@ -10,6 +10,8 @@ import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { suggestRung } from '../src/anzan/bridge.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
 import { Vault } from '../src/vault/vaultStore.js';
+import { EXAM_GRADES } from '../src/exam/grades.js';
+import { ExamLog } from '../src/exam/examLog.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -21,10 +23,12 @@ const TODAY = '2026-07-22';
 
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, vault = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, vault = {}, exam = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
+    examGrades: EXAM_GRADES,
+    examLog: new ExamLog(new MemoryProgressStore(exam)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),
@@ -175,7 +179,9 @@ test('the rod trainer and the village fill out a cleared-ladder plan', () => {
     practice: Object.fromEntries(TUTORIAL_LEVELS.map(l => [l.id, { solves: solves(l.floor, { day: '2026-07-21' }) }])),
     drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], '2026-07-21') }])),
   });
-  const plan = todaysPlan(p, { max: 4, budgetMin: 40 });
+  // Room for five: a learner with the whole ladder cleared has an unsat kyu
+  // paper waiting too, and it outranks both of these.
+  const plan = todaysPlan(p, { max: 5, budgetMin: 40 });
   const rules = plan.tasks.map(t => t.rule);
   assert.ok(rules.includes('trainer-mode'), `expected a trainer task, got ${rules}`);
   assert.ok(rules.includes('village'), `expected a village task, got ${rules}`);
@@ -291,6 +297,7 @@ test('every task a rule can emit deep-links to a real target', () => {
       if (t.page === 'drills') assert.ok(DRILL_DECKS[t.targetId], t.targetId);
       if (t.page === 'trainer') assert.ok(ROD_MODES.some(m => m.id === t.targetId), t.targetId);
       if (t.page === 'anzan') assert.ok(ANZAN_LEVELS.some(l => l.id === t.targetId), t.targetId);
+      if (t.page === 'exam') assert.ok(EXAM_GRADES.some(g => g.id === t.targetId), t.targetId);
       // ...and the href must round-trip back through the reader the page uses.
       const search = new URL(t.href, 'http://x/').search;
       assert.equal(targetFromSearch(search, t.page), t.targetId, t.href);
@@ -454,4 +461,56 @@ test('the vault task deep-links to the page and costs real minutes', () => {
   const t = todaysPlan(p).tasks[0];
   assert.equal(t.href, 'vault.html');
   assert.ok(t.minutes >= 1);
+});
+
+// --- the kyu exam -----------------------------------------------------------
+test('no paper is offered until the level the grade leans on is cleared', () => {
+  // 10級 needs 'small-add'; this learner is still on 'direct'.
+  const p = profileFrom({
+    tutorial: { v: 2, unlocked: 3, best: { read: 6, direct: 4 } },
+    practice: { read: { solves: solves(6, { day: '2026-07-20' }) }, direct: { solves: solves(4, { day: '2026-07-21' }) } },
+  });
+  assert.equal(p.exam.next.id, 'kyu10');
+  assert.ok(!todaysPlan(p, { max: 6, budgetMin: 99 }).tasks.some(t => t.page === 'exam'));
+});
+
+test('clearing that level puts the paper in the plan, with the reason', () => {
+  const t = todaysPlan(midLadder(), { max: 6, budgetMin: 99 }).tasks.find(x => x.page === 'exam');
+  assert.ok(t, 'the paper is offered');
+  assert.equal(t.rule, 'exam');
+  assert.equal(t.targetId, 'kyu10');
+  assert.equal(t.href, 'exam.html?grade=kyu10');
+  assert.match(t.why, /Small friend \+ is clear/);
+  assert.ok(t.minutes >= 2);
+});
+
+test('practice owing beats the paper — it is a checkpoint, not the work', () => {
+  const rules = todaysPlan(midLadder(), { max: 6, budgetMin: 99 }).tasks.map(t => t.rule);
+  assert.ok(rules.indexOf('unfinished-level') < rules.indexOf('exam'), rules.join(','));
+});
+
+test('a passed grade is never offered again — the next one is', () => {
+  const passed = { attempts: [{ t: '2026-07-01T10:00', gradeId: 'kyu10', kyu: 10, score: 100, passed: true, ms: 1, sections: [] }] };
+  const p = midLadder({ exam: passed });
+  assert.equal(p.exam.highest.id, 'kyu10');
+  assert.equal(p.exam.next.id, 'kyu9');
+  // 9級 needs 'big-add', which this learner has not cleared, so nothing is offered.
+  assert.ok(!todaysPlan(p, { max: 6, budgetMin: 99 }).tasks.some(t => t.page === 'exam'));
+});
+
+test('a failed paper rests for a couple of days before it is offered again', () => {
+  const failed = day => ({ attempts: [{ t: `${day}T10:00`, gradeId: 'kyu10', kyu: 10, score: 60, passed: false, ms: 1, sections: [] }] });
+  const offered = day => todaysPlan(midLadder({ exam: failed(day) }), { max: 6, budgetMin: 99 })
+    .tasks.some(t => t.page === 'exam');
+  assert.equal(offered('2026-07-21'), false, 'not the next day');
+  assert.equal(offered('2026-07-19'), true, 'but after the cooldown');
+  const t = todaysPlan(midLadder({ exam: failed('2026-07-19') }), { max: 6, budgetMin: 99 }).tasks.find(x => x.page === 'exam');
+  assert.match(t.why, /retake — best 60\/100/);
+});
+
+test('a paper sat today comes back auto-ticked rather than quietly vanishing', () => {
+  const sat = { attempts: [{ t: `${TODAY}T10:00`, gradeId: 'kyu10', kyu: 10, score: 40, passed: false, ms: 1, sections: [] }] };
+  const t = todaysPlan(midLadder({ exam: sat }), { max: 6, budgetMin: 99 }).tasks.find(x => x.page === 'exam');
+  assert.ok(t, 'still on the plan');
+  assert.equal(t.autoDone, true);
 });

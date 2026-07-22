@@ -729,3 +729,41 @@ export function figVault(rows = [], todayKey = null) {
     { size: 9.5, fill: STONE, anchor: 'start', weight: 600 });
   return svg(W, H, 'When each stored number comes up for review', body);
 }
+
+// --- The kyu ladder (live) ----------------------------------------------------
+// rows = [{ id, name, kyu, best: 0..100 | null, passed, attempts }] in ladder
+// order (easiest first) — drawn hardest at the TOP, because a ladder you climb
+// has to point up. The bar is the BEST score ever scored on that grade and the
+// shu rule at 70 is the pass mark every section had to clear; a filled dot on
+// the rule means the grade is held. `nextId` gets the shu caret: the one you
+// are on. Untouched grades keep their row so the whole climb stays in view.
+export function figExam(rows = [], nextId = null) {
+  if (!rows.length) return `<div class="fig-empty">No grades yet.</div>`;
+  const W = 520, RH = 21, LM = 96, R = 44, T = 12;
+  const H = T + rows.length * RH + 24;
+  const trackW = W - LM - R;
+  const xw = pct => (Math.max(0, Math.min(100, pct)) / 100) * trackW;
+  const ladder = [...rows].reverse();               // hardest at the top
+
+  let body = '';
+  for (const v of [0, 70, 100]) {
+    body += vline(LM + xw(v), T - 4, T + ladder.length * RH - 4, v === 70 ? SHU : LINE, v === 70 ? 1.5 : 1);
+    body += txt(LM + xw(v), H - 8, v === 70 ? 'pass 70' : String(v), { size: 8.5, fill: v === 70 ? SHU : FAINT });
+  }
+  ladder.forEach((r, i) => {
+    const cy = T + i * RH + RH / 2;
+    const on = r.id === nextId;
+    body += txt(LM - 10, cy + 3.5, `${r.passed ? '✓ ' : on ? '▸ ' : ''}${r.name}`,
+      { size: 9.5, fill: r.passed ? INK : on ? SHU : STONE, anchor: 'end', weight: r.passed || on ? 600 : 400 });
+    body += hline(LM, LM + trackW, cy, LINE2);
+    if (r.best != null) {
+      body += bar(LM, cy - 4, xw(r.best), 8, DATA);
+      body += txt(LM + xw(r.best) + 7, cy + 3.5, String(r.best), { size: 8.5, fill: STONE, anchor: 'start' });
+      if (r.passed) body += `<circle cx="${LM + xw(70)}" cy="${cy}" r="4.5" fill="${SHU}" stroke="${PAPER2}" stroke-width="2">` +
+        `<title>${r.name} — passed, best ${r.best} over ${r.attempts} attempt${r.attempts === 1 ? '' : 's'}</title></circle>`;
+    } else {
+      body += txt(LM + 4, cy + 3.5, '—', { size: 9, fill: FAINT, anchor: 'start' });
+    }
+  });
+  return svg(W, H, 'Best score per kyu grade against the pass mark', body);
+}

@@ -10,6 +10,7 @@ const PAGES = [
   ['trainer', 'trainer.html', 'Mult / Div trainer'],
   ['drills', 'drills.html', 'Codec drills'],
   ['anzan', 'anzan.html', 'Flash anzan'],
+  ['exam', 'exam.html', 'Kyu exam'],
   ['vault', 'vault.html', 'Vault'],
   ['game', 'game.html', 'Village'],
   ['reference', 'reference.html', 'Reference'],

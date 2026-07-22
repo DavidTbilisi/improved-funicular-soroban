@@ -26,6 +26,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
+| `exam.html` | **Kyu exam** — a timed paper in three sections (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down |
 | `vault.html` | **Vault** — store a real number, encode it to scenes, and be tested on recall over expanding intervals. Entries can be **sealed**: only the length and seals are kept, so the app never holds the digits |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
@@ -64,6 +65,22 @@ The panel also forecasts **how much more practice until you can drop the beads**
 on imagined rods — and once it says you can, it names the **flash-anzan rung** your level
 and your record point at, so the runway does not simply end at "Mental".
 
+### The kyu exam
+
+A soroban paper, and the app's one **external** yardstick — every other rank here it
+invented. Ten grades from 10級 to 1級, each three sections: **見取算** a column of terms
+added and subtracted in order, **掛算** multiplication, **割算** division. Each section is
+scored out of 100 with its own clock, and **every section must reach 70 on its own** — an
+average would let a perfect column carry a failed division.
+
+You work each question on the beads and hand in what the board reads. The paper does not
+mark as you go: every other page here answers you immediately because that is what practice
+is for, and an exam measures what you can do without it. It **certifies nothing** — the
+papers are shorter than the real ones and the division is exact — but the shape of the work
+and the standard are the real ones. 見取算 in particular is the classic exercise nothing
+else in the app asks for: guided practice tops out at two operands, and flash anzan does the
+long column with no board.
+
 ### Today, and your saved progress
 
 Every page writes its own progress to this browser's `localStorage` — nothing is sent
@@ -81,6 +98,7 @@ page that reads all of it at once:
 | `npv-fault-log` | practice · trainer · village | rejected moves, counted by the complement pair they needed |
 | `npv-game-save` | Soroban Village | the village |
 | `npv-anzan` | Flash anzan | rounds (each with the pace it ran at), best streaks, fastest pace carried |
+| `npv-exam` | Kyu exam | every paper sat: per-section scores, what passed, how long it took |
 | `npv-vault` | Vault | the numbers you are memorising, plus their review schedule. **The only key holding content rather than performance** — a `full` entry contains its digits in plain text, which is what the `sealed` mode is for |
 | `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
 | `npv-support`, `npv-sound`, `npv-bpm` | board pages | mnemonic-mental fade level, sound, metronome tempo |
@@ -115,6 +133,7 @@ src/
   drill/            decks, modes, session state machine, stats persistence, rng
   tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts
   anzan/            flash anzan: the rung ladder, the flash schedule, its own log
+  exam/             the kyu ladder, the paper generators + marking, the attempt log
   vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements
   today/            the day axis, the unified profile, the plan ladder, save transfer
