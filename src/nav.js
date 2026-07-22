@@ -15,7 +15,7 @@ const PAGES = [
   ['today', 'index.html', 'Today'],
   ['explore', 'explore.html', 'Explore'],
   ['practice', 'practice.html', 'Guided practice'],
-  ['trainer', 'trainer.html', 'Mult / Div trainer'],
+  ['trainer', 'trainer.html', 'Mult · Div · √'],
   ['drills', 'drills.html', 'Codec drills'],
   ['anzan', 'anzan.html', 'Flash anzan'],
   ['yomiage', 'yomiage.html', 'Read-aloud'],

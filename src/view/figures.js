@@ -374,7 +374,10 @@ export function figLayout(problem) {
   // Short value labels only — the setup line above the figure names the roles,
   // and a one-rod bracket can't carry a word without colliding with its neighbor.
   const lay = problem.layout;
-  if (problem.op === '×') {
+  if (problem.op === '√') {
+    body += bracket(lay.radicand, String(problem.a), 42, STONE);
+    body += bracket(lay.root, 'root', 70, SHU);
+  } else if (problem.op === '×') {
     body += bracket(lay.multiplier, `×${problem.b}`, 42, STONE);
     body += bracket(lay.multiplicand, String(problem.a), 42, STONE);
     body += bracket(lay.product, 'product', 70, SHU);

@@ -7,7 +7,7 @@ const PAGES = [
   ['index.html', 'Today — Place-Value Peg Soroban'],
   ['explore.html', 'Place-Value Peg Soroban — explore the board'],
   ['practice.html', 'Guided practice — Place-Value Peg Soroban'],
-  ['trainer.html', 'Multiplication & division trainer — Place-Value Peg Soroban'],
+  ['trainer.html', 'Rod methods — Place-Value Peg Soroban'],
   ['drills.html', 'Codec drills — Place-Value Peg Soroban'],
   ['anzan.html', 'Flash anzan — Place-Value Peg Soroban'],
   ['yomiage.html', 'Read-aloud — Place-Value Peg Soroban'],

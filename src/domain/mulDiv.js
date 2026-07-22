@@ -27,6 +27,7 @@
 //     rod (m0 − 1 − P). Division is the same identity read backwards.
 // ============================================================================
 import { columnLetter } from './config.js';
+import { buildSquareRoot } from './sqrt.js';
 
 const digitsLE = n => String(n).split('').reverse().map(Number); // ones-first
 const pow10 = p => Math.pow(10, p);
@@ -153,6 +154,7 @@ export function buildDivision(a, b) {
 }
 
 export function buildProblem(op, a, b) {
+  if (op === '√') return buildSquareRoot(a);      // one operand; b is unused
   return op === '÷' ? buildDivision(a, b) : buildMultiplication(a, b);
 }
 
@@ -188,4 +190,13 @@ export const ROD_MODES = [
   { id: 'div-2', floor: 3, timeFloorMs: 120000, op: '÷', label: '÷ 2-digit', title: 'Divide: ÷ 2-digit',
     teach: 'Same method with a two-digit divisor: subtract quotient × (each divisor digit), the ones product shifted one rod right.',
     gen: rng => { const b = between(rng, 12, 79), q = between(rng, 12, 79); return { a: b * q, b }; } },
+  // 開平法 — where 1級 stops. The radicand is only ever a perfect square here:
+  // the trainer verifies a step by comparing the whole board, and a root with a
+  // remainder left on the rods is a different exercise from "√n is …".
+  { id: 'sqrt-2', floor: 3, timeFloorMs: 90000, op: '√', label: '√ 2-digit root', title: 'Square root: 2-digit root',
+    teach: 'Pair the digits from the ones — one pair, one root digit. Take the largest d with d² ≤ the first pair, subtract d², bring the next pair down, then DOUBLE the root so far to make the trial divisor: the largest d with (20·root + d)·d ≤ the remainder.',
+    gen: rng => { const r = between(rng, 12, 99); return { a: r * r, b: 0 }; } },
+  { id: 'sqrt-3', floor: 3, timeFloorMs: 150000, op: '√', label: '√ 3-digit root', title: 'Square root: 3-digit root',
+    teach: 'Three pairs, three root digits, and the trial divisor grows with the root — 20·root is two rods wide by the last pair. Everything the previous rounds subtracted is exactly the 100·root² the identity leaves behind.',
+    gen: rng => { const r = between(rng, 101, 316); return { a: r * r, b: 0 }; } },
 ];
