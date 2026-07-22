@@ -541,8 +541,12 @@ export function figSessions(sessions) {
 const STATIONS = ['Beads', 'Percept', 'Mental'];
 const roundMin = m => (m == null ? '—' : m < 1 ? '<1' : String(Math.round(m)));
 
-export function figPrognosis(prog) {
-  const W = 520, H = 182;
+// `onward` (optional) extends the runway past Mental. The three stations were
+// drawn as if Mental were the destination, but it isn't — it is the entry
+// requirement for flash anzan. When the bridge names a rung, a fourth stop is
+// drawn beyond Mental so the chart stops implying the journey ends there.
+export function figPrognosis(prog, onward = null) {
+  const W = 520, H = onward ? 206 : 182;
   if (!prog || (!prog.enoughData && prog.n === 0 && !prog.atMental)) {
     return `<div class="fig-empty">${prog ? prog.message : 'No solves yet — your time-to-mental charts here.'}</div>`;
   }
@@ -564,6 +568,20 @@ export function figPrognosis(prog) {
     body += txt(NX[i], NY + 28, name, { size: 10.5, fill: cur ? INK : STONE, weight: cur ? 700 : 400 });
   });
   body += txt(NX[prog.support], NY - 16, 'you are here', { size: 8.5, fill: SHU });
+
+  // Past Mental: the onward stop. Drawn dashed and unfilled — it is not a
+  // support stage you reach by fading, it is a different page you go to.
+  if (onward) {
+    // The leg starts clear of Mental's target ring (r=13) and the labels sit on
+    // their OWN line below the station names — at this width "Mental" and
+    // "Flash anzan" collide if both are on the NY+28 row.
+    const OX = NX[2] + 46;
+    body += `<line x1="${NX[2] + 16}" y1="${NY}" x2="${OX - 13}" y2="${NY}" stroke="${LINE2}" stroke-width="2" stroke-dasharray="3 3"/>`;
+    body += `<path d="M${OX - 16} ${NY - 4} L${OX - 10} ${NY} L${OX - 16} ${NY + 4}" fill="none" stroke="${SHU}" stroke-width="1.5"/>`;
+    body += `<circle cx="${OX}" cy="${NY}" r="6" fill="${PAPER2}" stroke="${SHU}" stroke-width="2"/>`;
+    body += txt(W - 4, NY + 48, '⚡ Flash anzan', { size: 10, fill: SHU, anchor: 'end', weight: 600 });
+    body += txt(W - 4, NY + 62, onward.title, { size: 9, fill: STONE, anchor: 'end' });
+  }
 
   // Readiness gauge (top-right): a 0→100% bar with the 80% drop tick in shu.
   const GX0 = 300, GX1 = 500, GY = 34, pctR = Math.round(prog.readiness * 100);

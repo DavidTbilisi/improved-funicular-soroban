@@ -329,3 +329,20 @@ test('figStreak handles an empty history and a missing today', () => {
   assert.ok(noToday.includes('fig-empty'));
   assert.ok(!noToday.includes('<svg'));
 });
+
+test('figPrognosis extends the runway past Mental when a rung is named', () => {
+  const s = ({ ms = 2000, clean = true, support = 0 } = {}) => ({ t: '2026-01-01T09:00', ms, clean, support });
+  const ready = prognose(Array.from({ length: 12 }, () => s({ ms: 1500 })), { floorMs: 4500, support: 0 });
+
+  // Without an onward stop the chart is unchanged — Mental is the last station.
+  const plain = figPrognosis(ready);
+  assert.ok(!plain.includes('Flash anzan'));
+
+  const withNext = figPrognosis(ready, { id: 'five1', title: '5 × 1 digit' });
+  assert.ok(withNext.includes('⚡ Flash anzan'), 'the onward stop is labelled');
+  assert.ok(withNext.includes('>5 × 1 digit</text>'), 'and names the rung');
+  assert.ok(withNext.includes('stroke-dasharray'), 'the leg past Mental is dashed — a different page, not a stage');
+  // The plate grows to fit the extra row rather than overlapping it.
+  const h = p => Number(/viewBox="0 0 \d+ (\d+)"/.exec(p)[1]);
+  assert.ok(h(withNext) > h(plain));
+});

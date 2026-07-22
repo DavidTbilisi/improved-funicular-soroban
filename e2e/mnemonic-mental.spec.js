@@ -82,3 +82,61 @@ test('M cycles the fade and the choice persists across a reload', async ({ page 
   await expect(page.locator('#soroban')).toHaveClass(/sup-1/);
   await expect(page.getByRole('button', { name: 'Percept' })).toHaveClass(/active/);
 });
+
+// The prognosis → anzan bridge. The runway used to end at "Mental", a station
+// with nothing beyond it; once the forecast says the beads can go, it has to
+// name where that skill gets spent. Unit tests cover which rung is chosen —
+// what only a browser shows is that the link appears, is gated, and lands.
+const readySolves = (support, n = 12) =>
+  Array.from({ length: n }, () => ({ t: '2026-07-20T09:00', ms: 1500, clean: true, support }));
+
+async function seedReady(page, { support, level = 'read' }) {
+  await page.goto('practice.html');
+  await page.evaluate(({ support, level, solves }) => {
+    localStorage.setItem('npv-practice-history', JSON.stringify({ [level]: { solves, best: 6 } }));
+    localStorage.setItem('npv-support', String(support));
+  }, { support, level, solves: readySolves(support) });
+  await page.goto(`practice.html?level=${level}`);
+}
+
+test('at Beads the runway names no anzan rung, however ready the solves are', async ({ page }) => {
+  await seedReady(page, { support: 0 });
+  await expect(page.locator('#figProg svg')).toBeVisible();
+  await expect(page.locator('#stAnzan')).toBeHidden();
+  await expect(page.locator('#figProg')).not.toContainText('Flash anzan');
+});
+
+test('once the beads may go, the prognosis names a rung and links to it', async ({ page }) => {
+  await seedReady(page, { support: 1 });
+
+  const link = page.locator('#stAnzan a');
+  await expect(page.locator('#stAnzan')).toBeVisible();
+  await expect(link).toContainText('Warm-up · 3 × 1 digit');
+  await expect(page.locator('#figProg')).toContainText('Flash anzan');
+
+  await link.click();
+  await expect(page).toHaveURL(/anzan\.html\?level=warm$/);
+  await expect(page.locator('button[data-level="warm"]')).toHaveClass(/active/);
+});
+
+test('a rung already carried is skipped for the next one', async ({ page }) => {
+  await seedReady(page, { support: 2 });
+  await page.evaluate(() => localStorage.setItem('npv-anzan', JSON.stringify({
+    warm: { rounds: [{ t: '2026-07-20T10:00', ms: 650, ok: true }], best: 5, fastest: 650 },
+  })));
+  await page.reload();
+  await expect(page.locator('#stAnzan a')).toContainText('5 × 1 digit');
+  await expect(page.locator('#stAnzan')).toContainText('next rung');
+});
+
+test('the named rung follows the level in hand', async ({ page }) => {
+  // 'multi' maps to a 2-digit rung, not the bottom of the ladder.
+  await page.goto('practice.html');
+  await page.evaluate(solves => {
+    localStorage.setItem('npv-tutorial-progress', JSON.stringify({ v: 2, unlocked: 11, best: {} }));
+    localStorage.setItem('npv-practice-history', JSON.stringify({ multi: { solves, best: 6 } }));
+    localStorage.setItem('npv-support', '2');
+  }, readySolves(2));
+  await page.goto('practice.html?level=multi');
+  await expect(page.locator('#stAnzan a')).toContainText('3 × 2 digits');
+});

@@ -18,6 +18,7 @@
 // carries the day). Unit-tested in test/todayPlan.test.js.
 // ============================================================================
 import { hrefFor } from './deepLink.js';
+import { pickRung } from '../anzan/bridge.js';
 
 // Read-the-prompt + settle overhead per rep, matching prognosis.js's OVERHEAD_MS.
 const OVERHEAD_MS = 4000;
@@ -125,10 +126,19 @@ export const TASK_RULES = Object.freeze([
   //    someone still at Beads is offering the exam before the course: the whole
   //    discipline is the mnemonic-mental track under time pressure.
   { id: 'anzan', build: p => {
-      const lv = p.anzan && p.anzan.current;
-      if (!lv) return null;
+      if (!p.anzan || !p.anzan.levels.length) return null;
+      // A deliberately more permissive gate than the practice page's: once
+      // someone is doing anzan, keep offering it even if they have put the
+      // board back up. WHICH rung is pickRung's call either way, so the plan
+      // and the prognosis can never name different ones.
       const earned = p.mental.support > 0 || p.mental.prognosis.ready || p.anzan.rounds > 0;
       if (!earned) return null;
+      const pickedId = (pickRung({
+        levelId: p.practice.current ? p.practice.current.id : null,
+        rungs: p.anzan.levels,
+      }) || {}).id;
+      const lv = p.anzan.levels.find(l => l.id === pickedId) || p.anzan.current;
+      if (!lv) return null;
       const why = lv.fastest ? `cleared at ${lv.fastest} ms — push it`
         : lv.rounds ? `${Math.round((lv.accuracy || 0) * 100)}% at ${lv.lastMs || lv.baseMs} ms`
         : 'mental, under time';

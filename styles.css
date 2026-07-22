@@ -344,6 +344,13 @@ button.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--gold-edge), ins
 /* Live mental-readiness prognosis — its own line under the segment control. */
 .support-track .st-prog { flex: 1 1 100%; font-size: 0.78rem; color: var(--ink); font-weight: 600; padding: 6px 10px; border-left: 3px solid var(--shu); background: var(--paper-2); border-radius: 0 6px 6px 0; }
 .support-track .st-prog:empty { display: none; }
+/* Where Mental leads. Same full-width slot as the prognosis line and directly
+   under it, so it reads as that sentence's consequence rather than a new topic. */
+.support-track .st-anzan { flex: 1 1 100%; font-size: 0.78rem; color: var(--stone); padding: 2px 10px 0 13px; }
+.support-track .st-anzan[hidden] { display: none; }
+.support-track .st-anzan a { color: var(--gold); text-decoration: none; font-weight: 600; }
+.support-track .st-anzan a:hover { text-decoration: underline; }
+.support-track .st-anzan em { font-style: normal; color: var(--faint); }
 
 /* ── Rod rail: the focused-rod indicator (icons only) ───────────────────────
    The perpetual-calendar "lift the active tab" mechanism, adapted to the board:
