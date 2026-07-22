@@ -102,6 +102,19 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .topnav a:hover { color: var(--ink); background: var(--wash); }
 .topnav a.active { color: var(--on-gold); background: var(--gold); font-weight: 600; }
 
+/* The offline shell's one line of feedback, in the nav bar it belongs to: it
+   says "works offline" once and goes, or offers a reload after a deploy. Never
+   a modal — an update is not an interruption, and the learner may be mid-round. */
+.nav-shell { display: inline-flex; align-items: center; margin-left: 6px; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em; }
+.nav-shell[hidden] { display: none; }
+.nav-shell.ok { color: var(--green); padding: 0 8px; }
+.nav-shell.update button {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
+  padding: 5px 10px; border-radius: 999px; color: var(--on-gold); background: var(--gold);
+  border: 1px solid var(--gold-2); box-shadow: none; cursor: pointer;
+}
+.nav-shell.update button:hover { background: var(--gold-2); }
+
 /* Readout + decode */
 .readout {
   display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap;

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "python3 -m http.server 8139 --protocol HTTP/1.1",
     "test": "node --test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "offline:manifest": "node scripts/offline-manifest.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "license": "SEE LICENSE IN LICENSE",
   "devDependencies": {
