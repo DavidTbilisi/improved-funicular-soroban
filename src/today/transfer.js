@@ -35,6 +35,7 @@ export const SAVE_KEYS = Object.freeze([
   'npv-fault-log',          // rejected moves by complement pair
   'npv-game-save',          // the village
   'npv-anzan',              // flash-anzan rounds, best streaks, fastest pace cleared
+  'npv-yomiage',            // read-aloud rounds, each with the gap it was called at
   'npv-exam',               // sat kyu papers: per-section scores and what was passed
   'npv-vault',              // stored numbers + their review schedule (see the note below)
   'npv-achievements',       // badges + lifetime counters
@@ -43,12 +44,13 @@ export const SAVE_KEYS = Object.freeze([
   'npv-support',            // mnemonic-mental fade level
   'npv-sound',              // sound on/off
   'npv-bpm',                // metronome tempo
+  'npv-voice-rate',         // how fast the read-aloud caller talks
 ]);
 
 // These three hold PLAIN STRINGS, not JSON ('0', 'off', '60'). Parsing them as
 // JSON would half-work ('0' and '60' parse, 'off' throws) — so they are carried
 // verbatim, and this list is what keeps a round trip from double-encoding them.
-export const RAW_KEYS = Object.freeze(['npv-support', 'npv-sound', 'npv-bpm']);
+export const RAW_KEYS = Object.freeze(['npv-support', 'npv-sound', 'npv-bpm', 'npv-voice-rate']);
 
 // A NOTE ON npv-vault. It is the only key that holds CONTENT rather than
 // performance records: the numbers the learner is memorising. A 'full' entry

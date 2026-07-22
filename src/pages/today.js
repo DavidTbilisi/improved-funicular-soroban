@@ -14,6 +14,7 @@ import { DRILL_DECKS } from '../drill/decks.js';
 import { ROD_MODES } from '../domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../anzan/levels.js';
 import { AnzanLog } from '../anzan/anzanLog.js';
+import { YOMIAGE_LEVELS } from '../yomiage/levels.js';
 import { Vault } from '../vault/vaultStore.js';
 import { EXAM_GRADES } from '../exam/grades.js';
 import { ExamLog } from '../exam/examLog.js';
@@ -50,6 +51,9 @@ const save = new GameSave(store('npv-game-save'));
 const achievements = new AchievementTracker(store('npv-achievements'));
 const dayLog = new DayLog(store('npv-days'));
 const anzanLog = new AnzanLog(store('npv-anzan'));
+// The read-aloud page scores exactly like anzan (the pace a rung was carried
+// at), so it is the same log class on its own key.
+const yomiageLog = new AnzanLog(store('npv-yomiage'));
 const vault = new Vault(store('npv-vault'));
 const examLog = new ExamLog(store('npv-exam'));
 
@@ -83,8 +87,9 @@ function render() {
   const today = todayKey();
   const profile = buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
-    examGrades: EXAM_GRADES,
-    progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault, examLog,
+    yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
+    progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog,
+    anzanLog, yomiageLog, vault, examLog,
     support: parseInt(LS.getItem('npv-support'), 10) || 0,
     today,
   });

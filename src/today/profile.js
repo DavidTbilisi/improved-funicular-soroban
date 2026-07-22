@@ -52,11 +52,36 @@ function cleanRate(solves, window = 10) {
   return win.filter(s => s.clean).length / win.length;
 }
 
+// One row per rung of a PACED ladder (flash anzan, read-aloud). Both score the
+// same way — a rung is cleared when its floor was carried unbroken, and the
+// pace it was carried at is the record — so both read off an AnzanLog and both
+// come through here. `baseMs` is the rung's opening pace whatever it calls it.
+function paceRows(rungs = [], log = null, today = null) {
+  return rungs.map(l => {
+    const rounds = log ? log.rounds(l.id) : [];
+    const lastDay = lastDayOf(rounds);
+    return {
+      id: l.id, title: l.title, terms: l.terms, digits: l.digits,
+      baseMs: l.baseMs != null ? l.baseMs : l.baseGap, floor: l.floor,
+      best: log ? log.best(l.id) : 0,
+      fastest: log ? log.fastest(l.id) : null,
+      cleared: !!(log && log.fastest(l.id) !== null),
+      rounds: rounds.length,
+      accuracy: log ? log.accuracy(l.id) : null,
+      // The pace of the most recent round — what the learner is actually working
+      // at, which need not be the rung's default once they've moved the control.
+      lastMs: rounds.length ? rounds[rounds.length - 1].ms : null,
+      lastDay, daysSince: sinceDays(lastDay, today),
+    };
+  });
+}
+
 /**
  * @param levels   TUTORIAL_LEVELS
  * @param decks    DRILL_DECKS (an object keyed by deck id)
  * @param modes    ROD_MODES
  * @param anzanRungs ANZAN_LEVELS, with anzanLog the AnzanLog beside it
+ * @param yomiageRungs YOMIAGE_LEVELS, with yomiageLog its own AnzanLog beside it
  * @param examGrades EXAM_GRADES, with examLog the ExamLog beside it
  * @param progress TutorialProgress
  * @param practiceLog / trainerLog  SolveLog instances
@@ -69,8 +94,8 @@ function cleanRate(solves, window = 10) {
  * @param today    the injected day key ('YYYY-MM-DD')
  */
 export function buildProfile({
-  levels = [], decks = {}, modes = [], anzanRungs = [], examGrades = [],
-  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault, examLog,
+  levels = [], decks = {}, modes = [], anzanRungs = [], yomiageRungs = [], examGrades = [],
+  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, yomiageLog, vault, examLog,
   support = 0, today = null,
 } = {}) {
   // --- Days ----------------------------------------------------------------
@@ -116,24 +141,16 @@ export function buildProfile({
   // --- Flash anzan ---------------------------------------------------------
   // Its axis is the PACE it was carried at, not the time it took, so `cleared`
   // means the floor was ever carried unbroken and `fastest` is the real score.
-  const anzanLevels = anzanRungs.map(l => {
-    const rounds = anzanLog ? anzanLog.rounds(l.id) : [];
-    const lastDay = lastDayOf(rounds);
-    return {
-      id: l.id, title: l.title, terms: l.terms, digits: l.digits,
-      baseMs: l.baseMs, floor: l.floor,
-      best: anzanLog ? anzanLog.best(l.id) : 0,
-      fastest: anzanLog ? anzanLog.fastest(l.id) : null,
-      cleared: !!(anzanLog && anzanLog.fastest(l.id) !== null),
-      rounds: rounds.length,
-      accuracy: anzanLog ? anzanLog.accuracy(l.id) : null,
-      // The pace of the most recent round — what the learner is actually working
-      // at, which need not be the rung's default once they've moved the control.
-      lastMs: rounds.length ? rounds[rounds.length - 1].ms : null,
-      lastDay, daysSince: sinceDays(lastDay, today),
-    };
-  });
+  const anzanLevels = paceRows(anzanRungs, anzanLog, today);
   const currentAnzan = anzanLevels.find(l => !l.cleared) || anzanLevels[anzanLevels.length - 1] || null;
+
+  // --- Read-aloud (読上算) --------------------------------------------------
+  // Same measurement shape as anzan — the score is the PACE a rung was carried
+  // at — so it is the same rows off a second AnzanLog, not a second reading of
+  // the same idea. The pace means something different (the gap the caller
+  // leaves, not how long a number is lit); the ranking maths does not care.
+  const yomiageLevels = paceRows(yomiageRungs, yomiageLog, today);
+  const currentYomiage = yomiageLevels.find(l => !l.cleared) || yomiageLevels[yomiageLevels.length - 1] || null;
 
   // --- Vault ---------------------------------------------------------------
   // The only track whose work is scheduled by TIME rather than by mastery: a
@@ -249,6 +266,7 @@ export function buildProfile({
     + trainerModes.reduce((n, m) => n + m.solves, 0);
   const totalSessions = drillDecks.reduce((n, d) => n + d.sessions, 0)
     + anzanLevels.reduce((n, l) => n + l.rounds, 0)
+    + yomiageLevels.reduce((n, l) => n + l.rounds, 0)
     + vaultOut.entries.reduce((n, e) => n + e.reviews, 0)
     + examOut.attempts;
 
@@ -281,6 +299,13 @@ export function buildProfile({
       cleared: anzanLevels.filter(l => l.cleared).length,
       current: currentAnzan,
       rounds: anzanLevels.reduce((n, l) => n + l.rounds, 0),
+    },
+    yomiage: {
+      levels: yomiageLevels,
+      total: yomiageLevels.length,
+      cleared: yomiageLevels.filter(l => l.cleared).length,
+      current: currentYomiage,
+      rounds: yomiageLevels.reduce((n, l) => n + l.rounds, 0),
     },
     drills: {
       decks: drillDecks,

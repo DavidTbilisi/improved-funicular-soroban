@@ -9,6 +9,7 @@ import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { suggestRung } from '../src/anzan/bridge.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
+import { YOMIAGE_LEVELS } from '../src/yomiage/levels.js';
 import { Vault } from '../src/vault/vaultStore.js';
 import { EXAM_GRADES } from '../src/exam/grades.js';
 import { ExamLog } from '../src/exam/examLog.js';
@@ -23,11 +24,11 @@ const TODAY = '2026-07-22';
 
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, vault = {}, exam = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
-    examGrades: EXAM_GRADES,
+    yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
     examLog: new ExamLog(new MemoryProgressStore(exam)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
@@ -37,6 +38,7 @@ function profileFrom({
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
     anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
+    yomiageLog: new AnzanLog(new MemoryProgressStore(yomiage)),
     vault: new Vault(new MemoryProgressStore(vault)),
     support, today,
   });
@@ -179,9 +181,10 @@ test('the rod trainer and the village fill out a cleared-ladder plan', () => {
     practice: Object.fromEntries(TUTORIAL_LEVELS.map(l => [l.id, { solves: solves(l.floor, { day: '2026-07-21' }) }])),
     drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], '2026-07-21') }])),
   });
-  // Room for five: a learner with the whole ladder cleared has an unsat kyu
-  // paper waiting too, and it outranks both of these.
-  const plan = todaysPlan(p, { max: 5, budgetMin: 40 });
+  // Room for six: a learner with the whole ladder cleared also has an unsat kyu
+  // paper, an anzan rung and a read-aloud rung waiting, and all three outrank
+  // these two.
+  const plan = todaysPlan(p, { max: 6, budgetMin: 60 });
   const rules = plan.tasks.map(t => t.rule);
   assert.ok(rules.includes('trainer-mode'), `expected a trainer task, got ${rules}`);
   assert.ok(rules.includes('village'), `expected a village task, got ${rules}`);
@@ -298,6 +301,7 @@ test('every task a rule can emit deep-links to a real target', () => {
       if (t.page === 'trainer') assert.ok(ROD_MODES.some(m => m.id === t.targetId), t.targetId);
       if (t.page === 'anzan') assert.ok(ANZAN_LEVELS.some(l => l.id === t.targetId), t.targetId);
       if (t.page === 'exam') assert.ok(EXAM_GRADES.some(g => g.id === t.targetId), t.targetId);
+      if (t.page === 'yomiage') assert.ok(YOMIAGE_LEVELS.some(l => l.id === t.targetId), t.targetId);
       // ...and the href must round-trip back through the reader the page uses.
       const search = new URL(t.href, 'http://x/').search;
       assert.equal(targetFromSearch(search, t.page), t.targetId, t.href);
@@ -512,5 +516,53 @@ test('a paper sat today comes back auto-ticked rather than quietly vanishing', (
   const sat = { attempts: [{ t: `${TODAY}T10:00`, gradeId: 'kyu10', kyu: 10, score: 40, passed: false, ms: 1, sections: [] }] };
   const t = todaysPlan(midLadder({ exam: sat }), { max: 6, budgetMin: 99 }).tasks.find(x => x.page === 'exam');
   assert.ok(t, 'still on the plan');
+  assert.equal(t.autoDone, true);
+});
+
+// --- read-aloud -------------------------------------------------------------
+test('read-aloud is not offered before the carry is in hand', () => {
+  // "minus sixty-three" has to land as a borrow; big-add is not cleared here.
+  const rules = todaysPlan(midLadder(), { max: 9, budgetMin: 999 }).tasks.map(t => t.rule);
+  assert.ok(!rules.includes('yomiage'), rules.join(','));
+});
+
+const canCarry = (over = {}) => midLadder({
+  tutorial: { v: 2, unlocked: 7, best: { read: 6, direct: 8, 'small-add': 8, 'small-sub': 8, 'big-add': 8, 'big-sub': 4 } },
+  ...over,
+});
+
+test('clearing the carry opens it, and it deep-links to the first rung', () => {
+  const t = todaysPlan(canCarry(), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'yomiage');
+  assert.ok(t, 'offered');
+  assert.equal(t.rule, 'yomiage');
+  assert.equal(t.targetId, YOMIAGE_LEVELS[0].id);
+  assert.equal(t.href, `yomiage.html?level=${YOMIAGE_LEVELS[0].id}`);
+  assert.equal(t.why, 'called aloud, straight to the rods');
+  assert.ok(t.minutes > 0);
+});
+
+test('it needs no mental stage — the board does the remembering', () => {
+  const p = canCarry();
+  assert.equal(p.mental.support, 0, 'still on the beads');
+  assert.ok(todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.some(t => t.page === 'yomiage'));
+});
+
+test('rounds already run qualify on their own, and the reason quotes the gap', () => {
+  const rounds = { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 1600, ok: true }, { t: '2026-07-20T10:01', ms: 1600, ok: false }], best: 1, fastest: null } };
+  const t = todaysPlan(midLadder({ yomiage: rounds }), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'yomiage');
+  assert.ok(t, 'someone already doing it keeps being offered it');
+  assert.match(t.why, /50% at a 1600 ms gap/);
+});
+
+test('a carried rung is reported by the pace it was carried at', () => {
+  const carried = { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 800, ok: true }], best: 5, fastest: 800 } };
+  const t = todaysPlan(canCarry({ yomiage: carried }), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'yomiage');
+  assert.equal(t.targetId, YOMIAGE_LEVELS[1].id, 'a cleared rung moves the ladder on');
+  assert.equal(t.why, 'called aloud, straight to the rods');
+});
+
+test('a rung called today comes back auto-ticked', () => {
+  const todayRound = { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 2500, ok: true }], best: 1, fastest: null } };
+  const t = todaysPlan(canCarry({ yomiage: todayRound }), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'yomiage');
   assert.equal(t.autoDone, true);
 });

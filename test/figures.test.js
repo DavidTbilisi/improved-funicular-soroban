@@ -4,7 +4,7 @@ import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
-  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam,
+  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan,
 } from '../src/view/figures.js';
 import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
@@ -366,4 +366,11 @@ test('figExam draws the ladder hardest-first with the pass mark on it', () => {
 
 test('figExam says so rather than throwing when there are no grades', () => {
   assert.match(figExam([]), /No grades yet/);
+});
+
+test('the pace ladder names the rung it is charting', () => {
+  const rows = [{ id: 'warm', title: 'Warm-up · 3 × 1 digit', baseMs: 2500, floor: 5, best: 0, fastest: null, cleared: false, rounds: 0, accuracy: null }];
+  assert.match(figAnzan(rows), /per anzan rung/);
+  assert.match(figAnzan(rows, { what: 'dictation rung' }), /per dictation rung/);
+  assert.match(figAnzan([], { what: 'dictation rung' }), /No dictation rungs yet/);
 });

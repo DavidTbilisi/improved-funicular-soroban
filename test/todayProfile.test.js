@@ -6,6 +6,7 @@ import { DRILL_DECKS } from '../src/drill/decks.js';
 import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
+import { YOMIAGE_LEVELS } from '../src/yomiage/levels.js';
 import { Vault } from '../src/vault/vaultStore.js';
 import { EXAM_GRADES } from '../src/exam/grades.js';
 import { ExamLog } from '../src/exam/examLog.js';
@@ -21,11 +22,11 @@ const TODAY = '2026-07-22';
 // Build a profile from plain blobs — the same shapes the real keys hold.
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, vault = {}, exam = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
-    examGrades: EXAM_GRADES,
+    yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
     examLog: new ExamLog(new MemoryProgressStore(exam)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
@@ -35,6 +36,7 @@ function profileFrom({
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
     anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
+    yomiageLog: new AnzanLog(new MemoryProgressStore(yomiage)),
     vault: new Vault(new MemoryProgressStore(vault)),
     support, today,
   });
@@ -365,4 +367,33 @@ test('a grade carries its best score and how long since it was last sat', () => 
 
 test('sitting a paper counts as work — it stops the profile being fresh', () => {
   assert.equal(profileFrom({ exam: { attempts: [attempt('kyu10', 20, false)] } }).fresh, false);
+});
+
+// --- read-aloud -------------------------------------------------------------
+test('the read-aloud ladder reports like the anzan one, off its own log', () => {
+  const p = profileFrom({ yomiage: {
+    warm: { rounds: [{ t: '2026-07-20T10:00', ms: 2000, ok: true }], best: 5, fastest: 2000 },
+    five1: { rounds: [{ t: '2026-07-21T10:00', ms: 1600, ok: false }], best: 0, fastest: null },
+  } });
+  assert.equal(p.yomiage.total, YOMIAGE_LEVELS.length);
+  assert.equal(p.yomiage.cleared, 1);
+  assert.equal(p.yomiage.current.id, 'five1', 'the first uncarried rung');
+  assert.equal(p.yomiage.rounds, 2);
+  const warm = p.yomiage.levels[0];
+  assert.equal(warm.fastest, 2000);
+  assert.equal(warm.lastMs, 2000);
+  assert.equal(warm.daysSince, 2);
+  assert.equal(warm.baseMs, YOMIAGE_LEVELS[0].baseGap, 'the rung\'s opening pace, whatever it calls it');
+});
+
+test('the two paced ladders do not read each other\'s log', () => {
+  const p = profileFrom({ anzan: { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 1600, ok: true }], best: 5, fastest: 1600 } } });
+  assert.equal(p.anzan.cleared, 1);
+  assert.equal(p.yomiage.cleared, 0);
+  assert.equal(p.yomiage.rounds, 0);
+});
+
+test('a called round counts as work', () => {
+  const p = profileFrom({ yomiage: { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 2000, ok: false }], best: 0, fastest: null } } });
+  assert.equal(p.fresh, false);
 });

@@ -1026,6 +1026,68 @@ body.ex-sitting .ex-grades { display: none; }
   .ex-paper { grid-template-columns: 1fr; }
 }
 
+
+/* ── Read-aloud (読上算) ───────────────────────────────────────────────────
+   There is almost nothing to draw, and that is the exercise: the numbers are
+   spoken, so the screen carries only the cue, which term is being called, and
+   the board you are setting it on. The captions are opt-in and off by default —
+   a visible number here is a different, easier exercise — so they are styled as
+   a fallback, not as the main event. */
+.ym-levels { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.ym-levels button { display: inline-flex; align-items: center; gap: 7px; }
+.ym-levels button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.ym-levels button.cleared:not(.active) { border-color: var(--green); }
+.ym-pb { font-family: var(--mono); font-size: 0.6rem; color: var(--data); font-variant-numeric: tabular-nums; }
+.ym-levels button.active .ym-pb { color: var(--on-gold); }
+
+.ym-stage { background: var(--well); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 20px; }
+.ym-stage[hidden] { display: none; }
+.ym-teach { font-size: 0.86rem; color: var(--stone); line-height: 1.65; margin: 0 auto 16px; max-width: 70ch; text-align: center; }
+.ym-teach b { color: var(--ink); }
+
+.ym-pace-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.ym-pace, .ym-score { font-family: var(--mono); font-size: 0.72rem; color: var(--stone); font-variant-numeric: tabular-nums; }
+.ym-score { color: var(--faint); }
+.ym-rate { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 0.66rem; color: var(--faint); text-transform: uppercase; letter-spacing: 1.1px; }
+.ym-rate input { width: 90px; }
+.ym-cc { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--stone); cursor: pointer; }
+.ym-cc input { accent-color: var(--data); }
+.ym-stop { padding: 5px 11px; font-size: 0.7rem; }
+
+.ym-silent { font-size: 0.8rem; color: var(--amber); text-align: center; margin: 0 auto 12px; max-width: 66ch; }
+.ym-silent[hidden] { display: none; }
+
+.ym-screen {
+  position: relative; display: grid; place-items: center; gap: 10px;
+  height: 150px; margin: 0 auto 14px; border-radius: 12px;
+  background: radial-gradient(120% 90% at 50% 30%, rgba(143, 160, 255, 0.08), rgba(143, 160, 255, 0) 62%) var(--paper);
+  border: 1px solid var(--line);
+}
+.ym-progress { position: absolute; top: 10px; right: 14px; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); font-variant-numeric: tabular-nums; }
+/* The cue is a SOUND made visible, not a number: it says that something is
+   being said and roughly what kind, never what it was. */
+.ym-cue { font-size: 2.6rem; line-height: 1; color: var(--data); }
+.ym-cue.pulse { animation: ym-pulse 0.5s ease-out; }
+@keyframes ym-pulse { 0% { transform: scale(0.82); opacity: 0.5; } 45% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.ym-caption { font-family: var(--mono); font-size: 1.15rem; color: var(--stone); text-align: center; padding: 0 14px; }
+.ym-caption[hidden] { display: none; }
+
+.ym-answer-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.ym-answer-label { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.3px; color: var(--faint); }
+.ym-answer { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; min-width: 4ch; text-align: center; }
+.ym-feedback { min-height: 1.6em; margin-top: 12px; text-align: center; font-size: 0.9rem; color: var(--stone); }
+.ym-feedback b { font-family: var(--mono); color: var(--ink); }
+.ym-feedback.ok { color: var(--green); }
+.ym-feedback.bad { color: var(--shu); }
+.ym-terms { display: block; margin-top: 6px; font-family: var(--mono); font-size: 0.78rem; color: var(--faint); }
+
+.ym-board { margin-top: 16px; }
+/* Unlike the anzan stage, nothing here is hidden while a round runs: there is
+   no number on screen to be distracted from, and the Stop control has to stay
+   reachable — a caller you cannot stop mid-round is a caller you have to sit
+   through. The screen just takes the data-coloured edge while it is speaking. */
+.ym-stage.ym-calling .ym-screen { border-color: var(--data); }
+
 /* Narrow screens */
 @media (max-width: 640px) {
   body { padding: 18px 14px 60px; }
