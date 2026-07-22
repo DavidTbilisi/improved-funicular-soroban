@@ -4,7 +4,7 @@ import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
-  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan,
+  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan, figRetention,
 } from '../src/view/figures.js';
 import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
@@ -373,4 +373,27 @@ test('the pace ladder names the rung it is charting', () => {
   assert.match(figAnzan(rows), /per anzan rung/);
   assert.match(figAnzan(rows, { what: 'dictation rung' }), /per dictation rung/);
   assert.match(figAnzan([], { what: 'dictation rung' }), /No dictation rungs yet/);
+});
+
+// --- Fig: retention across the tracks ---------------------------------------
+test('figRetention bars what is left, and marks what is due', () => {
+  const rows = [
+    { title: 'Small friend +', retention: 0.42, due: true, text: '42% held · 3d overdue', activeDays: 2, halfLife: 3.8 },
+    { title: 'Face → digit', retention: 0.95, due: false, text: '95% held · due in 4d', activeDays: 6, halfLife: 25 },
+  ];
+  const p = figRetention(rows);
+  assert.match(p, /review 70%/);
+  assert.ok(p.includes('>42%</text>'));
+  assert.ok(p.includes('>95%</text>'));
+  assert.ok(p.includes('3d overdue'), 'the tooltip carries the forecast');
+  assert.ok(p.indexOf('Small friend') < p.indexOf('Face'), 'rows keep the order they came in');
+});
+
+test('figRetention caps its rows and says how many it dropped', () => {
+  const rows = Array.from({ length: 14 }, (_, i) => ({ title: `T${i}`, retention: 0.5, due: false, text: 'x', activeDays: 1, halfLife: 2 }));
+  assert.match(figRetention(rows), /\+4 more/);
+});
+
+test('figRetention says so rather than throwing when nothing is practised', () => {
+  assert.match(figRetention([]), /Nothing practised yet/);
 });

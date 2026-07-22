@@ -139,13 +139,18 @@ test('a deck with facts under the floor is queued with its due count', () => {
   assert.equal(drill.targetId, 'fingerTimes');
 });
 
-test('a cold deck with no due facts is queued on staleness instead', () => {
-  const plan = todaysPlan(midLadder({
+test('a cold deck with no due facts is caught by retention, not by a day count', () => {
+  // One session, a week ago: nothing is below the mastery floor, so 'due-deck'
+  // has nothing to say — but a single day of practice has a two-day half-life,
+  // so almost none of it is left, and the retention rung says so in those terms.
+  const p = midLadder({
+    practice: { 'big-add': { solves: solves(5, { day: TODAY }) } },   // nothing else faded
     drills: { faceToDigit: { sessions: sessions([95], '2026-07-15') } },
-  }));
-  const drill = plan.tasks.find(t => t.page === 'drills');
-  assert.equal(drill.rule, 'due-deck');
-  assert.equal(drill.why, '7 days cold');
+  });
+  const drill = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(t => t.page === 'drills');
+  assert.equal(drill.rule, 'fading');
+  assert.equal(drill.targetId, 'faceToDigit');
+  assert.match(drill.why, /% held · \d+d overdue/);
 });
 
 // --- mental track -----------------------------------------------------------
@@ -190,7 +195,7 @@ test('the rod trainer and the village fill out a cleared-ladder plan', () => {
   assert.ok(rules.includes('village'), `expected a village task, got ${rules}`);
 });
 
-test('keep-warm catches the coldest thing when everything is cleared', () => {
+test('the retention rung outranks keep-warm while anything is actually due', () => {
   const cleared = {};
   TUTORIAL_LEVELS.forEach(l => { cleared[l.id] = l.floor; });
   const trainerBlob = Object.fromEntries(ROD_MODES.map(m => [m.id, { solves: solves(3, { day: '2026-07-21' }), best: m.floor ?? 3 }]));
@@ -205,9 +210,11 @@ test('keep-warm catches the coldest thing when everything is cleared', () => {
     trainer: trainerBlob,
     drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], '2026-07-21') }])),
   });
-  const t = todaysPlan(p, { max: 4, budgetMin: 60 }).tasks.find(x => x.rule === 'keep-warm');
-  assert.ok(t, 'the coldest target is offered');
+  const t = todaysPlan(p, { max: 4, budgetMin: 60 }).tasks.find(x => x.rule === 'fading');
+  assert.ok(t, 'the most faded target is offered');
   assert.equal(t.targetId, 'read');
+  assert.ok(!todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.some(x => x.rule === 'keep-warm'),
+    'keep-warm is the nothing-is-due fallback, and something is due');
 });
 
 // --- session shape ----------------------------------------------------------
@@ -565,4 +572,70 @@ test('a rung called today comes back auto-ticked', () => {
   const todayRound = { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 2500, ok: true }], best: 1, fastest: null } };
   const t = todaysPlan(canCarry({ yomiage: todayRound }), { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'yomiage');
   assert.equal(t.autoDone, true);
+});
+
+// --- retention: the schedule across every track -----------------------------
+test('the most faded track wins the rung, whichever page it lives on', () => {
+  const p = midLadder({
+    practice: {
+      read: { solves: solves(6, { day: TODAY }) },
+      direct: { solves: solves(8, { day: TODAY }) },
+      'small-add': { solves: solves(8, { day: TODAY }) },
+      'small-sub': { solves: solves(8, { day: TODAY }) },
+      'big-add': { solves: solves(5, { day: TODAY }) },
+    },
+    drills: { faceToDigit: { sessions: sessions([95], TODAY) } },
+    // An anzan rung last touched seven weeks ago is the softest thing here.
+    anzan: { warm: { rounds: [{ t: '2026-06-01T10:00', ms: 1600, ok: true }], best: 1, fastest: null } },
+  });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.rule === 'fading');
+  assert.ok(t);
+  assert.equal(t.page, 'anzan');
+  assert.equal(t.targetId, 'warm');
+  assert.match(t.why, /% held/);
+});
+
+test('nothing is due when everything was practised today', () => {
+  const p = midLadder({
+    practice: Object.fromEntries(TUTORIAL_LEVELS.map(l => [l.id, { solves: solves(l.floor, { day: TODAY }) }])),
+    drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], TODAY) }])),
+  });
+  const rules = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.map(t => t.rule);
+  assert.ok(!rules.includes('fading'), rules.join(','));
+});
+
+test('keep-warm falls back to the softest thing, due or not', () => {
+  const cleared = {};
+  TUTORIAL_LEVELS.forEach(l => { cleared[l.id] = l.floor; });
+  const p = profileFrom({
+    tutorial: { v: 2, unlocked: TUTORIAL_LEVELS.length, best: cleared },
+    // Everything practised today over many days, so nothing has fallen through.
+    practice: Object.fromEntries(TUTORIAL_LEVELS.map((l, i) => [l.id, {
+      solves: ['2026-07-18', '2026-07-19', '2026-07-20', '2026-07-21', TODAY]
+        .flatMap(day => solves(2, { day, ms: 20000 })),
+    }])),
+    drills: Object.fromEntries(Object.keys(DRILL_DECKS).map(id => [id, { sessions: sessions([95], TODAY) }])),
+    trainer: Object.fromEntries(ROD_MODES.map(m => [m.id, { solves: solves(3, { day: TODAY }), best: m.floor ?? 3 }])),
+  });
+  const plan = todaysPlan(p, { max: 9, budgetMin: 999 });
+  assert.ok(!plan.tasks.some(t => t.rule === 'fading'), 'nothing is due');
+  const t = plan.tasks.find(x => x.rule === 'keep-warm');
+  assert.ok(t, `expected the fallback, got ${plan.tasks.map(x => x.rule)}`);
+  assert.match(t.why, /% held/);
+});
+
+test('spacing shows in the plan: the crammed deck is the one that has gone', () => {
+  const day = d => ({ t: `${d}T10:00`, n: 20, acc: 95, meanMs: 1200, floorPct: 95 });
+  const p = midLadder({
+    drills: {
+      // Same six sessions, same last day — one deck spread over a fortnight,
+      // the other done in a single sitting. Only the model can tell them apart.
+      faceToDigit: { sessions: ['2026-07-08', '2026-07-10', '2026-07-12', '2026-07-14', '2026-07-16', '2026-07-18'].map(day) },
+      digitToFace: { sessions: [day('2026-07-18'), day('2026-07-18'), day('2026-07-18'), day('2026-07-18'), day('2026-07-18'), day('2026-07-18')] },
+    },
+  });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.rule === 'fading');
+  assert.ok(t, 'something is due');
+  assert.equal(t.page, 'drills');
+  assert.equal(t.targetId, 'digitToFace');
 });

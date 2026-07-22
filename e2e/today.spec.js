@@ -196,3 +196,59 @@ test('a first-run browser gets an onboarding plan, not an empty page', async ({ 
   await expect(page.locator('#todayMsg')).toContainText('streak starts today');
   expect(errors).toEqual([]);
 });
+
+// --- retention --------------------------------------------------------------
+// Two decks with the SAME number of sessions and the same last day: one spread
+// over a fortnight, one crammed into an afternoon. Only the decay model can
+// tell them apart, and the page has to show that it did.
+const spacingSeed = () => {
+  const sess = d => ({ t: `${d}T10:00`, n: 20, acc: 95, meanMs: 1200, floorPct: 95 });
+  return {
+    'npv-days': JSON.stringify({ v: 1, seeded: true, days: [dayBack(14), dayBack(7), TODAY] }),
+    'npv-drill-stats': JSON.stringify({
+      faceToDigit: { sessions: [14, 12, 10, 8, 6, 4].map(n => sess(dayBack(n))) },
+      digitToFace: { sessions: [4, 4, 4, 4, 4, 4].map(n => sess(dayBack(n))) },
+    }),
+  };
+};
+
+test('the notes say what is fading, and the figure charts every track on one axis', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e));
+  await page.goto('index.html');
+  await page.evaluate(blob => {
+    localStorage.clear();
+    for (const [k, v] of Object.entries(blob)) localStorage.setItem(k, v);
+  }, spacingSeed());
+  await page.reload();
+
+  await expect(page.locator('#todayRetention')).toContainText('held across 2 tracks');
+  await expect(page.locator('#figRetention')).toContainText('review 70%');
+  await expect(page.locator('#figRetention')).toContainText('Face → digit');
+  await expect(page.locator('#figRetention')).toContainText('Digit → face');
+  expect(errors).toEqual([]);
+});
+
+test('the crammed deck is the one the plan sends you back to', async ({ page }) => {
+  await page.goto('index.html');
+  await page.evaluate(blob => {
+    localStorage.clear();
+    for (const [k, v] of Object.entries(blob)) localStorage.setItem(k, v);
+  }, spacingSeed());
+  await page.reload();
+
+  // Same six sessions each, same four days since — the spread one is holding,
+  // the crammed one is not, and the reason is stated as retention.
+  const drill = page.locator('.today-task', { hasText: 'Digit → face' });
+  await expect(drill).toHaveCount(1);
+  await expect(drill.locator('.tt-why')).toContainText('% held');
+  await expect(page.locator('.today-task', { hasText: 'Face → digit' })).toHaveCount(0);
+});
+
+test('a retention figure with nothing practised says so instead of breaking', async ({ page }) => {
+  await page.goto('index.html');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await expect(page.locator('#figRetention')).toContainText('Nothing practised yet');
+  await expect(page.locator('#todayRetention')).toBeEmpty();
+});

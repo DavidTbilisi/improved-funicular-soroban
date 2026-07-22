@@ -44,6 +44,16 @@ function lastDayOf(records) {
 const sinceDays = (lastDay, today) =>
   (lastDay && today ? Math.max(0, daysBetween(lastDay, today)) : null);
 
+// How many DISTINCT calendar days a track was practised on. This is the input
+// the retention model wants and record COUNT is not: forty solves in one sitting
+// is one day of learning, and counting the reps would let a single cramming
+// session claim a year-long half-life (see src/review/decay.js).
+function activeDaysOf(records) {
+  const days = new Set();
+  for (const r of records || []) { const d = r && dayKey(r.t); if (d) days.add(d); }
+  return days.size;
+}
+
 // Share of the recent solves that were clean — a cheap per-level readiness that
 // doesn't need the full prognosis machinery (which is per support level).
 function cleanRate(solves, window = 10) {
@@ -66,7 +76,7 @@ function paceRows(rungs = [], log = null, today = null) {
       best: log ? log.best(l.id) : 0,
       fastest: log ? log.fastest(l.id) : null,
       cleared: !!(log && log.fastest(l.id) !== null),
-      rounds: rounds.length,
+      rounds: rounds.length, activeDays: activeDaysOf(rounds),
       accuracy: log ? log.accuracy(l.id) : null,
       // The pace of the most recent round — what the learner is actually working
       // at, which need not be the rung's default once they've moved the control.
@@ -111,7 +121,8 @@ export function buildProfile({
       idx, id: lv.id, title: lv.title, floor: lv.floor, timeFloorMs: lv.timeFloorMs,
       unlocked: progress ? progress.isUnlocked(idx) : idx === 0,
       best, cleared: best >= lv.floor,
-      solves: solves.length, lastDay, daysSince: sinceDays(lastDay, today),
+      solves: solves.length, activeDays: activeDaysOf(solves),
+      lastDay, daysSince: sinceDays(lastDay, today),
       readiness: cleanRate(solves),
     };
   });
@@ -133,7 +144,8 @@ export function buildProfile({
     return {
       id: m.id, label: m.label, title: m.title, op: m.op, floor, timeFloorMs: m.timeFloorMs ?? null,
       best, cleared: best >= floor,
-      solves: solves.length, lastDay, daysSince: sinceDays(lastDay, today),
+      solves: solves.length, activeDays: activeDaysOf(solves),
+      lastDay, daysSince: sinceDays(lastDay, today),
     };
   });
   const weakestMode = trainerModes.find(m => !m.cleared) || null;
@@ -211,7 +223,7 @@ export function buildProfile({
     const lastDay = lastDayOf(sessions);
     return {
       id, label: deck.label, floorMs: deck.floorMs, mode: deck.mode,
-      sessions: sessions.length,
+      sessions: sessions.length, activeDays: activeDaysOf(sessions),
       latestFloorPct: sessions.length ? sessions[sessions.length - 1].floorPct : null,
       best: stats ? stats.best(id) : null,
       lastDay, daysSince: sinceDays(lastDay, today),

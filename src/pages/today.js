@@ -28,10 +28,12 @@ import { DayLog } from '../today/dayLog.js';
 import { harvestDays } from '../today/harvest.js';
 import { buildProfile } from '../today/profile.js';
 import { todaysPlan } from '../today/plan.js';
+import { retentionSummary } from '../review/skills.js';
 import { Checklist } from '../today/checklist.js';
 import { exportSave, importSave, validateSave } from '../today/transfer.js';
 import { TodayView } from '../view/todayView.js';
-import { figure, figStreak, figLadder } from '../view/figures.js';
+import { figure, figStreak, figLadder, figRetention } from '../view/figures.js';
+import { REVIEW_AT } from '../review/decay.js';
 
 const $ = id => document.getElementById(id);
 mountNav('today');
@@ -74,7 +76,7 @@ const checklist = new Checklist(store('npv-today'), { today: todayKey() });
 const view = new TodayView({
   headEl: $('todayHead'), planEl: $('todayPlan'), planMsgEl: $('todayMsg'),
   planTotalEl: $('todayTotal'), mentalEl: $('todayMental'), faultsEl: $('todayFaults'),
-  villageEl: $('todayVillage'), statusEl: $('todayStatus'),
+  villageEl: $('todayVillage'), retentionEl: $('todayRetention'), statusEl: $('todayStatus'),
   exportBtn: $('todayExport'), importBtn: $('todayImportBtn'),
   importEl: $('todayImport'), importFile: $('todayImportFile'),
 }, {
@@ -94,12 +96,15 @@ function render() {
     today,
   });
   const plan = todaysPlan(profile);
+  // Derived, never stored: the schedule is a pure function of the logs the app
+  // already keeps (see src/review/decay.js).
+  const retention = retentionSummary(profile);
   // A task counts as done if it was ticked OR the profile already shows work on
   // it today — practice done before opening this page still counts.
   for (const t of plan.tasks) t.done = t.autoDone || checklist.isDone(t.id);
   const done = plan.tasks.filter(t => t.done).length;
 
-  view.render({ profile, plan, done });
+  view.render({ profile, plan, done, retention });
 
   $('figStreak').innerHTML = figure(1,
     'Calendar days you practised, one cell per day in weekday rows — a habit reads as a solid block, a lapse as a hole. Today carries the vermilion ring.',
@@ -107,6 +112,9 @@ function render() {
   $('figLadder').innerHTML = figure(2,
     'Best clean streak per level (bars) against the streak each level demands (red tick). A red seal marks a cleared level; locked levels are dimmed.',
     figLadder(profile.practice.levels));
+  $('figRetention').innerHTML = figure(3,
+    'What the decay model says is left of every track you have practised, most faded first. The bar is retention now; the vermilion rule is the point at which a rep is worth taking, so anything reaching left of it is due — and it is the same axis for a tutorial level, a drill deck and a paced rung, which is what lets the plan rank them against each other.',
+    figRetention(retention.rows, REVIEW_AT));
 }
 
 // --- Save transfer ----------------------------------------------------------
