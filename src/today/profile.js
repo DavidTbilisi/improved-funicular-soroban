@@ -23,6 +23,7 @@ import { nextGoal } from '../game/goals.js';
 import { nextHint } from '../game/advisor.js';
 import { dayKey, daysBetween } from './dayKey.js';
 import { isDue, daysUntilDue } from '../vault/schedule.js';
+import { nextGrade, highestPassed, totalSeconds, describeGrade } from '../exam/grades.js';
 
 // A deck fact counts as "due" while fewer than this share of its saved reps
 // landed under the floor — the same 90% bar automaticityForecast uses for a
@@ -56,6 +57,7 @@ function cleanRate(solves, window = 10) {
  * @param decks    DRILL_DECKS (an object keyed by deck id)
  * @param modes    ROD_MODES
  * @param anzanRungs ANZAN_LEVELS, with anzanLog the AnzanLog beside it
+ * @param examGrades EXAM_GRADES, with examLog the ExamLog beside it
  * @param progress TutorialProgress
  * @param practiceLog / trainerLog  SolveLog instances
  * @param stats    DrillStatsService
@@ -67,8 +69,8 @@ function cleanRate(solves, window = 10) {
  * @param today    the injected day key ('YYYY-MM-DD')
  */
 export function buildProfile({
-  levels = [], decks = {}, modes = [], anzanRungs = [],
-  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault,
+  levels = [], decks = {}, modes = [], anzanRungs = [], examGrades = [],
+  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault, examLog,
   support = 0, today = null,
 } = {}) {
   // --- Days ----------------------------------------------------------------
@@ -153,6 +155,34 @@ export function buildProfile({
     digits: vaultEntries.reduce((n, e) => n + (e.length || 0), 0),
   };
 
+  // --- Kyu exam ------------------------------------------------------------
+  // The only track measured against a standard the app did not invent, so
+  // "passed" is a fact about attempts rather than a threshold this file picks:
+  // it just asks the log which grades were ever carried, and grades.js which
+  // one is therefore next.
+  const passedIds = examLog ? examLog.passedIds() : [];
+  const passedSet = new Set(passedIds);
+  const examRows = examGrades.map(g => {
+    const attempts = examLog ? examLog.attempts(g.id) : [];
+    const lastDay = lastDayOf(attempts);
+    return {
+      id: g.id, name: g.name, kyu: g.kyu, needs: g.needs, desc: describeGrade(g),
+      minutes: Math.round(totalSeconds(g) / 60),
+      best: examLog ? examLog.best(g.id) : null,
+      passed: passedSet.has(g.id),
+      attempts: attempts.length,
+      lastDay, daysSince: sinceDays(lastDay, today),
+    };
+  });
+  const rowFor = grade => (grade ? examRows.find(r => r.id === grade.id) || null : null);
+  const examOut = {
+    grades: examRows,
+    passed: examRows.filter(r => r.passed).length,
+    highest: rowFor(highestPassed(passedIds)),
+    next: rowFor(nextGrade(passedIds)),
+    attempts: examRows.reduce((n, r) => n + r.attempts, 0),
+  };
+
   // --- Drill decks ---------------------------------------------------------
   const drillDecks = Object.entries(decks).map(([id, deck]) => {
     const sessions = stats ? stats.history(id) : [];
@@ -219,7 +249,8 @@ export function buildProfile({
     + trainerModes.reduce((n, m) => n + m.solves, 0);
   const totalSessions = drillDecks.reduce((n, d) => n + d.sessions, 0)
     + anzanLevels.reduce((n, l) => n + l.rounds, 0)
-    + vaultOut.entries.reduce((n, e) => n + e.reviews, 0);
+    + vaultOut.entries.reduce((n, e) => n + e.reviews, 0)
+    + examOut.attempts;
 
   return {
     today, days, streak,
@@ -243,6 +274,7 @@ export function buildProfile({
       solves: trainerModes.reduce((n, m) => n + m.solves, 0),
     },
     vault: vaultOut,
+    exam: examOut,
     anzan: {
       levels: anzanLevels,
       total: anzanLevels.length,

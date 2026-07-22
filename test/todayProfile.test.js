@@ -7,6 +7,8 @@ import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
 import { Vault } from '../src/vault/vaultStore.js';
+import { EXAM_GRADES } from '../src/exam/grades.js';
+import { ExamLog } from '../src/exam/examLog.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -19,10 +21,12 @@ const TODAY = '2026-07-22';
 // Build a profile from plain blobs — the same shapes the real keys hold.
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, vault = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, vault = {}, exam = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
+    examGrades: EXAM_GRADES,
+    examLog: new ExamLog(new MemoryProgressStore(exam)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),
@@ -317,4 +321,48 @@ test('a vault review counts as work — it stops the profile being fresh', () =>
 
 test('merely storing a number is not yet work', () => {
   assert.equal(profileFrom({ vault: vaultBlob([stored('v1', 'x')]) }).fresh, true);
+});
+
+// --- the kyu exam -----------------------------------------------------------
+const attempt = (gradeId, score, passed, day = TODAY, kyu = 10) =>
+  ({ t: `${day}T10:00`, gradeId, kyu, score, passed, ms: 300000, sections: [{ kind: 'mitori', score, passed }] });
+
+test('an unsat ladder reports every grade, none held, and 10級 next', () => {
+  const p = profileFrom();
+  assert.equal(p.exam.grades.length, EXAM_GRADES.length);
+  assert.equal(p.exam.passed, 0);
+  assert.equal(p.exam.highest, null);
+  assert.equal(p.exam.next.id, 'kyu10');
+  assert.equal(p.exam.next.needs, 'small-add');
+  assert.ok(p.exam.next.minutes > 0, 'the plan needs a minute estimate');
+  assert.equal(p.exam.attempts, 0);
+});
+
+test('passing walks the ladder on; the held grade is the smallest kyu', () => {
+  const p = profileFrom({ exam: { attempts: [
+    attempt('kyu10', 100, true, '2026-07-01'),
+    attempt('kyu9', 60, false, '2026-07-10', 9),
+    attempt('kyu9', 80, true, '2026-07-20', 9),
+  ] } });
+  assert.equal(p.exam.passed, 2);
+  assert.equal(p.exam.highest.id, 'kyu9');
+  assert.equal(p.exam.next.id, 'kyu8');
+  assert.equal(p.exam.attempts, 3);
+});
+
+test('a grade carries its best score and how long since it was last sat', () => {
+  const p = profileFrom({ exam: { attempts: [
+    attempt('kyu10', 40, false, '2026-07-12'),
+    attempt('kyu10', 60, false, '2026-07-20'),
+  ] } });
+  const g = p.exam.grades.find(x => x.id === 'kyu10');
+  assert.equal(g.best, 60);
+  assert.equal(g.passed, false);
+  assert.equal(g.attempts, 2);
+  assert.equal(g.lastDay, '2026-07-20');
+  assert.equal(g.daysSince, 2);
+});
+
+test('sitting a paper counts as work — it stops the profile being fresh', () => {
+  assert.equal(profileFrom({ exam: { attempts: [attempt('kyu10', 20, false)] } }).fresh, false);
 });

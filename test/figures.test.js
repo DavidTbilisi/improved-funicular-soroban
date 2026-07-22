@@ -4,7 +4,7 @@ import {
   figure, rodGlyph, figDigits, figComplements, figPlaceValue,
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
-  figNineFold, figFingerFacts, figChisanbop, figStreak,
+  figNineFold, figFingerFacts, figChisanbop, figStreak, figExam,
 } from '../src/view/figures.js';
 import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
@@ -345,4 +345,25 @@ test('figPrognosis extends the runway past Mental when a rung is named', () => {
   // The plate grows to fit the extra row rather than overlapping it.
   const h = p => Number(/viewBox="0 0 \d+ (\d+)"/.exec(p)[1]);
   assert.ok(h(withNext) > h(plain));
+});
+
+// --- Fig: the kyu ladder -----------------------------------------------------
+test('figExam draws the ladder hardest-first with the pass mark on it', () => {
+  const rows = [
+    { id: 'kyu10', name: '10級', kyu: 10, best: 100, passed: true, attempts: 1 },
+    { id: 'kyu9', name: '9級', kyu: 9, best: 60, passed: false, attempts: 2 },
+    { id: 'kyu8', name: '8級', kyu: 8, best: null, passed: false, attempts: 0 },
+  ];
+  const p = figExam(rows, 'kyu9');
+  assert.ok(p.includes('pass 70'), 'the 70 rule is labelled');
+  // Hardest at the top: 8級 must appear before 10級 in document order.
+  assert.ok(p.indexOf('8級') < p.indexOf('10級'), 'the ladder points up');
+  assert.ok(p.includes('✓ 10級'), 'a held grade is ticked');
+  assert.ok(p.includes('▸ 9級'), 'the grade you are on is marked');
+  assert.ok(p.includes('passed, best 100'), 'the held mark says why');
+  assert.ok(p.includes('>—</text>'), 'an unsat grade keeps its row');
+});
+
+test('figExam says so rather than throwing when there are no grades', () => {
+  assert.match(figExam([]), /No grades yet/);
 });

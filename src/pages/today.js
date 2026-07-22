@@ -15,6 +15,8 @@ import { ROD_MODES } from '../domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../anzan/levels.js';
 import { AnzanLog } from '../anzan/anzanLog.js';
 import { Vault } from '../vault/vaultStore.js';
+import { EXAM_GRADES } from '../exam/grades.js';
+import { ExamLog } from '../exam/examLog.js';
 import { LocalStorageProgressStore, TutorialProgress } from '../tutorial/progressStore.js';
 import { LocalStorageStatsStore, DrillStatsService } from '../drill/statsStore.js';
 import { SolveLog } from '../tutorial/solveLog.js';
@@ -49,6 +51,7 @@ const achievements = new AchievementTracker(store('npv-achievements'));
 const dayLog = new DayLog(store('npv-days'));
 const anzanLog = new AnzanLog(store('npv-anzan'));
 const vault = new Vault(store('npv-vault'));
+const examLog = new ExamLog(store('npv-exam'));
 
 // Backfill once, so a learner who has been practising for months doesn't see a
 // zero-day streak the first time this page loads. Reads the raw blobs (the
@@ -80,7 +83,8 @@ function render() {
   const today = todayKey();
   const profile = buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
-    progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault,
+    examGrades: EXAM_GRADES,
+    progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, vault, examLog,
     support: parseInt(LS.getItem('npv-support'), 10) || 0,
     today,
   });

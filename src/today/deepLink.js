@@ -4,7 +4,7 @@
 // deck already started, not on the page's default.
 //
 //   practice.html?level=big-sub    drills.html?deck=fingerTimes
-//   anzan.html?level=five2
+//   anzan.html?level=five2         exam.html?grade=kyu8
 //   trainer.html?mode=mul-1x1      game.html
 //
 // Kept here, DOM-free and on both sides of the wire, so the writer (plan.js)
@@ -20,6 +20,7 @@ export const TARGET_PARAM = Object.freeze({
   drills: 'deck',
   trainer: 'mode',
   anzan: 'level',
+  exam: 'grade',
 });
 
 export const PAGE_HREF = Object.freeze({
@@ -29,6 +30,7 @@ export const PAGE_HREF = Object.freeze({
   trainer: 'trainer.html',
   drills: 'drills.html',
   anzan: 'anzan.html',
+  exam: 'exam.html',
   vault: 'vault.html',
   game: 'game.html',
   reference: 'reference.html',

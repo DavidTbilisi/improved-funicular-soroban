@@ -11,7 +11,7 @@ import { RES_EMOJI } from '../game/buildings.js';
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const KIND_EMOJI = { practice: '🧮', drill: '🎴', trainer: '✖️', anzan: '⚡', vault: '🔐', game: '🏮' };
+const KIND_EMOJI = { practice: '🧮', drill: '🎴', trainer: '✖️', anzan: '⚡', exam: '📜', vault: '🔐', game: '🏮' };
 
 export class TodayView {
   constructor(els, { onToggle, onExport, onImport } = {}) {
@@ -68,6 +68,10 @@ export class TodayView {
       (rank ? `<span class="td-rank" title="Village rank — total building levels plus sp minted">🏘 ${esc(rank.title)}` +
         `<span class="td-rank-bar"><i style="width:${Math.round(100 * rank.cur / rank.next)}%"></i></span></span>` : '') +
       (p.village ? `<span class="td-sp">${p.village.sp} sp</span>` : '') +
+      // The kyu grade is the app's one external rank, so it belongs on the spine
+      // beside the invented one. Silent until a paper has actually been passed.
+      (p.exam && p.exam.highest
+        ? `<span class="td-kyu" title="Highest kyu grade passed">📜 ${esc(p.exam.highest.name)}</span>` : '') +
       `<span class="td-done">${done}/${plan.tasks.length} done today</span>`;
   }
 

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kyu exam — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">The kyu exam — a timed paper in three sections, sat on the beads. The board is your answer sheet.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Sit a paper</h2>
+    <div class="ex-grades" id="examGrades"></div>
+
+    <div class="ex-stage" id="examStage" hidden>
+      <div class="ex-head">
+        <b class="ex-title" id="examTitle"></b>
+        <span class="ex-counter" id="examCounter"></span>
+        <span class="ex-clock" id="examClock">0:00</span>
+        <button id="examAbandon" class="ex-leave" title="Leave the paper — nothing is recorded">✕ Leave</button>
+      </div>
+      <div class="ex-sections" id="examSection"></div>
+      <p class="ex-desc" id="examDesc"></p>
+
+      <div class="ex-paper" id="examPaper">
+        <div class="ex-work">
+          <div class="ex-question" id="examQuestion"></div>
+          <div class="ex-hand">
+            <div class="ex-answer-row">
+              <span class="ex-answer-label">Board reads</span>
+              <span class="ex-answer" id="examAnswer">0</span>
+              <button id="examSubmit" class="primary">Hand in ⏎</button>
+              <button id="examSkip">Skip</button>
+            </div>
+            <p class="ex-expired" id="examExpired" hidden></p>
+            <p class="ex-note">The board is cleared for you after every question. Nothing is marked until the paper is down.</p>
+          </div>
+        </div>
+        <div class="ex-board" id="examBoard"></div>
+      </div>
+
+      <div class="ex-sheet" id="examSheet" hidden></div>
+    </div>
+
+    <p class="help help-cols" style="margin-top:16px;">A paper has three sections — <strong>見取算</strong> a column of terms added and subtracted in order, <strong>掛算</strong> multiplication, <strong>割算</strong> division — and each is scored out of 100 with its own clock. <strong>Every section must reach 70 on its own</strong>: an average would let a perfect column carry a failed division, which is exactly the operator the grade is meant to exclude.<br>Work each question on the beads and hand in what the board reads. The paper does <strong>not</strong> tell you as you go — every other page here answers you immediately because that is what practice is for; an exam measures what you can do without it. When a section's time is out it closes, unanswered questions and all, and an answer keyed after the bell is not taken.</p>
+  </div>
+
+  <div class="panel-row">
+  <div class="panel">
+    <h2>The ladder</h2>
+    <div class="fig-grid">
+      <div id="figExam"></div>
+    </div>
+    <h3 class="ex-h3">Recent papers</h3>
+    <ol class="ex-history" id="examHistory"></ol>
+  </div>
+
+  <div class="panel">
+    <h2>What this is, and what it is not</h2>
+    <p class="help">Every other rank in this app is one it made up: the practice ladder unlocks on a streak it chose, the anzan rungs are its own, the village rank is fiction. Soroban has had an <strong>external</strong> standard for a century — the 珠算検定 grading exam — and this page is modelled on it: the term counts, the digit widths, the grade at which minus terms and division appear, 100 points a section and 70 to pass.</p>
+    <p class="help" style="margin-top:12px;"><strong>It certifies nothing.</strong> This is not the Japan Chamber of Commerce &amp; Industry, the papers here are shorter than the real ones (five questions a section, with the clock scaled to match), and the division is exact where a real paper above about 4級 carries remainders. Passing 3級 in a browser is not 3級. What does transfer is the shape of the work and the standard you are held to.</p>
+    <p class="help" style="margin-top:12px;">見取算 is the reason this page exists. It is what soroban practice actually <em>is</em> — ten numbers down a column, one pass, no re-reading — and nothing else here has ever asked for it: <a href="practice.html">guided practice</a> tops out at two operands, and <a href="anzan.html">flash anzan</a> does the long column with no board to do it on. A grade you cannot sit is a level to go and drill: each grade names the practice level it leans on.</p>
+  </div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/exam.js"></script>
+
+</body>
+</html>

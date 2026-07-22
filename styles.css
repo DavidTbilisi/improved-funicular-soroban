@@ -476,11 +476,19 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 /* Header strip: title · nav · resource chips · help/reset. */
 .ck-top { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .ck-title { font-family: var(--mono); font-size: 1rem; font-weight: 700; margin: 0; white-space: nowrap; }
-.page-game .topnav { position: static; margin: 0; padding: 4px; box-shadow: none; flex-wrap: nowrap; }
+/* The cockpit never scrolls, so the nav must give way rather than push the
+   header taller: it stays one line and scrolls inside itself as pages are
+   added, instead of forcing the resource chips to wrap. */
+.page-game #nav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.page-game #nav::-webkit-scrollbar { display: none; }
+.page-game .topnav { position: static; margin: 0; padding: 4px; box-shadow: none; flex-wrap: nowrap; width: max-content; }
 .page-game .topnav a { padding: 4px 10px; font-size: 0.7rem; white-space: nowrap; }
 /* Nowrap keeps the chips one line when they fit; min-width:0 lets the bar
    shrink and wrap under pressure so the header actions never get clipped. */
-.page-game .game-res { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+/* The chips keep their natural width; the NAV is the flexible one (it scrolls
+   inside itself), so a new page in the bar can never squeeze the resources into
+   a taller stack and push the cockpit past one screen. */
+.page-game .game-res { margin-left: auto; flex: none; flex-wrap: nowrap; justify-content: flex-end; }
 .ck-actions { display: flex; gap: 6px; }
 .ck-actions button { padding: 5px 10px; font-size: 0.74rem; color: var(--stone); }
 
@@ -913,6 +921,110 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 .today-status { font-size: 0.82rem; color: var(--stone); margin: 0; min-height: 1.3em; }
 .today-status.ok { color: var(--green); }
 .today-status.bad { color: var(--shu); }
+
+
+/* ── Kyu exam ─────────────────────────────────────────────────────────────
+   A desk, not a dashboard: the paper on the left, the instrument on the right,
+   and a clock that changes its manner as it runs down. While a paper is being
+   sat the grade picker is HIDDEN (body.ex-sitting) — an exam in progress must
+   not offer you a different exam, and the sheet only appears once the paper is
+   down, because nothing here marks as you go. */
+.ex-grades { display: flex; flex-wrap: wrap; gap: 7px; }
+.ex-grades button { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; padding: 8px 12px; }
+.ex-grades button b { font-family: var(--mono); font-size: 0.94rem; }
+.ex-best { font-family: var(--mono); font-size: 0.58rem; color: var(--faint); letter-spacing: 0.06em; }
+.ex-grades button.passed { border-color: var(--green); }
+.ex-grades button.passed .ex-best { color: var(--green); }
+.ex-grades button.next { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.ex-grades button.next .ex-best { color: var(--on-gold); }
+body.ex-sitting .ex-grades { display: none; }
+
+.ex-stage { margin-top: 16px; background: var(--well); border: 1px solid var(--line-2); border-radius: 14px; padding: 16px 18px 18px; }
+.ex-stage[hidden] { display: none; }
+.ex-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ex-title { font-family: var(--mono); font-size: 0.9rem; color: var(--ink); }
+.ex-counter { font-family: var(--mono); font-size: 0.74rem; color: var(--faint); font-variant-numeric: tabular-nums; }
+.ex-clock {
+  margin-left: auto; font-family: var(--mono); font-size: 1.35rem; font-weight: 700;
+  color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+}
+.ex-clock.low { color: var(--amber); }
+.ex-clock.out { color: var(--shu); animation: ex-pulse 1s steps(2, end) infinite; }
+@keyframes ex-pulse { 50% { opacity: 0.35; } }
+.ex-leave { padding: 5px 10px; font-size: 0.68rem; }
+
+.ex-sections { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.ex-sections[hidden], .ex-desc[hidden], .ex-leave[hidden] { display: none; }
+.ex-sections span { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; }
+.ex-sections span.on { color: var(--on-gold); background: var(--gold); border-color: var(--gold-2); font-weight: 600; }
+.ex-sections span.done { color: var(--stone); border-color: var(--line-2); }
+.ex-desc { font-family: var(--mono); font-size: 0.68rem; color: var(--data); margin: 0 0 14px; letter-spacing: 0.02em; }
+
+.ex-paper { display: grid; grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.6fr); gap: 20px; align-items: start; }
+.ex-paper[hidden] { display: none; }
+.ex-question {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 20px; min-height: 120px;
+}
+/* The column as the paper prints it: one term per line, signs in the margin,
+   digits tabular so the places line up down the page. */
+.ex-col { list-style: none; margin: 0; padding: 0; }
+.ex-col li { display: flex; align-items: baseline; justify-content: flex-end; gap: 10px; font-family: var(--mono); font-size: 1.15rem; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.55; }
+.ex-sign { width: 1ch; color: var(--shu); font-weight: 700; }
+.ex-sum { font-family: var(--mono); font-size: 1.5rem; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; padding-top: 24px; }
+.ex-op { color: var(--data); padding: 0 6px; }
+
+.ex-hand { margin-top: 14px; }
+.ex-answer-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ex-answer-label { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.3px; color: var(--faint); }
+.ex-answer { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; min-width: 4ch; }
+.ex-expired { font-family: var(--mono); font-size: 0.74rem; color: var(--shu); margin: 10px 0 0; }
+.ex-expired[hidden] { display: none; }
+.ex-note { font-size: 0.76rem; color: var(--faint); margin: 10px 0 0; }
+.ex-board { min-width: 0; }
+
+/* The mark sheet — only ever rendered once the paper is down. */
+.ex-sheet[hidden] { display: none; }
+.ex-verdict { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding: 14px 0 10px; }
+.ex-verdict b { font-family: var(--mono); font-size: 1.15rem; }
+.ex-verdict span { font-family: var(--mono); font-size: 0.76rem; color: var(--stone); font-variant-numeric: tabular-nums; }
+.ex-verdict.pass b { color: var(--green); }
+.ex-verdict.fail b { color: var(--shu); }
+.ex-rule { font-size: 0.78rem; color: var(--faint); margin: 0 0 14px; }
+.ex-sec { margin-bottom: 16px; }
+.ex-sec-head { display: flex; gap: 12px; align-items: baseline; font-family: var(--mono); font-size: 0.78rem; color: var(--ink); padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.ex-sec-head span { margin-left: auto; font-variant-numeric: tabular-nums; }
+.ex-sec-head span.ok { color: var(--green); }
+.ex-sec-head span.bad { color: var(--shu); }
+.ex-marks { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ex-marks li { display: flex; align-items: baseline; gap: 12px; font-family: var(--mono); font-size: 0.74rem; color: var(--stone); padding: 4px 8px; border-radius: 7px; background: var(--well); font-variant-numeric: tabular-nums; }
+.ex-marks li.bad { background: rgba(239, 91, 62, 0.09); }
+.ex-marks li.blank { opacity: 0.6; }
+.ex-m-no { width: 1.5ch; color: var(--faint); }
+.ex-m-q { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.ex-m-a { width: 12ch; text-align: right; }
+.ex-marks li.ok .ex-m-a { color: var(--green); }
+.ex-marks li.bad .ex-m-a { color: var(--shu); }
+.ex-m-right { width: 12ch; text-align: right; color: var(--data); }
+
+.ex-h3 { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.4px; color: var(--faint); margin: 20px 0 10px; font-weight: 600; }
+.ex-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.ex-history li { display: flex; align-items: baseline; gap: 12px; font-family: var(--mono); font-size: 0.72rem; color: var(--stone); padding: 6px 10px; background: var(--well); border: 1px solid var(--line); border-radius: 8px; font-variant-numeric: tabular-nums; }
+.ex-history li.pass { border-left: 3px solid var(--green); }
+.ex-history li.fail { border-left: 3px solid var(--line-2); }
+.ex-history li.empty { color: var(--faint); }
+.exh-grade { color: var(--ink); font-weight: 600; width: 5ch; }
+.exh-score { width: 7ch; }
+.exh-secs { display: flex; gap: 4px; }
+.exh-secs i { font-style: normal; padding: 0 5px; border-radius: 5px; background: var(--paper); border: 1px solid var(--line); }
+.exh-secs i.ok { color: var(--green); }
+.exh-secs i.bad { color: var(--shu); }
+.exh-when { margin-left: auto; color: var(--faint); }
+.exh-verdict { white-space: nowrap; text-align: right; }
+
+@media (max-width: 900px) {
+  .ex-paper { grid-template-columns: 1fr; }
+}
 
 /* Narrow screens */
 @media (max-width: 640px) {
