@@ -29,6 +29,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `yomiage.html` | **Read-aloud** (読上算) — the numbers are *spoken* and never shown: set each one on the beads as you hear it and hand in what the board reads. The third modality, and the one exercise where the board does the remembering |
 | `exam.html` | **Kyu exam** — a timed paper (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades, from 10級 to 三段. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down. Dan papers add 開平 and a 暗算 section with the board faded out |
 | `vault.html` | **Vault** — store a real number, encode it to scenes, and be tested on recall over expanding intervals. Entries can be **sealed**: only the length and seals are kept, so the app never holds the digits |
+| `misses.html` | **Mistake book** (間違いノート) — every question you got wrong, from any page, until you get it right twice |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
 
@@ -80,6 +81,27 @@ the kyu paper's 見取算 column — same generator, same rules.
 
 If the browser has no speech voice installed (many Linux boxes, most CI containers) the page
 says so and shows the words instead: a soundless caller is still a usable exercise.
+
+### The mistake book
+
+Working the things you got wrong is the highest-yield habit there is after spacing, and this
+app used to throw them all away: a drill miss was re-dealt inside its own round and
+forgotten, a wrong line on a kyu paper appeared once on the mark sheet and went with it, a
+lost anzan round showed its terms back and moved on.
+
+Now every page that can grade an answer writes its misses into one book — drills, kyu
+papers, flash anzan, read-aloud — in one shape, and `misses.html` works them:
+
+- **the same miss is one entry**, with a count; missing something twice is not two problems;
+- **two rights in a row take it out**, because one right is a coin flip on a two-choice
+  answer and a fluke on most of the rest — and a later miss puts the progress back to zero;
+- **a wrong answer shows you the right one immediately**: this is not a test, the entry is
+  already a known miss, and hiding the answer a second time teaches nothing;
+- the book is **capped at the most recent 80** — a book you cannot finish is one nobody opens.
+
+It sits second in Today's plan, behind only a due vault number: these are questions you have
+already met and already got wrong, so they are the cheapest minutes in the app. And it
+empties itself, which is why it can outrank the skill rungs without becoming furniture.
 
 ### Where the point goes
 
@@ -154,6 +176,7 @@ page that reads all of it at once:
 | `npv-anzan` | Flash anzan | rounds (each with the pace it ran at), best streaks, fastest pace carried |
 | `npv-yomiage` | Read-aloud | rounds, each with the gap the caller left, best streaks, fastest gap carried |
 | `npv-exam` | Kyu exam | every paper sat: per-section scores, what passed, how long it took |
+| `npv-misses` | drills · exam · anzan · read-aloud | the mistake book: questions missed, until worked off |
 | `npv-vault` | Vault | the numbers you are memorising, plus their review schedule. **The only key holding content rather than performance** — a `full` entry contains its digits in plain text, which is what the `sealed` mode is for |
 | `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
 | `npv-support`, `npv-sound`, `npv-bpm`, `npv-voice-rate` | board pages | mnemonic-mental fade level, sound, metronome tempo, caller speed |
@@ -265,7 +288,7 @@ src/
   vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements
   a11y/             the board in words — place names, bead phrases, spoken readings
-  review/           retention: the decay model, and every track on one axis
+  review/           retention: the decay model and every track on one axis; the mistake book
   today/            the day axis, the unified profile, the plan ladder, save transfer
   view/             one class per panel (observers of the store/session) + figures.js
   pages/            one composition root per page

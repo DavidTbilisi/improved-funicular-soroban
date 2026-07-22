@@ -11,7 +11,7 @@ import { RES_EMOJI } from '../game/buildings.js';
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const KIND_EMOJI = { practice: '🧮', drill: '🎴', trainer: '✖️', anzan: '⚡', yomiage: '👂', exam: '📜', vault: '🔐', game: '🏮' };
+const KIND_EMOJI = { practice: '🧮', drill: '🎴', trainer: '✖️', anzan: '⚡', yomiage: '👂', exam: '📜', misses: '📕', vault: '🔐', game: '🏮' };
 
 export class TodayView {
   constructor(els, { onToggle, onExport, onImport } = {}) {

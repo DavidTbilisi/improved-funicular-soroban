@@ -35,6 +35,7 @@ export const PAGE_HREF = Object.freeze({
   yomiage: 'yomiage.html',
   exam: 'exam.html',
   vault: 'vault.html',
+  misses: 'misses.html',
   game: 'game.html',
   reference: 'reference.html',
 });

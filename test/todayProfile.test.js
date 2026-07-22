@@ -10,6 +10,7 @@ import { YOMIAGE_LEVELS } from '../src/yomiage/levels.js';
 import { Vault } from '../src/vault/vaultStore.js';
 import { EXAM_GRADES } from '../src/exam/grades.js';
 import { ExamLog } from '../src/exam/examLog.js';
+import { MissQueue } from '../src/review/misses.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -22,12 +23,13 @@ const TODAY = '2026-07-22';
 // Build a profile from plain blobs — the same shapes the real keys hold.
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, misses = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
     yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
     examLog: new ExamLog(new MemoryProgressStore(exam)),
+    misses: new MissQueue(new MemoryProgressStore(misses)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),

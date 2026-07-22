@@ -21,6 +21,7 @@ const PAGES = [
   ['yomiage', 'yomiage.html', 'Read-aloud'],
   ['exam', 'exam.html', 'Kyu exam'],
   ['vault', 'vault.html', 'Vault'],
+  ['misses', 'misses.html', 'Mistake book'],
   ['game', 'game.html', 'Village'],
   ['reference', 'reference.html', 'Reference'],
 ];

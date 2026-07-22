@@ -9,11 +9,12 @@
 // ============================================================================
 import { mountNav } from '../nav.js';
 import { MathRng } from '../drill/rng.js';
-import { ANZAN_LEVELS, SPEEDS, speedStep } from '../anzan/levels.js';
+import { ANZAN_LEVELS, SPEEDS, speedStep, levelById } from '../anzan/levels.js';
 import { AnzanSession } from '../anzan/anzanSession.js';
 import { AnzanLog } from '../anzan/anzanLog.js';
 import { AnzanView } from '../view/anzanView.js';
 import { DayLog } from '../today/dayLog.js';
+import { MissQueue } from '../review/misses.js';
 import { targetFromSearch, hrefFor } from '../today/deepLink.js';
 import { diagnoseRung } from '../anzan/bridge.js';
 import { TUTORIAL_LEVELS } from '../tutorial/levels.js';
@@ -27,6 +28,10 @@ mountNav('anzan');
 const log = new AnzanLog(new LocalStorageProgressStore(window.localStorage, 'npv-anzan'));
 // The day axis behind the Today page's streak — marked on real work only.
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// A lost round used to show its terms back and vanish. Now the column itself
+// goes in the mistake book, where it can be worked at your own pace — which is
+// the only way a flashed round can ever be worked again.
+const misses = new MissQueue(new LocalStorageProgressStore(window.localStorage, 'npv-misses'));
 // Read-only: the anzan page never writes either of these. It reads the unlock
 // ladder so it can't send you to a locked level, and the fault log so a stalling
 // rung can name a weakness you demonstrably have on the board.
@@ -133,6 +138,16 @@ const renderDiagnosis = () => {
 session.subscribe(evt => {
   if (evt.type === 'result') {
     dayLog.mark(); // a completed round is work: today counts toward the streak
+    if (!evt.ok) {
+      misses.add({
+        key: `anzan:${evt.terms.join('+')}`,
+        source: `Flash anzan · ${(levelById(activeId) || {}).title || ''}`.trim(),
+        page: 'anzan',
+        prompt: evt.terms.map((t, i) => (i === 0 ? String(t) : t < 0 ? `− ${-t}` : `+ ${t}`)).join(' '),
+        sub: 'the round you lost — add the column and type the total',
+        answers: [String(evt.sum)],
+      });
+    }
     render();
     renderDiagnosis();
   }

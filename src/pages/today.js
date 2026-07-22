@@ -29,6 +29,7 @@ import { harvestDays } from '../today/harvest.js';
 import { buildProfile } from '../today/profile.js';
 import { todaysPlan } from '../today/plan.js';
 import { retentionSummary } from '../review/skills.js';
+import { MissQueue } from '../review/misses.js';
 import { Checklist } from '../today/checklist.js';
 import { exportSave, importSave, validateSave } from '../today/transfer.js';
 import { TodayView } from '../view/todayView.js';
@@ -58,6 +59,7 @@ const anzanLog = new AnzanLog(store('npv-anzan'));
 const yomiageLog = new AnzanLog(store('npv-yomiage'));
 const vault = new Vault(store('npv-vault'));
 const examLog = new ExamLog(store('npv-exam'));
+const misses = new MissQueue(store('npv-misses'));
 
 // Backfill once, so a learner who has been practising for months doesn't see a
 // zero-day streak the first time this page loads. Reads the raw blobs (the
@@ -91,7 +93,7 @@ function render() {
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
     yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
     progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog,
-    anzanLog, yomiageLog, vault, examLog,
+    anzanLog, yomiageLog, vault, examLog, misses,
     support: parseInt(LS.getItem('npv-support'), 10) || 0,
     today,
   });

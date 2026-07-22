@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mistake book — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16141f">
+<link rel="icon" href="icons/soroban-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/soroban-192.png">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">間違いノート — the mistake book: every question you got wrong, until you get it right twice.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Work the book</h2>
+    <div class="ms-head" id="msHead"></div>
+
+    <div class="ms-stage" id="msStage" hidden>
+      <div class="ms-stage-head">
+        <span class="ms-source" id="msSource"></span>
+        <span class="ms-meta" id="msMeta"></span>
+      </div>
+      <div class="ms-prompt" id="msPrompt"></div>
+      <div class="ms-sub" id="msSub"></div>
+      <form class="ms-answer" id="msForm">
+        <input type="text" id="msInput" inputmode="numeric" autocomplete="off" placeholder="your answer + Enter">
+        <button type="submit" class="primary">Check</button>
+        <button type="button" id="msSkip">Skip</button>
+      </form>
+      <div class="ms-verdict" id="msVerdict"></div>
+    </div>
+
+    <ol class="ms-list" id="msList"></ol>
+    <div class="ms-actions"><button id="msClear">Strike out the whole book</button></div>
+
+    <p class="help help-cols" style="margin-top:16px;">Working the things you got wrong is the highest-yield habit there is after spacing, and until now this app threw them all away: a drill miss was re-dealt inside its own round and forgotten, a wrong line on a kyu paper appeared once on the mark sheet and went with it, a lost anzan round showed its terms back and moved on. Now every page that can grade an answer writes its misses here, in one shape.<br><strong>The same miss is one entry</strong>, with a count — missing something twice is not two problems. <strong>Two rights in a row take it out</strong> of the book, because one right is a coin flip on a two-choice answer and a fluke on most of the rest; a later miss puts the progress back to zero. A wrong answer <strong>shows you the right one immediately</strong>: this is not a test, the entry is already a known miss, and hiding the answer a second time teaches nothing. The book is capped at the most recent 80 — a book you cannot finish is a book nobody opens.</p>
+  </div>
+</div>
+
+<script type="module" src="src/pages/misses.js"></script>
+
+</body>
+</html>
