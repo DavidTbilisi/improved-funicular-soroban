@@ -25,6 +25,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `practice.html` | **Guided practice** — the leveled bead-arithmetic ladder (see below) |
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
+| `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
 
@@ -74,6 +75,7 @@ page that reads all of it at once:
 | `npv-drill-stats` | Codec drills | per-deck sessions, bests, and per-fact tallies |
 | `npv-fault-log` | practice · trainer · village | rejected moves, counted by the complement pair they needed |
 | `npv-game-save` | Soroban Village | the village |
+| `npv-anzan` | Flash anzan | rounds (each with the pace it ran at), best streaks, fastest pace carried |
 | `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
 | `npv-support`, `npv-sound`, `npv-bpm` | board pages | mnemonic-mental fade level, sound, metronome tempo |
 
@@ -106,6 +108,7 @@ src/
   state/            AbacusStore (Observable) + Commands (undo)
   drill/            decks, modes, session state machine, stats persistence, rng
   tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts
+  anzan/            flash anzan: the rung ladder, the flash schedule, its own log
   game/             the Soroban Village economy, contracts, goals, achievements
   today/            the day axis, the unified profile, the plan ladder, save transfer
   view/             one class per panel (observers of the store/session) + figures.js

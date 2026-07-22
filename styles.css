@@ -710,6 +710,64 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
   .drill-feedback .ok, .tut-feedback .ok { animation: none; }
 }
 
+/* ── Flash anzan ──────────────────────────────────────────────────────────
+   The stage has one job: while a round runs, nothing on screen may compete
+   with the number. .az-running BLANKS the chrome rather than dimming it —
+   a dimmed streak counter is still something to read, and anzan fails on the
+   first stray glance. The number box is a fixed height and the digits are
+   tabular, so a 3-digit term landing after a 2-digit one cannot shift the
+   layout and make the eye re-find the number. */
+.az-levels { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.az-levels button { display: inline-flex; align-items: center; gap: 7px; }
+.az-levels button.active { background: var(--gold); border-color: var(--gold-2); color: var(--on-gold); box-shadow: 0 3px 0 var(--gold-edge), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.az-levels button.cleared:not(.active) { border-color: var(--green); }
+.az-pb { font-family: var(--mono); font-size: 0.6rem; color: var(--data); font-variant-numeric: tabular-nums; }
+.az-levels button.active .az-pb { color: var(--on-gold); }
+
+.az-stage { background: var(--well); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 20px; }
+.az-teach { font-size: 0.86rem; color: var(--stone); line-height: 1.65; margin: 0 auto 16px; max-width: 70ch; text-align: center; }
+.az-teach b { color: var(--ink); }
+
+.az-pace-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.az-pace, .az-score { font-family: var(--mono); font-size: 0.72rem; color: var(--stone); font-variant-numeric: tabular-nums; }
+.az-score { color: var(--faint); }
+
+.az-screen {
+  position: relative; display: grid; place-items: center;
+  height: 220px; margin: 0 auto 16px; border-radius: 12px;
+  background: radial-gradient(120% 90% at 50% 30%, rgba(242, 189, 78, 0.07), rgba(242, 189, 78, 0) 62%) var(--paper);
+  border: 1px solid var(--line);
+}
+.az-progress {
+  position: absolute; top: 10px; right: 14px;
+  font-family: var(--mono); font-size: 0.68rem; color: var(--faint); font-variant-numeric: tabular-nums;
+}
+.az-number {
+  font-family: var(--mono); font-size: clamp(3rem, 13vw, 6.5rem); font-weight: 700;
+  color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  /* No transition: a flash must appear and vanish, not fade — a fade would
+     smear two consecutive numbers into each other at the fast rungs. */
+}
+.az-number.blank { color: var(--line-2); }
+
+.az-answer { display: flex; gap: 10px; justify-content: center; align-items: center; }
+.az-answer input { width: 220px; font-size: 1.3rem; text-align: center; letter-spacing: 2px; }
+.az-feedback { min-height: 1.6em; margin-top: 12px; text-align: center; font-size: 0.9rem; color: var(--stone); }
+.az-feedback b { font-family: var(--mono); color: var(--ink); }
+.az-feedback.ok { color: var(--green); }
+.az-feedback.bad { color: var(--shu); }
+
+/* Round in flight: the number and nothing else. */
+.az-stage.az-running .az-teach,
+.az-stage.az-running .az-pace-row,
+.az-stage.az-running .az-answer,
+.az-stage.az-running .az-feedback { visibility: hidden; }
+.az-stage.az-running .az-screen { border-color: var(--gold-edge); }
+/* The rung ladder sits outside the stage, so it needs reaching from the panel.
+   `visibility` and not `display`: the row keeps its space, so the number cannot
+   jump up the page mid-round and make the eye re-find it. */
+.panel:has(.az-stage.az-running) .az-levels { visibility: hidden; }
+
 /* ── Today: the front door ────────────────────────────────────────────────
    The one card that speaks for the whole app. The streak is the loudest thing
    on it (gold when fed today, amber flame when alive but unfed), the plan reads

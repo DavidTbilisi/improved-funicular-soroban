@@ -9,6 +9,7 @@ const PAGES = [
   ['practice', 'practice.html', 'Guided practice'],
   ['trainer', 'trainer.html', 'Mult / Div trainer'],
   ['drills', 'drills.html', 'Codec drills'],
+  ['anzan', 'anzan.html', 'Flash anzan'],
   ['game', 'game.html', 'Village'],
   ['reference', 'reference.html', 'Reference'],
 ];

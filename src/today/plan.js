@@ -1,8 +1,8 @@
 // ============================================================================
 // Today's plan — one short, concrete practice session, chosen from the profile.
 //
-// The app has six pages and 34 things to practise (11 levels, 17 decks, 6 rod
-// modes, the village). A returning learner's real question is not "what is
+// The app has seven pages and 43 things to practise (11 levels, 17 decks, 6 rod
+// modes, 9 anzan rungs, the village). A returning learner's real question is not "what is
 // available" but "what should I do for the next ten minutes" — so this turns
 // the whole profile into three tasks with a reason and a deep link each.
 //
@@ -23,6 +23,8 @@ import { hrefFor } from './deepLink.js';
 const OVERHEAD_MS = 4000;
 // A drill visit is a short round, not a full deck sweep.
 const DECK_REPS = 12;
+// Anzan rounds per visit — short, because a missed round is worth sitting with.
+const ANZAN_ROUNDS = 6;
 // Reps assumed per practice/trainer visit when the level's own shortfall is small
 // (you never do just one problem).
 const MIN_REPS = 4;
@@ -119,19 +121,34 @@ export const TASK_RULES = Object.freeze([
   { id: 'new-deck', build: p => p.drills.untouched
       ? deckTask('new-deck', p.drills.untouched, 'not yet drilled') : null },
 
-  // 7. The rod method.
+  // 7. Flash anzan — but only once the Mental stage is in reach. Offering it to
+  //    someone still at Beads is offering the exam before the course: the whole
+  //    discipline is the mnemonic-mental track under time pressure.
+  { id: 'anzan', build: p => {
+      const lv = p.anzan && p.anzan.current;
+      if (!lv) return null;
+      const earned = p.mental.support > 0 || p.mental.prognosis.ready || p.anzan.rounds > 0;
+      if (!earned) return null;
+      const why = lv.fastest ? `cleared at ${lv.fastest} ms — push it`
+        : lv.rounds ? `${Math.round((lv.accuracy || 0) * 100)}% at ${lv.lastMs || lv.baseMs} ms`
+        : 'mental, under time';
+      return task('anzan', 'anzan', 'anzan', lv.id, lv.title, why,
+        minutesFor(ANZAN_ROUNDS, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
+    } },
+
+  // 8. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 8. The village — its own advisor already knows what it wants.
+  // 9. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 9. Everything is cleared — keep the coldest thing warm.
+  // 10. Everything is cleared — keep the coldest thing warm.
   { id: 'keep-warm', build: p => {
       const cold = [...p.practice.levels.filter(l => l.unlocked), ...p.drills.decks.filter(d => d.sessions > 0)]
         .filter(x => x.daysSince != null)
@@ -186,6 +203,10 @@ function wasDoneToday(profile, t) {
   if (t.page === 'trainer') {
     const m = profile.trainer.modes.find(x => x.id === t.targetId);
     return !!m && m.lastDay === profile.today;
+  }
+  if (t.page === 'anzan') {
+    const a = profile.anzan.levels.find(x => x.id === t.targetId);
+    return !!a && a.lastDay === profile.today;
   }
   return false; // the village carries no wall-clock stamp to check against
 }

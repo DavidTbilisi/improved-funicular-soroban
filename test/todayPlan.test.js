@@ -6,6 +6,8 @@ import { buildProfile } from '../src/today/profile.js';
 import { TUTORIAL_LEVELS } from '../src/tutorial/levels.js';
 import { DRILL_DECKS } from '../src/drill/decks.js';
 import { ROD_MODES } from '../src/domain/mulDiv.js';
+import { ANZAN_LEVELS } from '../src/anzan/levels.js';
+import { AnzanLog } from '../src/anzan/anzanLog.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -17,10 +19,10 @@ const TODAY = '2026-07-22';
 
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
-    levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES,
+    levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),
@@ -28,6 +30,7 @@ function profileFrom({
     faults: new FaultLog(new MemoryProgressStore(faults)),
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
+    anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
     support, today,
   });
 }
@@ -272,6 +275,7 @@ test('every task a rule can emit deep-links to a real target', () => {
     midLadder(),
     midLadder({ faults: { pairs: { 'big:3-7': 9, 'small:2-3': 5 }, resets: 2 } }),
     midLadder({ drills: { fingerTimes: { sessions: sessions([50], '2026-07-10'), facts: { '7x8': { n: 8, miss: 5, sumMs: 20000, floorPass: 2 } } } } }),
+    midLadder({ support: 2 }),   // so the anzan rung actually fires here too
   ];
   const seen = new Set();
   for (const p of profiles) {
@@ -283,6 +287,7 @@ test('every task a rule can emit deep-links to a real target', () => {
       if (t.page === 'practice') assert.ok(TUTORIAL_LEVELS.some(l => l.id === t.targetId), t.targetId);
       if (t.page === 'drills') assert.ok(DRILL_DECKS[t.targetId], t.targetId);
       if (t.page === 'trainer') assert.ok(ROD_MODES.some(m => m.id === t.targetId), t.targetId);
+      if (t.page === 'anzan') assert.ok(ANZAN_LEVELS.some(l => l.id === t.targetId), t.targetId);
       // ...and the href must round-trip back through the reader the page uses.
       const search = new URL(t.href, 'http://x/').search;
       assert.equal(targetFromSearch(search, t.page), t.targetId, t.href);
@@ -304,4 +309,68 @@ test('the exported ladder is frozen and every rung is buildable', () => {
     assert.equal(typeof r.build, 'function');
     assert.ok(r.id);
   }
+});
+
+// --- flash anzan ------------------------------------------------------------
+// The gate exists so the plan never offers the exam before the course.
+test('anzan is NOT offered to a learner still working on the beads', () => {
+  const p = midLadder();                       // support 0, no anzan history
+  assert.equal(p.mental.support, 0);
+  assert.equal(p.anzan.rounds, 0);
+  assert.ok(!todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.some(t => t.page === 'anzan'));
+});
+
+test('fading the board past Beads unlocks the anzan rung', () => {
+  const p = midLadder({ support: 1 });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.ok(t, 'once the board is fading, anzan is on the table');
+  assert.equal(t.targetId, 'warm');
+  assert.equal(t.href, 'anzan.html?level=warm');
+  assert.equal(t.why, 'mental, under time');
+});
+
+test('anzan history alone qualifies — someone already doing it keeps being offered it', () => {
+  const p = midLadder({ anzan: { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 1600, ok: true }], best: 1, fastest: null } } });
+  assert.equal(p.mental.support, 0);
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.ok(t);
+  assert.match(t.why, /100% at 1600 ms/, 'and it quotes the pace actually run, not the rung default');
+});
+
+test('a carried rung is reported by the pace it was carried at', () => {
+  const p = midLadder({
+    support: 2,
+    anzan: {
+      warm: { rounds: [{ t: '2026-07-20T10:00', ms: 650, ok: true }], best: 5, fastest: 650 },
+    },
+  });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.equal(t.targetId, 'five1', 'it moves on to the next uncarried rung');
+  assert.equal(t.why, 'mental, under time');
+
+  // ...and a rung carried but still current reports its record.
+  const all = {};
+  for (const l of ANZAN_LEVELS) all[l.id] = { rounds: [{ t: '2026-07-20T10:00', ms: 500, ok: true }], best: l.floor, fastest: 500 };
+  const done = midLadder({ support: 2, anzan: all });
+  const t2 = todaysPlan(done, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.match(t2.why, /cleared at 500 ms — push it/);
+});
+
+test('the anzan reason quotes the pace last run, not the rung default', () => {
+  const p = midLadder({
+    support: 1,
+    // Run at 500 ms, well off the rung's 1600 ms default.
+    anzan: { warm: { rounds: [{ t: '2026-07-20T10:00', ms: 500, ok: false }], best: 0, fastest: null } },
+  });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.equal(t.why, '0% at 500 ms');
+});
+
+test('an anzan round today auto-ticks its task', () => {
+  const p = midLadder({
+    support: 1,
+    anzan: { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 1600, ok: true }], best: 1, fastest: null } },
+  });
+  const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
+  assert.equal(t.autoDone, true);
 });

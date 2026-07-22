@@ -4,6 +4,8 @@ import { buildProfile } from '../src/today/profile.js';
 import { TUTORIAL_LEVELS } from '../src/tutorial/levels.js';
 import { DRILL_DECKS } from '../src/drill/decks.js';
 import { ROD_MODES } from '../src/domain/mulDiv.js';
+import { ANZAN_LEVELS } from '../src/anzan/levels.js';
+import { AnzanLog } from '../src/anzan/anzanLog.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -16,10 +18,10 @@ const TODAY = '2026-07-22';
 // Build a profile from plain blobs — the same shapes the real keys hold.
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
-    levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES,
+    levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),
@@ -27,6 +29,7 @@ function profileFrom({
     faults: new FaultLog(new MemoryProgressStore(faults)),
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
+    anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
     support, today,
   });
 }
@@ -218,5 +221,53 @@ test('one drill session is enough to stop being fresh', () => {
   const p = profileFrom({
     drills: { faceToDigit: { sessions: [{ t: `${TODAY}T10:00`, n: 10, acc: 100, meanMs: 900, floorPct: 80 }] } },
   });
+  assert.equal(p.fresh, false);
+});
+
+// --- flash anzan ------------------------------------------------------------
+test('an untouched anzan ladder still reports every rung', () => {
+  const p = profileFrom();
+  assert.equal(p.anzan.total, ANZAN_LEVELS.length);
+  assert.equal(p.anzan.cleared, 0);
+  assert.equal(p.anzan.rounds, 0);
+  assert.equal(p.anzan.current.id, ANZAN_LEVELS[0].id, 'current is the first uncarried rung');
+  for (const l of p.anzan.levels) {
+    assert.equal(l.fastest, null);
+    assert.equal(l.cleared, false);
+    assert.equal(l.accuracy, null);
+  }
+});
+
+test('a rung counts as cleared once a pace has been carried', () => {
+  const p = profileFrom({
+    anzan: {
+      warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 650, ok: true }], best: 5, fastest: 650 },
+      five1: { rounds: [{ t: `${TODAY}T10:00`, ms: 1300, ok: false }], best: 1, fastest: null },
+    },
+  });
+  const warm = p.anzan.levels.find(l => l.id === 'warm');
+  assert.equal(warm.cleared, true);
+  assert.equal(warm.fastest, 650);
+  assert.equal(warm.best, 5);
+  assert.equal(p.anzan.cleared, 1);
+  assert.equal(p.anzan.current.id, 'five1', 'current moves to the first rung not yet carried');
+});
+
+test('anzan accuracy and staleness come through', () => {
+  const p = profileFrom({
+    anzan: { warm: { rounds: [
+      { t: '2026-07-18T10:00', ms: 800, ok: true },
+      { t: '2026-07-18T10:01', ms: 800, ok: false },
+    ], best: 1, fastest: null } },
+  });
+  const warm = p.anzan.levels.find(l => l.id === 'warm');
+  assert.equal(warm.accuracy, 0.5);
+  assert.equal(warm.rounds, 2);
+  assert.equal(warm.lastDay, '2026-07-18');
+  assert.equal(warm.daysSince, 4);
+});
+
+test('an anzan round is enough to stop being fresh', () => {
+  const p = profileFrom({ anzan: { warm: { rounds: [{ t: `${TODAY}T10:00`, ms: 800, ok: true }], best: 1, fastest: null } } });
   assert.equal(p.fresh, false);
 });
