@@ -106,6 +106,7 @@
     "src/view/sorobanView.js",
     "src/view/soundService.js",
     "src/view/todayView.js",
+    "src/view/touchPad.js",
     "src/view/tutorialView.js",
     "src/view/vaultView.js",
     "src/view/voiceService.js",

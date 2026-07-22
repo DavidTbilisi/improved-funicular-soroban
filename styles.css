@@ -508,8 +508,14 @@ body.page-game { padding: 0; height: 100vh; height: 100dvh; overflow: hidden; }
 /* Main region: the Phaser diorama + the side panel. The village sits under a
    dusk sky — the lit windows are the game's own festival. */
 .ck-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: 14px; min-height: 0; }
-.game-canvas { height: 100%; min-height: 0; background: linear-gradient(180deg, #2a3222, #1e2618); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.game-canvas canvas { display: block; }
+/* min-width: 0 so the grid cell can shrink past the canvas's inline width —
+   without it the column floors at whatever Phaser last measured, and a phone
+   gets a page 140 px wider than its screen. gameCanvas.js's ResizeObserver then
+   refreshes the FIT scale to whatever width the cell actually got. */
+.game-canvas { height: 100%; min-width: 0; min-height: 0; background: linear-gradient(180deg, #2a3222, #1e2618); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+/* Belt and braces beside gameCanvas's ResizeObserver: whatever Phaser puts in
+   the inline width, the canvas never spills the panel. */
+.game-canvas canvas { display: block; max-width: 100%; }
 .ck-side { display: flex; flex-direction: column; gap: 9px; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .game-h { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--stone); margin: 0 0 4px; }
 .game-h .h-tail { text-transform: none; letter-spacing: 0.3px; color: var(--faint); }
@@ -1101,12 +1107,116 @@ body.ex-sitting .ex-grades { display: none; }
    through. The screen just takes the data-coloured edge while it is speaking. */
 .ym-stage.ym-calling .ym-screen { border-color: var(--data); }
 
+
+/* ── The touch pad ────────────────────────────────────────────────────────
+   Hidden on a mouse, shown on a finger. It is the die cross again — the same
+   object the home-row keys spell — one hand each side, right adding and left
+   subtracting, each cell in its fixed position. 6-9 sit in their own row
+   because a chord needs two keys held and a finger cannot hold two cells;
+   they keep both faces on the button so the compound stays visible.
+   Cells are 52 px+, which is the smallest thing a thumb hits reliably. */
+.touchpad { display: none; }
+@media (pointer: coarse), (max-width: 720px) {
+  .touchpad { display: block; margin: 14px 0 4px; }
+  /* With the pad on screen, the key legend is advice for a keyboard that is not
+     there. The coach ELEMENT stays — it is where a rejected move explains
+     itself — so only the legend chips go. */
+  .coach .kbg { display: none; }
+  .coach:not(:has(.warn)):not(:has(.rule)) { padding: 0; min-height: 0; }
+}
+
+.tp-rods { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+.tp-rod, .tp-reset { min-width: 52px; min-height: 40px; font-size: 0.9rem; }
+.tp-focus {
+  min-width: 5ch; text-align: center; font-family: var(--mono); font-size: 0.72rem;
+  color: var(--gold); font-variant-numeric: tabular-nums;
+}
+
+.tp-hands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tp-hand { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 9px 6px 10px; background: var(--well); border: 1px solid var(--line); border-radius: 13px; }
+.tp-label { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--faint); }
+.tp-hand.add .tp-label { color: var(--gold); }
+.tp-hand.sub .tp-label { color: var(--data); }
+
+/* The cross: a 3×3 grid with the four arms and the centre, corners empty — the
+   same shape as the board's die faces, so the percept transfers. */
+.tp-cross { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 100%; max-width: 190px; }
+.tp-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 52px; padding: 4px 0; }
+.tp-cell b { font-family: var(--mono); font-size: 1rem; font-weight: 700; line-height: 1; }
+.tp-cell i { font-style: normal; font-size: 0.82rem; line-height: 1; }
+.tp-top { grid-area: 1 / 2; }
+.tp-left { grid-area: 2 / 1; }
+.tp-center { grid-area: 2 / 2; }
+.tp-right { grid-area: 2 / 3; }
+.tp-bottom { grid-area: 3 / 2; }
+.tp-hand.add .tp-cell b { color: var(--gold); }
+.tp-hand.sub .tp-cell b { color: var(--data); }
+/* The rose is the heaven bead — the one cell that is not an earth bead. */
+.tp-right { border-color: var(--shu); }
+
+.tp-comps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; max-width: 190px; }
+.tp-comp { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 44px; padding: 3px 0; }
+.tp-comp b { font-family: var(--mono); font-size: 0.82rem; }
+.tp-comp i { font-style: normal; font-size: 0.62rem; }
+.tp-ten { width: 100%; max-width: 190px; min-height: 42px; font-family: var(--mono); font-size: 0.76rem; }
+
+
+/* ── The cockpit on a phone ───────────────────────────────────────────────
+   The village page is a one-screen cockpit that never scrolls, and on a phone
+   that rule has to give: a 412 px viewport cannot hold the diorama, the side
+   panel and the contract strip at once, and `overflow: hidden` on a layout that
+   does not fit does not make it fit — it makes half the UI unreachable. So on a
+   narrow screen the cockpit becomes an ordinary scrolling column, with the
+   village given a fixed slice of the viewport rather than a share of a grid.
+   Focus mode is untouched: the contract popup is fixed to the viewport, which
+   is exactly the behaviour a phone wants. */
+@media (max-width: 720px) {
+  body.page-game { height: auto; min-height: 100dvh; overflow: auto; padding-bottom: 12px; }
+  .cockpit { height: auto; min-height: 100dvh; grid-template-rows: auto auto auto; padding: 8px 10px 10px; }
+  .ck-top { flex-wrap: wrap; gap: 8px 10px; }
+  /* minmax(0, 1fr), never a bare 1fr: a bare fr floors at min-content, and the
+     Phaser canvas carries an inline width, so the column would refuse to shrink
+     below the canvas and push the whole page sideways. */
+  .ck-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; }
+  /* An explicit width, because the canvas cell does not stretch on its own here
+     and Phaser's FIT then measures a parent wider than the screen. With the
+     panel pinned to the column, gameCanvas.js's ResizeObserver refreshes the
+     scale and Phaser letterboxes into whatever width the phone actually has. */
+  .game-canvas { width: 100%; max-width: 100%; }
+  .game-canvas { height: 42vh; min-height: 220px; }
+  .ck-side { overflow: visible; max-height: none; }
+  /* The contract popup on a phone: the strip's text wraps to several lines, so
+     the dock stops centring (which would push the board off the bottom) and
+     scrolls if it must. The board keeps a smaller slice of the viewport. */
+  .ck-focused .ck-dock { justify-content: flex-start; overflow-y: auto; padding: 2vh 2vw; }
+  .ck-focused .ck-board { height: min(42vh, 340px); }
+  .ck-focused .ck-strip { min-height: 0; padding: 10px 14px; }
+  .ck-focused .tut-prompt { font-size: 1.3rem; }
+  .ck-focused .ck-strip-mid { min-width: 0; }
+}
+
 /* Narrow screens */
-@media (max-width: 640px) {
-  body { padding: 18px 14px 60px; }
-  .panel { padding: 18px 16px; }
+@media (max-width: 720px) {
+  body { padding: 14px 12px 56px; }
+  .panel { padding: 16px 14px; }
+  h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
+  .subtitle { font-size: 0.82rem; margin-bottom: 14px; }
   .readout .value { font-size: 2rem; }
   .td-done { margin-left: 0; }
   .today-note { flex-direction: column; gap: 2px; }
   .td-note-k { width: auto; }
+  /* The nav is eleven pages: wrapped, it is a four-line wall costing half the
+     first screen. On a phone it becomes ONE scrolling row — the same trick the
+     game cockpit uses — and mountNav scrolls the current page into view, so you
+     always land looking at where you are. */
+  .topnav {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    width: auto; max-width: 100%; border-radius: 22px; margin-bottom: 16px;
+    scroll-padding: 8px;
+  }
+  .topnav::-webkit-scrollbar { display: none; }
+  .topnav a { white-space: nowrap; padding: 8px 12px; }
+  /* Room for a thumb, everywhere a finger has to land. */
+  button, .today-file { min-height: 40px; }
+  .fig-grid { gap: 14px; }
 }

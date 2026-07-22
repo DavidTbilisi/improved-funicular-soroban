@@ -36,6 +36,11 @@ export function mountNav(current) {
     `<a href="${href}"${key === current ? ' class="active" aria-current="page"' : ''}>${label}</a>`).join('')}` +
     `<span class="nav-shell" id="navShell" hidden aria-live="polite"></span></nav>`;
 
+  // On a phone the bar is one scrolling row (see styles.css), so the page you
+  // are on can be off-screen at load — which reads as "the nav has lost me".
+  const here = el.querySelector('a.active');
+  if (here && here.scrollIntoView) here.scrollIntoView({ block: 'nearest', inline: 'center' });
+
   const chip = document.getElementById('navShell');
   const say = (text, cls, action) => {
     if (!chip) return;
