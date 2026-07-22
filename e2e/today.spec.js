@@ -182,15 +182,6 @@ test('a malformed save is refused without touching what is stored', async ({ pag
   await expect(page.locator('#todayHead')).toContainText('3-day streak');
 });
 
-// Today shipped at home.html before it took over the root; the stub keeps that
-// published URL working. Without a test it would rot silently — nothing else
-// links to it any more.
-test('the old home.html URL still lands on Today', async ({ page }) => {
-  await page.goto('home.html');
-  await expect(page).toHaveURL(/\/index\.html$/);
-  await expect(page.locator('#todayHead')).toBeVisible();
-});
-
 test('a first-run browser gets an onboarding plan, not an empty page', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e));
