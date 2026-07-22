@@ -5,6 +5,7 @@
 //
 //   practice.html?level=big-sub    drills.html?deck=fingerTimes
 //   anzan.html?level=five2         exam.html?grade=kyu8
+//   yomiage.html?level=ten2
 //   trainer.html?mode=mul-1x1      game.html
 //
 // Kept here, DOM-free and on both sides of the wire, so the writer (plan.js)
@@ -20,6 +21,7 @@ export const TARGET_PARAM = Object.freeze({
   drills: 'deck',
   trainer: 'mode',
   anzan: 'level',
+  yomiage: 'level',
   exam: 'grade',
 });
 
@@ -30,6 +32,7 @@ export const PAGE_HREF = Object.freeze({
   trainer: 'trainer.html',
   drills: 'drills.html',
   anzan: 'anzan.html',
+  yomiage: 'yomiage.html',
   exam: 'exam.html',
   vault: 'vault.html',
   game: 'game.html',

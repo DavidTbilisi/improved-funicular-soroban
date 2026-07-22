@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Read-aloud — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">読上算 — the numbers are read aloud and never shown. Set each one as you hear it; the board holds the total.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Read-aloud addition — the ear straight to the rods</h2>
+    <div class="ym-levels" id="ymLevels"></div>
+
+    <div class="ym-stage" id="ymStage" hidden>
+      <div class="ym-teach" id="ymTeach"></div>
+
+      <div class="ym-pace-row">
+        <button id="ymSlower" title="A longer gap between calls">− slower</button>
+        <span class="ym-pace" id="ymPace"></span>
+        <button id="ymFaster" title="A shorter gap between calls">faster +</button>
+        <span class="ym-score" id="ymScore"></span>
+        <span class="ym-rate">
+          <label for="ymRate">voice</label>
+          <input type="range" id="ymRate" min="0.7" max="1.6" step="0.1" value="1">
+          <span id="ymRateVal">1.0×</span>
+        </span>
+        <label class="ym-cc"><input type="checkbox" id="ymCaptions"> <span>show the words</span></label>
+        <button id="ymStop" class="ym-stop" title="Stop the caller">■ Stop</button>
+      </div>
+
+      <p class="ym-silent" id="ymSilent" hidden>This browser has no speech voice installed, so the caller is <strong>silent</strong> and the words are shown instead. The pacing is unchanged — it is still a dictation exercise, just a read one.</p>
+
+      <div class="ym-screen">
+        <div class="ym-progress" id="ymProgress"></div>
+        <div class="ym-cue" id="ymCue">·</div>
+        <div class="ym-caption" id="ymCaption" hidden></div>
+      </div>
+
+      <div class="ym-answer-row">
+        <span class="ym-answer-label">Board reads</span>
+        <span class="ym-answer" id="ymAnswer">0</span>
+        <button id="ymSubmit" class="primary" disabled>Hand in ⏎</button>
+        <button id="ymNext" hidden>Next round (Enter)</button>
+      </div>
+      <div class="ym-feedback" id="ymFeedback"></div>
+    </div>
+
+    <div class="ym-board" id="ymBoard"></div>
+
+    <p class="help help-cols" style="margin-top:16px;">Pick a rung and the caller opens with <strong>“Ready”</strong> — that is your cue, and the board is cleared for you on it. Then each number is <strong>spoken as a number</strong> (“three hundred twenty-five”, never “three two five”): set it on the beads as you hear it and let the board carry the running total, because holding the numbers in your head instead is a different exercise, and a harder one you have not earned yet. At the end you are asked for the total; hand in what the board reads.<br><strong>There is no replay.</strong> A caller does not repeat a number, so a term you miss is gone — keep the rods you have rather than stopping to recover it. The <strong>gap</strong> between calls is the difficulty here, not how fast the voice talks: it is how long you have to hear a number, set it, and be ready for the next. Speed changes apply to the next round, never to a round already being called.</p>
+  </div>
+
+  <div class="panel-row">
+  <div class="panel">
+    <h2>Where you are</h2>
+    <div class="fig-grid">
+      <div id="figYomiage"></div>
+    </div>
+    <p class="help" style="margin-top:12px;">A rung is <strong>carried</strong> when you take its whole streak unbroken, and the pace you did it at is banked as the record for that shape. One lucky round at a short gap is not a record.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Why an ear exercise</h2>
+    <p class="help">Every other page here reaches the rods through the <em>eyes</em>: <a href="practice.html">guided practice</a> shows you a problem, <a href="anzan.html">flash anzan</a> shows it faster, the <a href="exam.html">kyu paper</a> prints a column. 読上算 is the third modality, and in a real soroban school it is graded on its own certificate — because hearing “<em>minus sixty-three</em>” and having the borrow happen is not the same skill as reading it.</p>
+    <p class="help" style="margin-top:12px;">It is also the one exercise where the <strong>board is doing the remembering</strong>. That is why it is worth doing early: the column can be ten terms long and three digits wide without ever taxing your memory, so what gets trained is purely the path from the sound to the fingers.</p>
+    <p class="help" style="margin-top:12px;">The column itself is the <a href="exam.html">kyu paper's</a> 見取算 column — the same generator, so the same rules hold: every number is exactly the rung's width, and a minus term never takes the running total below zero, because there is nothing to the left of the top rod to borrow from.</p>
+  </div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/yomiage.js"></script>
+
+</body>
+</html>

@@ -26,6 +26,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
+| `yomiage.html` | **Read-aloud** (読上算) — the numbers are *spoken* and never shown: set each one on the beads as you hear it and hand in what the board reads. The third modality, and the one exercise where the board does the remembering |
 | `exam.html` | **Kyu exam** — a timed paper in three sections (見取算 a column of terms, 掛算, 割算), modelled on the 珠算検定 grades. Sat on the beads: the board is the answer sheet, and nothing is marked until the paper is down |
 | `vault.html` | **Vault** — store a real number, encode it to scenes, and be tested on recall over expanding intervals. Entries can be **sealed**: only the length and seals are kept, so the app never holds the digits |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
@@ -65,6 +66,21 @@ The panel also forecasts **how much more practice until you can drop the beads**
 on imagined rods — and once it says you can, it names the **flash-anzan rung** your level
 and your record point at, so the runway does not simply end at "Mental".
 
+### Read-aloud (読上算)
+
+The numbers are **called aloud** and never appear: the caller opens with “Ready” (the board
+is cleared for you on it), speaks each number *as a number* — “three hundred twenty-five”,
+never “three two five” — and asks for the total. You set each one on the beads as it lands,
+so the board carries the running sum and your memory carries nothing. **There is no replay.**
+
+It is a third modality rather than a harder anzan: guided practice reaches the rods through
+the eyes, flash anzan does the same faster, and this one never shows a numeral at all.
+The difficulty is the **gap** between calls, not how fast the voice talks. The column is
+the kyu paper's 見取算 column — same generator, same rules.
+
+If the browser has no speech voice installed (many Linux boxes, most CI containers) the page
+says so and shows the words instead: a soundless caller is still a usable exercise.
+
 ### The kyu exam
 
 A soroban paper, and the app's one **external** yardstick — every other rank here it
@@ -98,10 +114,11 @@ page that reads all of it at once:
 | `npv-fault-log` | practice · trainer · village | rejected moves, counted by the complement pair they needed |
 | `npv-game-save` | Soroban Village | the village |
 | `npv-anzan` | Flash anzan | rounds (each with the pace it ran at), best streaks, fastest pace carried |
+| `npv-yomiage` | Read-aloud | rounds, each with the gap the caller left, best streaks, fastest gap carried |
 | `npv-exam` | Kyu exam | every paper sat: per-section scores, what passed, how long it took |
 | `npv-vault` | Vault | the numbers you are memorising, plus their review schedule. **The only key holding content rather than performance** — a `full` entry contains its digits in plain text, which is what the `sealed` mode is for |
 | `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
-| `npv-support`, `npv-sound`, `npv-bpm` | board pages | mnemonic-mental fade level, sound, metronome tempo |
+| `npv-support`, `npv-sound`, `npv-bpm`, `npv-voice-rate` | board pages | mnemonic-mental fade level, sound, metronome tempo, caller speed |
 
 Days are keyed in **UTC**, matching every timestamp the app already writes, so the day
 boundary is the same wherever you practise.
@@ -133,6 +150,7 @@ src/
   drill/            decks, modes, session state machine, stats persistence, rng
   tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts
   anzan/            flash anzan: the rung ladder, the flash schedule, its own log
+  yomiage/          read-aloud: the call grammar, the rung ladder, the spoken schedule
   exam/             the kyu ladder, the paper generators + marking, the attempt log
   vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements

@@ -1,9 +1,9 @@
 // ============================================================================
 // Today's plan — one short, concrete practice session, chosen from the profile.
 //
-// The app has nine pages and 50-plus things to practise (11 levels, 17 decks,
-// 6 rod modes, 9 anzan rungs, 10 kyu grades, the village, and however many
-// numbers are stored). A returning learner's real question is not "what is
+// The app has ten pages and 55-plus things to practise (11 levels, 17 decks,
+// 6 rod modes, 9 anzan rungs, 6 read-aloud rungs, 10 kyu grades, the village,
+// and however many numbers are stored). A returning learner's real question is not "what is
 // available" but "what should I do for the next ten minutes" — so this turns
 // the whole profile into three tasks with a reason and a deep link each.
 //
@@ -27,6 +27,9 @@ const OVERHEAD_MS = 4000;
 const DECK_REPS = 12;
 // Anzan rounds per visit — short, because a missed round is worth sitting with.
 const ANZAN_ROUNDS = 6;
+// Read-aloud rounds per visit. Fewer: a called round takes the caller's own
+// time on top of the gap, so each one is a good deal longer than a flash.
+const YOMIAGE_ROUNDS = 4;
 // Reps assumed per practice/trainer visit when the level's own shortfall is small
 // (you never do just one problem).
 const MIN_REPS = 4;
@@ -189,19 +192,38 @@ export const TASK_RULES = Object.freeze([
         minutesFor(ANZAN_ROUNDS, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
     } },
 
-  // 10. The rod method.
+  // 10. Read-aloud. Gated on the carry being in hand — "minus sixty-three" has
+  //     to reach the beads as a borrow, and a learner who cannot yet borrow is
+  //     being asked to do the exercise and learn the rule at once. Unlike anzan
+  //     it needs NO mental stage: the board does the remembering here, which is
+  //     exactly why it is worth doing early.
+  { id: 'yomiage', build: p => {
+      if (!p.yomiage || !p.yomiage.levels.length) return null;
+      const carry = p.practice.levels.find(l => l.id === 'big-add');
+      const earned = (carry && carry.cleared) || p.yomiage.rounds > 0;
+      if (!earned) return null;
+      const lv = p.yomiage.current;
+      if (!lv) return null;
+      const why = lv.fastest ? `carried at ${lv.fastest} ms — shorten the gap`
+        : lv.rounds ? `${Math.round((lv.accuracy || 0) * 100)}% at a ${lv.lastMs || lv.baseMs} ms gap`
+        : 'called aloud, straight to the rods';
+      return task('yomiage', 'yomiage', 'yomiage', lv.id, lv.title, why,
+        minutesFor(YOMIAGE_ROUNDS, lv.terms * ((lv.lastMs || lv.baseMs) + 900) + 6000));
+    } },
+
+  // 11. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 11. The village — its own advisor already knows what it wants.
+  // 12. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 12. Everything is cleared — keep the coldest thing warm.
+  // 13. Everything is cleared — keep the coldest thing warm.
   { id: 'keep-warm', build: p => {
       const cold = [...p.practice.levels.filter(l => l.unlocked), ...p.drills.decks.filter(d => d.sessions > 0)]
         .filter(x => x.daysSince != null)
@@ -260,6 +282,10 @@ function wasDoneToday(profile, t) {
   if (t.page === 'anzan') {
     const a = profile.anzan.levels.find(x => x.id === t.targetId);
     return !!a && a.lastDay === profile.today;
+  }
+  if (t.page === 'yomiage') {
+    const y = (profile.yomiage ? profile.yomiage.levels : []).find(x => x.id === t.targetId);
+    return !!y && y.lastDay === profile.today;
   }
   if (t.page === 'exam') {
     const g = (profile.exam ? profile.exam.grades : []).find(x => x.id === t.targetId);

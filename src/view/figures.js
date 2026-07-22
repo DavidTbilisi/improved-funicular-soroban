@@ -657,13 +657,15 @@ export function figStreak(dayKeys = [], todayKey = null, weeks = 12) {
   return svg(W, H, 'Calendar days practised', body);
 }
 
-// --- Flash-anzan ladder (live) -----------------------------------------------
+// --- Pace ladder (live) ------------------------------------------------------
 // One row per rung, and the mark is the PACE it was carried at — the only score
-// anzan has. The axis is inverted on purpose: faster is further right, because
+// a paced exercise has. Two pages have that shape (flash anzan's flash interval
+// and read-aloud's gap between calls), so `what` names the rung rather than the
+// chart being copied. The axis is inverted on purpose: faster is further right, because
 // "further along the axis" has to mean "better" or the chart reads backwards.
 // Untouched rungs keep their row so the ladder's shape stays visible.
-export function figAnzan(rows = []) {
-  if (!rows.length) return `<div class="fig-empty">No anzan rungs yet.</div>`;
+export function figAnzan(rows = [], { what = 'anzan rung' } = {}) {
+  if (!rows.length) return `<div class="fig-empty">No ${what}s yet.</div>`;
   const W = 520, RH = 20, L = 132, R = 54, T = 20;
   const H = T + rows.length * RH + 22;
   const speeds = [2000, 1000, 500, 250];
@@ -691,7 +693,7 @@ export function figAnzan(rows = []) {
     }
   });
   body += txt(W - R, 11, 'faster →', { size: 8, fill: FAINT, anchor: 'end' });
-  return svg(W, H, 'Fastest pace carried, per anzan rung', body);
+  return svg(W, H, `Fastest pace carried, per ${what}`, body);
 }
 
 // --- Vault retention (live) ---------------------------------------------------
