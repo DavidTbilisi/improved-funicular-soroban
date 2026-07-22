@@ -29,6 +29,7 @@ export const PAGE_HREF = Object.freeze({
   trainer: 'trainer.html',
   drills: 'drills.html',
   anzan: 'anzan.html',
+  vault: 'vault.html',
   game: 'game.html',
   reference: 'reference.html',
 });

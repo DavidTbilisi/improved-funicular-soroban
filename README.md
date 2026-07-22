@@ -26,6 +26,7 @@ built from native ES modules, which browsers refuse to import over `file://`.
 | `trainer.html` | **Mult / Div trainer** — the authentic rod-placement method, stepped out over six modes |
 | `drills.html` | **Codec drills** — 17 timed recall decks (pegs → cells → scenes → seals) plus the finger times-table track |
 | `anzan.html` | **Flash anzan** — the endgame: numbers appear one at a time and are gone; add them on the imagined board and type the sum. A rung you are stalling on points back at the board level that drills its trades |
+| `vault.html` | **Vault** — store a real number, encode it to scenes, and be tested on recall over expanding intervals. Entries can be **sealed**: only the length and seals are kept, so the app never holds the digits |
 | `game.html` | **Soroban Village** — a one-screen resource game where every contract is solved on the beads |
 | `reference.html` | **Reference** — the frozen peg, face and hex tables |
 
@@ -80,6 +81,7 @@ page that reads all of it at once:
 | `npv-fault-log` | practice · trainer · village | rejected moves, counted by the complement pair they needed |
 | `npv-game-save` | Soroban Village | the village |
 | `npv-anzan` | Flash anzan | rounds (each with the pace it ran at), best streaks, fastest pace carried |
+| `npv-vault` | Vault | the numbers you are memorising, plus their review schedule. **The only key holding content rather than performance** — a `full` entry contains its digits in plain text, which is what the `sealed` mode is for |
 | `npv-achievements` | Soroban Village | earned badges + lifetime counters (survive a raze) |
 | `npv-support`, `npv-sound`, `npv-bpm` | board pages | mnemonic-mental fade level, sound, metronome tempo |
 
@@ -113,6 +115,7 @@ src/
   drill/            decks, modes, session state machine, stats persistence, rng
   tutorial/         the leveled ladder, the rod trainer, solve/fault logs, forecasts
   anzan/            flash anzan: the rung ladder, the flash schedule, its own log
+  vault/            stored numbers: entry + modes, recall verification, review scheduling
   game/             the Soroban Village economy, contracts, goals, achievements
   today/            the day axis, the unified profile, the plan ladder, save transfer
   view/             one class per panel (observers of the store/session) + figures.js

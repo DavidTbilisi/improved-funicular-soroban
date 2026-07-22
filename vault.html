@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault — Place-Value Peg Soroban</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <h1>Place-Value Peg Soroban</h1>
+  <p class="subtitle">The Vault — put a real number into the codec and be tested on it days later, as the encoding intends.</p>
+  <div id="nav"></div>
+
+  <div class="panel">
+    <h2>Stored numbers</h2>
+    <div class="vault-head" id="vaultHead"></div>
+    <ol class="vault-list" id="vaultList"></ol>
+
+    <div class="vault-stage" id="vaultStage" hidden>
+      <div class="vault-stage-head">
+        <h3 class="vault-stage-title" id="vaultStageTitle"></h3>
+        <button id="vaultSkip" class="vault-close" title="Close without answering">✕ Close</button>
+      </div>
+      <p class="vault-stage-meta" id="vaultStageMeta"></p>
+      <form class="vault-recall" id="vaultRecallForm">
+        <textarea id="vaultRecall" rows="2" placeholder="type the number from memory — spaces and dashes are fine"></textarea>
+        <button type="submit" class="primary">Check</button>
+      </form>
+      <div class="vault-verdict" id="vaultVerdict"></div>
+      <div class="vault-grade" id="vaultGrade" hidden>
+        <button id="vaultGot" class="primary">✓ Knew it — schedule further out</button>
+        <button id="vaultMissed">✗ Missed it — show me again soon</button>
+        <button id="vaultReveal">👁 Show the scenes</button>
+      </div>
+      <div class="vault-scenes" id="vaultScenes" hidden></div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+  <div class="panel">
+    <h2>Store a number</h2>
+    <form class="vault-add" id="vaultAddForm">
+      <label>What is it?<input type="text" id="vaultLabel" placeholder="π to 30, the shed padlock…" maxlength="60"></label>
+      <label>The number<textarea id="vaultCode" rows="2" placeholder="digits — spaces and dashes are fine"></textarea></label>
+      <div class="vault-add-row">
+        <label>Base
+          <select id="vaultRadix">
+            <option value="10">Decimal</option>
+            <option value="16">Hex</option>
+          </select>
+        </label>
+        <label class="vault-sealed"><input type="checkbox" id="vaultMode"> <span>Sealed — don't store the digits</span></label>
+        <button type="submit" class="primary">Store &amp; encode</button>
+      </div>
+    </form>
+    <p class="vault-status" id="vaultStatus"></p>
+    <p class="help" style="margin-top:12px;"><strong>Sealed entries are the safe default for anything private.</strong> Everything in this app lives in <em>unencrypted</em> browser storage and travels in your exported save file — so a memory trainer is exactly the wrong place to leave a PIN or a card number lying about in plain text. A sealed entry stores only the <strong>length</strong> and the <strong>per-locus seals</strong>, never the digits: the app then cannot show you the answer, because it does not have it, and your recall is checked by recomputing the seals. That is a checksum and not a hash — it catches a wrong locus roughly eight times in nine (fourteen in fifteen for hex), which is useful evidence, not proof. Store in full only what you would not mind someone reading.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Retention</h2>
+    <div class="fig-grid">
+      <div id="figVault"></div>
+    </div>
+    <p class="help" style="margin-top:12px;">A new entry is due <strong>immediately</strong> — the first recall belongs in the session that created it, while the scenes are still warm, because that is what turns an encoding into a memory. After that the gap expands: <strong>1 day, 3 days</strong>, then multiplying by an ease that drifts up with each success, out to a year. A miss collapses the gap back to one day and drops the ease harder than a success raises it, so a number you keep half-knowing keeps coming back.</p>
+    <p class="help" style="margin-top:10px;">When a recall fails, the seals say <em>which locus</em> broke, not what it should have been. That is deliberate and it is the whole use of the checksum: you go back to the scene for that locus and repair it yourself. Rebuilding a corrupt image is what fixes it — being told the digits is not.</p>
+  </div>
+  </div>
+</div>
+
+<script type="module" src="src/pages/vault.js"></script>
+
+</body>
+</html>

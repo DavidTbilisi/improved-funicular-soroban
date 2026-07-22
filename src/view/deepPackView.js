@@ -53,25 +53,37 @@ export class DeepPackView {
     const noun = hex ? 'Hex string' : 'Digit string';
     this.lineEl.innerHTML = `${noun}: <code>${codeLabel}</code> · ${unitCount} ${unitNoun}${plural}${note}`;
 
-    this.lociEl.innerHTML = loci.map((locus, li) => {
-      const scenesHTML = locus.scenes.map(scene => {
-        const units = scene.parts.map(p => this._unitHTML(p)).join('<span class="pack-arrow">›</span>');
-        const digitsLabel = hex ? '0x' + scene.digits : scene.digits;
-        return `<div class="pack-scene">${units}</div>
-          <div class="pack-story">${scene.partial ? '<em>partial</em> — ' : ''}${sceneStory(scene)} — <em>${digitsLabel}</em></div>`;
-      }).join('');
-      return `<div class="locus">
-          <div class="locus-tag">locus ${li + 1}</div>
-          <div class="locus-body">${scenesHTML}</div>
-          <div class="seal-chip${inScope ? '' : ' below-scope'}" title="${this.codec.sealExplain(locus)}">
-            <span class="s-emoji">${this.codec.sealPercept(locus.seal)}</span>
-            <span class="s-label">seal ${this.codec.sealLabel(locus.seal)}${inScope ? '' : '<br>below scope'}</span>
-          </div>
-        </div>`;
-    }).join('');
+    this.lociEl.innerHTML = lociHTML(loci, this.codec, { inScope });
   }
 
-  _unitHTML(part) {
+  _unitHTML(part) { return unitHTML(part); }
+}
+
+// The loci strip, as a standalone builder. Extracted from DeepPackView.update
+// so the vault can render the scenes for a stored code — which the view itself
+// cannot do, because it renders from an AbacusStore and a vault entry has no
+// board behind it (and may be longer than the board can hold).
+export function lociHTML(loci, codec, { inScope = true } = {}) {
+  const hex = codec.radix === 16;
+  return loci.map((locus, li) => {
+    const scenesHTML = locus.scenes.map(scene => {
+      const units = scene.parts.map(unitHTML).join('<span class="pack-arrow">›</span>');
+      const digitsLabel = hex ? '0x' + scene.digits : scene.digits;
+      return `<div class="pack-scene">${units}</div>
+          <div class="pack-story">${scene.partial ? '<em>partial</em> — ' : ''}${sceneStory(scene)} — <em>${digitsLabel}</em></div>`;
+    }).join('');
+    return `<div class="locus">
+          <div class="locus-tag">locus ${li + 1}</div>
+          <div class="locus-body">${scenesHTML}</div>
+          <div class="seal-chip${inScope ? '' : ' below-scope'}" title="${codec.sealExplain(locus)}">
+            <span class="s-emoji">${codec.sealPercept(locus.seal)}</span>
+            <span class="s-label">seal ${codec.sealLabel(locus.seal)}${inScope ? '' : '<br>below scope'}</span>
+          </div>
+        </div>`;
+  }).join('');
+}
+
+function unitHTML(part) {
     if (part.type === 'cell' || part.type === 'hexcell') {
       const c = part.cell;
       const digits = part.type === 'hexcell' ? '0x' + c.hexStr : String(c.nn).padStart(2, '0');
@@ -94,7 +106,6 @@ export class DeepPackView {
         <span class="u-digits">${part.digit}</span>
         <span class="u-name">${cubeName(part.digit)}</span>
       </div>`;
-  }
 }
 
 function vpEmoji(vp) { return vp.rot ? `<span class="rot90">${vp.emoji}</span>` : vp.emoji; }

@@ -1,8 +1,8 @@
 // ============================================================================
 // Today's plan — one short, concrete practice session, chosen from the profile.
 //
-// The app has seven pages and 43 things to practise (11 levels, 17 decks, 6 rod
-// modes, 9 anzan rungs, the village). A returning learner's real question is not "what is
+// The app has eight pages and 43-plus things to practise (11 levels, 17 decks,
+// 6 rod modes, 9 anzan rungs, the village, and however many numbers are stored). A returning learner's real question is not "what is
 // available" but "what should I do for the next ten minutes" — so this turns
 // the whole profile into three tasks with a reason and a deep link each.
 //
@@ -65,7 +65,23 @@ function modeTask(rule, mode, why) {
 
 // The ladder. Order IS the priority; each build() returns a Task or null.
 export const TASK_RULES = Object.freeze([
-  // 1. Nothing done yet — hand over the intended first hour, in order.
+  // 1. A number is DUE. This outranks EVERYTHING, including the first-run rungs:
+  //    it is the only work in the app with a deadline, it exists only because the
+  //    learner deliberately stored something, and it is being lost right now
+  //    while they drill. Skills wait; memories decay.
+  { id: 'vault-due', build: p => {
+      const v = p.vault;
+      if (!v || !v.due) return null;
+      const late = v.next && v.next.daysUntil != null && v.next.daysUntil < 0;
+      const why = v.due === 1
+        ? (late ? `${-v.next.daysUntil}d overdue — ${v.next.label}` : `due today — ${v.next.label}`)
+        : `${v.due} due${late ? `, oldest ${-v.next.daysUntil}d overdue` : ''}`;
+      return task('vault-due', 'vault', 'vault', null,
+        v.due === 1 ? 'Recall a stored number' : `Recall ${v.due} stored numbers`, why,
+        Math.max(1, Math.ceil(v.due * 1.5)));
+    } },
+
+  // 2. Nothing done yet — hand over the intended first hour, in order.
   { id: 'first-level', build: p => p.fresh && p.practice.levels[0]
       ? levelTask('first-level', p.practice.levels[0], 'start here') : null },
   { id: 'first-deck', build: p => p.fresh && p.drills.decks[0]
@@ -73,7 +89,7 @@ export const TASK_RULES = Object.freeze([
   { id: 'first-contract', build: p => p.fresh
       ? task('first-contract', 'game', 'game', null, 'Soroban Village', 'earn your first sp', 4) : null },
 
-  // 2. A pattern in the fumbles beats everything else — it names the exact
+  // 3. A pattern in the fumbles beats everything else — it names the exact
   //    trade that is costing clean solves.
   { id: 'weak-pair', build: p => {
       const top = p.faults.top[0];
@@ -89,7 +105,7 @@ export const TASK_RULES = Object.freeze([
         `weakest — ${pair.replace('-', ' ↔ ')} costs you ${top.count} fumbles`) : null;
     } },
 
-  // 3. Ready to fade the beads. This sits ABOVE the plain level rung because it
+  // 4. Ready to fade the beads. This sits ABOVE the plain level rung because it
   //    targets the SAME level — it is the same visit, better framed ("drop to
   //    Percept" beats "3/8 clean" when the solves already say you can).
   { id: 'mental-step', build: p => {
@@ -101,13 +117,13 @@ export const TASK_RULES = Object.freeze([
       return lv ? levelTask('mental-step', lv, `ready to fade — drop to ${pr.nextName}`) : null;
     } },
 
-  // 4. The level the ladder is actually on.
+  // 5. The level the ladder is actually on.
   { id: 'unfinished-level', build: p => {
       const lv = p.practice.current;
       return lv && !lv.cleared ? levelTask('unfinished-level', lv, `${lv.best}/${lv.floor} clean`) : null;
     } },
 
-  // 5. A deck with facts still below the floor, or one gone cold.
+  // 6. A deck with facts still below the floor, or one gone cold.
   { id: 'due-deck', build: p => {
       const d = p.drills.weakest;
       if (!d) return null;
@@ -116,13 +132,13 @@ export const TASK_RULES = Object.freeze([
       return null;
     } },
 
-  // 6. Something new is open and untried — that pull is worth a slot.
+  // 7. Something new is open and untried — that pull is worth a slot.
   { id: 'next-unlock', build: p => p.practice.untouched
       ? levelTask('next-unlock', p.practice.untouched, 'newly unlocked') : null },
   { id: 'new-deck', build: p => p.drills.untouched
       ? deckTask('new-deck', p.drills.untouched, 'not yet drilled') : null },
 
-  // 7. Flash anzan — but only once the Mental stage is in reach. Offering it to
+  // 8. Flash anzan — but only once the Mental stage is in reach. Offering it to
   //    someone still at Beads is offering the exam before the course: the whole
   //    discipline is the mnemonic-mental track under time pressure.
   { id: 'anzan', build: p => {
@@ -146,19 +162,19 @@ export const TASK_RULES = Object.freeze([
         minutesFor(ANZAN_ROUNDS, lv.terms * (lv.lastMs || lv.baseMs) + 6000));
     } },
 
-  // 8. The rod method.
+  // 9. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 9. The village — its own advisor already knows what it wants.
+  // 10. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 10. Everything is cleared — keep the coldest thing warm.
+  // 11. Everything is cleared — keep the coldest thing warm.
   { id: 'keep-warm', build: p => {
       const cold = [...p.practice.levels.filter(l => l.unlocked), ...p.drills.decks.filter(d => d.sessions > 0)]
         .filter(x => x.daysSince != null)

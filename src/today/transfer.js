@@ -35,6 +35,7 @@ export const SAVE_KEYS = Object.freeze([
   'npv-fault-log',          // rejected moves by complement pair
   'npv-game-save',          // the village
   'npv-anzan',              // flash-anzan rounds, best streaks, fastest pace cleared
+  'npv-vault',              // stored numbers + their review schedule (see the note below)
   'npv-achievements',       // badges + lifetime counters
   'npv-days',               // the day axis (streak)
   'npv-today',              // today's plan checklist
@@ -47,6 +48,13 @@ export const SAVE_KEYS = Object.freeze([
 // JSON would half-work ('0' and '60' parse, 'off' throws) — so they are carried
 // verbatim, and this list is what keeps a round trip from double-encoding them.
 export const RAW_KEYS = Object.freeze(['npv-support', 'npv-sound', 'npv-bpm']);
+
+// A NOTE ON npv-vault. It is the only key that holds CONTENT rather than
+// performance records: the numbers the learner is memorising. A 'full' entry
+// carries its digits, so an exported save file contains them in plain text —
+// which is exactly why entry.js offers the 'sealed' mode, and why the vault page
+// says so where the choice is made. Nothing here encrypts anything; the export
+// is as readable as the localStorage it came from.
 
 const KEY_SET = new Set(SAVE_KEYS);
 

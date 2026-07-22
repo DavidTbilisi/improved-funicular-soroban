@@ -9,6 +9,7 @@ import { ROD_MODES } from '../src/domain/mulDiv.js';
 import { ANZAN_LEVELS } from '../src/anzan/levels.js';
 import { suggestRung } from '../src/anzan/bridge.js';
 import { AnzanLog } from '../src/anzan/anzanLog.js';
+import { Vault } from '../src/vault/vaultStore.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -20,7 +21,7 @@ const TODAY = '2026-07-22';
 
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, vault = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
@@ -32,6 +33,7 @@ function profileFrom({
     save: new GameSave(new MemoryProgressStore(village)),
     dayLog: new DayLog(new MemoryProgressStore(days)),
     anzanLog: new AnzanLog(new MemoryProgressStore(anzan)),
+    vault: new Vault(new MemoryProgressStore(vault)),
     support, today,
   });
 }
@@ -395,4 +397,61 @@ test('an anzan round today auto-ticks its task', () => {
   });
   const t = todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.find(x => x.page === 'anzan');
   assert.equal(t.autoDone, true);
+});
+
+// --- vault ------------------------------------------------------------------
+const vaultOf = entries => ({ v: 1, entries });
+const storedEntry = (id, label, over = {}) => ({
+  id, label, radix: 10, mode: 'full', length: 10, seals: [6], code: '1415926535',
+  created: '2026-07-01T10:00', reviews: [], ease: 2.2, interval: 0, due: TODAY, ...over,
+});
+
+test('nothing due means no vault task', () => {
+  const p = midLadder({ vault: vaultOf([storedEntry('v1', 'x', { due: '2026-09-01' })]) });
+  assert.ok(!todaysPlan(p, { max: 9, budgetMin: 999 }).tasks.some(t => t.page === 'vault'));
+});
+
+// Skills wait; memories decay. That is why this outranks the skill rungs.
+test('a due number outranks even the first-run onboarding', () => {
+  const p = profileFrom({ vault: vaultOf([storedEntry('v1', 'π to 10')]) });
+  assert.equal(p.fresh, true, 'storing is not yet work, so this IS a first run');
+  const plan = todaysPlan(p);
+  assert.equal(plan.tasks[0].rule, 'vault-due');
+  assert.ok(plan.tasks.some(t => t.rule === 'first-level'), 'and the ladder still gets a slot');
+});
+
+test('a due number leads the plan, ahead of the fumble pattern', () => {
+  const p = midLadder({
+    faults: { pairs: { 'big:3-7': 9 }, resets: 0 },
+    vault: vaultOf([storedEntry('v1', 'π to 10')]),
+  });
+  const plan = todaysPlan(p);
+  assert.equal(plan.tasks[0].page, 'vault');
+  assert.equal(plan.tasks[0].rule, 'vault-due');
+  assert.match(plan.tasks[0].why, /due today — π to 10/);
+  assert.ok(plan.tasks.some(t => t.rule === 'weak-pair'), 'the fumble rung still gets its slot');
+});
+
+test('an overdue number says how late it is', () => {
+  const p = midLadder({ vault: vaultOf([storedEntry('v1', 'padlock', { due: '2026-07-15' })]) });
+  const t = todaysPlan(p).tasks[0];
+  assert.match(t.why, /7d overdue — padlock/);
+});
+
+test('several due numbers are counted, and the oldest named', () => {
+  const p = midLadder({ vault: vaultOf([
+    storedEntry('v1', 'a', { due: TODAY }),
+    storedEntry('v2', 'b', { due: '2026-07-18' }),
+    storedEntry('v3', 'c', { due: TODAY }),
+  ]) });
+  const t = todaysPlan(p).tasks[0];
+  assert.equal(t.title, 'Recall 3 stored numbers');
+  assert.match(t.why, /3 due, oldest 4d overdue/);
+});
+
+test('the vault task deep-links to the page and costs real minutes', () => {
+  const p = midLadder({ vault: vaultOf([storedEntry('v1', 'x')]) });
+  const t = todaysPlan(p).tasks[0];
+  assert.equal(t.href, 'vault.html');
+  assert.ok(t.minutes >= 1);
 });
