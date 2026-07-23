@@ -26,6 +26,7 @@
     "src/domain/config.js",
     "src/domain/decimalPoint.js",
     "src/domain/faces.js",
+    "src/domain/fingering.js",
     "src/domain/fingers.js",
     "src/domain/movePlan.js",
     "src/domain/mulDiv.js",

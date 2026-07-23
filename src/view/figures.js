@@ -18,6 +18,7 @@ import { CUBE_FACES } from '../domain/pegs.js';
 import { CUBE_LAYOUT, cubeFaceValues, cubeName } from '../domain/faces.js';
 import { fingerPlan, nineFoldPlan } from '../domain/fingers.js';
 import { chisanbopAdd, chisanbopSub, handOf, actionValue } from '../domain/chisanbop.js';
+import { fingeringOf, FINGER_RULES } from '../domain/fingering.js';
 import { shiftDay, daysBetween, weekdayIndex, streakOf } from '../today/dayKey.js';
 
 // A digit as a die face: each face-emoji in its fixed cell (taxi center, alien
@@ -318,6 +319,67 @@ export function figChisanbop(c, sign = '+', d = 1) {
     }
   });
   return svg(W, 118, `Chisanbop: ${start} ${sign} ${d} walked on the hands`, body);
+}
+
+// --- 運指: the fingering of a trade -------------------------------------------
+// figTradeChain's sibling, one level down the hand. That plate walks the BEADS
+// a trade moves; this one walks the MOTIONS the hand makes to move them, which
+// is fewer — two moves that ask for different fingers happen at once. Frames
+// come from `fingeringOf`, so plate, coach line and drill deck cannot drift.
+//
+// The legend above the strip is the whole rule: the thumb owns one arrow, the
+// index finger owns the other three.
+function ruleLegend(y, w) {
+  const items = FINGER_RULES.map(r => ({
+    // The arrow is the bead's direction of travel, so the two "toward the bar"
+    // rows point at each other across the bar — which is the fact being taught.
+    glyph: `${r.bead === 'heaven' ? '五' : '一'}${r.travel === 'up' ? '↑' : '↓'}`,
+    finger: r.finger,
+  }));
+  const step = w / items.length;
+  return items.map((it, i) => {
+    const x = step * (i + 0.5);
+    return txt(x - 13, y, it.glyph, { size: 12, fill: INK, weight: 600, anchor: 'middle' }) +
+      txt(x + 13, y, it.finger, { size: 9.5, fill: it.finger === 'thumb' ? SHU : DATA, anchor: 'middle' });
+  }).join('') + hline(0, w, y + 8, LINE);
+}
+
+// c = starting ones digit, sign '+'/'-', d = the digit added/subtracted (1..9).
+export function figFingering(c, sign = '+', d = 1) {
+  const f = fingeringOf(c, sign, d);
+  // A borrow needs a ten on the board to take, so seed the tens rod for it; an
+  // add's carry lands on an empty one. Same bookkeeping as figChisanbop.
+  const borrow = sign === '-' && c - d < 0 ? 1 : 0;
+  let tens = borrow, ones = c;
+  const frames = [{ tens, ones, g: null }];
+  for (const g of f.gestures) {
+    for (const m of g.motions) {
+      const v = m.sign * (m.bead === 'heaven' ? 5 : m.n);
+      if (m.rod === 1) tens += m.sign; else ones += v;
+    }
+    frames.push({ tens, ones, g });
+  }
+  const FW = 65, GAP = 92, M = 8, TOP = 26;
+  const W = M * 2 + frames.length * FW + (frames.length - 1) * GAP;
+  let body = ruleLegend(12, W);
+  frames.forEach((fr, i) => {
+    const ox = M + i * (FW + GAP);
+    body += rodGlyph(fr.tens, ox, TOP) + rodGlyph(fr.ones, ox + 33, TOP);
+    body += txt(ox + FW / 2, TOP + 118, String(fr.tens * 10 + fr.ones), { size: 13, fill: INK, weight: 600 });
+    if (!i) return;                       // the opening frame has no arrow into it
+    const x1 = ox - GAP + 6, x2 = ox - 6, ym = TOP + 58, xm = (x1 + x2) / 2;
+    body += `<line x1="${x1}" y1="${ym}" x2="${x2}" y2="${ym}" stroke="${LINE2}" stroke-width="1.5"/>`;
+    body += `<path d="M${x2 - 5} ${ym - 3.5} L${x2} ${ym} L${x2 - 5} ${ym + 3.5}" fill="none" stroke="${LINE2}" stroke-width="1.5"/>`;
+    body += txt(xm, ym - 9, fr.g.steps.join(' ').replace(/-/g, '−'), { size: 11, fill: DATA, weight: 600 });
+    body += txt(xm, ym + 15, fr.g.label, { size: 8.5, fill: fr.g.kind === 'single' ? STONE : INK });
+    // What the fused pair costs the hand: nothing. Say so under the arrow.
+    if (fr.g.kind !== 'single') {
+      body += txt(xm, ym + 27, fr.g.pinch ? 'one pinch' : fr.g.crossRod ? 'across two rods' : 'one motion',
+        { size: 8, fill: FAINT });
+    }
+  });
+  const n = f.gestureCount;
+  return svg(W, TOP + 128, `${c} ${sign} ${d} in ${n} hand motion${n > 1 ? 's' : ''}`, body);
 }
 
 // --- Finger-facts heatmap (HTML, like the multiplication table) ---------------

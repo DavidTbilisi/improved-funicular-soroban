@@ -22,6 +22,7 @@ import {
   fingerPlan, fingerStory, handGlyph, handGlyphR,
   nineFoldPlan, nineFoldStory,
 } from '../domain/fingers.js';
+import { motionFor, fingeringOf, fingeringStory } from '../domain/fingering.js';
 import { stripStoryDigits } from './text.js';
 import { placement, digitsOf } from '../domain/decimalPoint.js';
 
@@ -34,6 +35,13 @@ const FINGER_FACTS = Object.freeze(Array.from({ length: 16 }, (_, i) => {
 }));
 const NINE_FACTS = Object.freeze(Array.from({ length: 8 }, (_, i) =>
   Object.freeze({ key: `9f${i + 2}`, kind: 'fold', n: i + 2 })));
+
+// The twelve primitive bead moves — every motion a hand can be asked for, the
+// carry included. A finite space, so the fingering rule is drilled to coverage
+// rather than sampled.
+const BEAD_FACTS = Object.freeze(['+1', '+2', '+3', '+4', '+5', '+10',
+  '-1', '-2', '-3', '-4', '-5', '-10'].map(step =>
+  Object.freeze({ key: `bead${step}`, kind: 'bead', step })));
 
 export const DRILL_DECKS = {
   faceToDigit: {
@@ -258,7 +266,60 @@ export const DRILL_DECKS = {
       };
     },
   },
+  // --- 運指: which finger, and how many motions -----------------------------
+  // The other thing the screen cannot see. Every deck above asks what the
+  // answer is; these two ask what the HAND does, which is what a teacher
+  // standing over the board would correct and what nobody self-taught ever
+  // hears. Both are graded off `src/domain/fingering.js`, so the drill, the
+  // coach line and the plate can never give three different answers.
+  fingerBead: {
+    // The rule itself, one bead move at a time: thumb or index. Twelve facts,
+    // dealt from the bag so every motion comes round — including the two that
+    // look like exceptions until you say the rule out loud (the heaven bead is
+    // the index finger's in BOTH directions).
+    label: 'Which finger?', floorMs: 1200, mode: 'type',
+    facts: BEAD_FACTS,
+    genFact(fact) {
+      const m = motionFor(fact.step);
+      return {
+        prompt: fact.step.replace('-', '−'),
+        sub: `${m.rod === 1 ? 'the carry — ' : ''}${beadPhrase(m)} → type thumb or index`,
+        answers: [m.finger, m.finger[0]],
+        reveal: `${m.finger} — ${m.text}.`,
+        fact,
+      };
+    },
+    gen(rng) { return this.genFact(this.facts[rng.int(this.facts.length)], rng); },
+  },
+  fingerMotions: {
+    // The rule applied: a whole ±digit onto a rod that is already holding
+    // something, answered with the number of motions the hand makes. It is a
+    // number rather than a vocabulary, so there is nothing to spell — and it
+    // is the number that matters, since technique on a soroban is exactly the
+    // business of not making a motion you did not have to.
+    label: 'Motions?', floorMs: 4000, mode: 'type',
+    gen(rng) {
+      const c = rng.int(10);
+      const d = 1 + rng.int(9);
+      const sign = rng.int(2) ? '+' : '-';
+      const f = fingeringOf(c, sign, d);
+      return {
+        prompt: `${c} ${sign === '-' ? '−' : '+'} ${d}`,
+        sub: 'one rod holding ' + c + ' — how many motions does the hand make? ' +
+          '(everything that can go at once, does)',
+        answers: [String(f.gestureCount)],
+        reveal: fingeringStory(c, sign, d),
+        fingering: { c, sign, d },
+      };
+    },
+  },
 };
+
+// One bead move as the phrase the deck asks it with — the motion without its
+// finger, which is the answer.
+const beadPhrase = m => m.bead === 'heaven'
+  ? `the heaven bead ${m.travel} ${m.toward ? 'to' : 'off'} the bar`
+  : `${m.n} earth bead${m.n > 1 ? 's' : ''} ${m.travel} ${m.toward ? 'to' : 'off'} the bar`;
 
 // --- helpers for the point decks --------------------------------------------
 // A written operand with 0–2 decimals. Trailing zeros are never generated: a

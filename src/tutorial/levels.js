@@ -17,6 +17,7 @@
 import { FRAC_COLS } from '../domain/config.js';
 import { classifyAdd, classifySub } from '../domain/soroban.js';
 import { planAdd, planSub, stepsText, keysText } from '../domain/movePlan.js';
+import { gesturesFor, fingeringText } from '../domain/fingering.js';
 
 const SCALE = Math.pow(10, FRAC_COLS);
 const scaled = v => Math.round(v * SCALE);
@@ -44,12 +45,15 @@ function movesOf(p) {
   const pretty = s => s.replace(/-/g, '−');
   const chain = `<b>${stepsText(plan.steps)}</b>`;
   const keys = keysText(plan.steps);
+  // …and what the hand does with it. The keys are this app's; the fingering is
+  // the instrument's, and it is the half that transfers to a real soroban.
+  const hands = ` ✋ ${fingeringText(gesturesFor(plan.steps))}`;
   if (plan.story.length > 1) {
     const [top, pay] = plan.story;
     return `${pretty(top.op)} = ${pretty(top.into)} — but ${pretty(pay.op)} is blocked on this rod, so it trades too: ` +
-      `${pretty(pay.op)} = ${pretty(pay.into)}. Chain: ${chain}${keys ? ` (${keys})` : ''}`;
+      `${pretty(pay.op)} = ${pretty(pay.into)}. Chain: ${chain}${keys ? ` (${keys})` : ''}${hands}`;
   }
-  return `${chain}${keys ? ` (${keys})` : ''}`;
+  return `${chain}${keys ? ` (${keys})` : ''}${hands}`;
 }
 
 // --- Advanced builders ------------------------------------------------------
