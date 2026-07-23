@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DRILL_DECKS } from '../src/drill/decks.js';
 import { SequenceRng, MathRng } from '../src/drill/rng.js';
+import { fingeringOf } from '../src/domain/fingering.js';
 
 test('every deck has the strategy shape', () => {
   for (const [id, deck] of Object.entries(DRILL_DECKS)) {
@@ -135,5 +136,41 @@ test('the point decks never deal a written trailing zero — it would be an ambi
         if (operand.includes('.')) assert.ok(!/0$/.test(operand), `${item.prompt} deals ${operand}`);
       }
     }
+  }
+});
+
+// --- the fingering decks -----------------------------------------------------
+test('the bead deck covers all twelve motions and grades them off the rule', () => {
+  const deck = DRILL_DECKS.fingerBead;
+  assert.equal(deck.facts.length, 12);
+  const asked = new Set();
+  for (const fact of deck.facts) {
+    const item = deck.genFact(fact);
+    asked.add(item.prompt);
+    const thumb = /^\+[1-4]$|^\+10$/.test(fact.step); // earth beads, toward the bar
+    assert.deepEqual(item.answers, thumb ? ['thumb', 't'] : ['index', 'i'], fact.step);
+    assert.ok(!item.sub.includes('thumb') || !item.sub.includes('index') || item.sub.includes('type'),
+      'the question must not contain its own answer');
+    assert.ok(item.reveal.includes(item.answers[0]));
+  }
+  assert.equal(asked.size, 12, 'every motion is its own question');
+});
+
+test('the bead deck never gives the answer away in the question', () => {
+  for (const fact of DRILL_DECKS.fingerBead.facts) {
+    const q = `${DRILL_DECKS.fingerBead.genFact(fact).sub}`.replace('type thumb or index', '');
+    assert.ok(!/thumb|index/.test(q), `${fact.step}: ${q}`);
+  }
+});
+
+test('the motions deck answers with the gesture count the fingering rules give', () => {
+  const rng = new MathRng();
+  for (let i = 0; i < 300; i++) {
+    const item = DRILL_DECKS.fingerMotions.gen(rng);
+    const { c, sign, d } = item.fingering;
+    assert.equal(item.answers[0], String(fingeringOf(c, sign, d).gestureCount));
+    assert.ok(['1', '2', '3'].includes(item.answers[0]), item.prompt);
+    assert.match(item.prompt, /^\d [+−] \d$/);
+    assert.ok(item.reveal.endsWith('.'));
   }
 });

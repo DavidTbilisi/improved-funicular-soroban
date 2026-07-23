@@ -5,6 +5,7 @@ import {
   multTableHTML, figLayout, figLadder, figDeckBests, figSessions, figTradeChain,
   figSolveTimes, figFumbles, cubeFaceGrid, figPrognosis, figFingerTrick,
   figNineFold, figFingerFacts, figChisanbop, figStreak, figExam, figAnzan, figRetention, figPoint,
+  figFingering,
 } from '../src/view/figures.js';
 import { shiftDay } from '../src/today/dayKey.js';
 import { prognose } from '../src/tutorial/prognosis.js';
@@ -423,4 +424,29 @@ test('a placement wider than the digits draws the leading zero', () => {
   assert.match(p, /2 rods right of the point/);
   // 0.05 — the ones rod and the tenths rod are both drawn zeros.
   assert.equal((p.match(/>0<\/text>/g) || []).length, 2);
+});
+
+test('figFingering walks 6 + 7 as hand motions, not bead moves', () => {
+  const f = figFingering(6, '+', 7);
+  // Three bead moves (+10 −5 +2) but two motions: the carry, then both fingers.
+  assert.ok(f.includes('2 hand motions'), 'the title counts motions');
+  assert.equal(count(f, /−5 \+2/g), 1, 'the fused pair is labelled as one arrow');
+  assert.ok(f.includes('index + thumb together'));
+  assert.equal(count(f, /<ellipse/g), 5 * 2 * 3, 'three frames of two rods');
+  assert.ok(f.includes('>13<'), 'the strip ends on the answer');
+});
+
+test('figFingering states the whole rule above the strip', () => {
+  const f = figFingering(0, '+', 6);
+  for (const g of ['一↑', '一↓', '五↓', '五↑']) assert.ok(f.includes(g), `legend row ${g}`);
+  assert.equal(count(f, />thumb</g), 1, 'the thumb owns exactly one legend row');
+  assert.equal(count(f, />index</g), 3);
+  assert.ok(f.includes('1 hand motion'), 'a pinch is one motion');
+  assert.ok(f.includes('one pinch'));
+});
+
+test('figFingering seeds a ten for a borrow so the strip never goes negative', () => {
+  const f = figFingering(2, '-', 5);
+  assert.ok(f.includes('>12<'), 'starts at 12, not 2');
+  assert.ok(f.includes('>7<'), 'and lands on 7');
 });

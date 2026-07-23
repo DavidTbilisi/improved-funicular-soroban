@@ -198,6 +198,10 @@ h2::before { content: ""; display: inline-block; width: 6px; height: 6px; backgr
 .coach .rule.big { color: var(--violet); }
 .coach .move { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
 .coach .warn { color: var(--shu); font-weight: 700; }
+/* 運指 — the fingering rides at the end of every coach line, quieter than the
+   move it belongs to: it is the same instruction every time, and once it is
+   known it should read as a reminder rather than compete with the arithmetic. */
+.coach .fingers { color: var(--faint); white-space: nowrap; }
 /* The coach's idle state is the key chart: labeled clusters that wrap between
    groups, never inside one. */
 .coach .kbg { display: inline-block; white-space: nowrap; margin: 0 9px 2px; }

@@ -2,6 +2,16 @@
 // on another, be gradeable there, and leave only after two rights in a row.
 import { test, expect } from '@playwright/test';
 
+// The product of two written decimals, computed EXACTLY: Number(a)*Number(b)
+// is binary floating point, and a stray 4.340000000000001 fails a test about
+// the mistake book for a reason that has nothing to do with the mistake book.
+const decimals = s => (s.split('.')[1] || '').length;
+function exactMul(a, b) {
+  const dp = decimals(a) + decimals(b);
+  const s = (Number(a) * Number(b)).toFixed(dp);
+  return dp ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
+}
+
 // Miss a drill item on purpose and hand back the question that was asked.
 async function missOne(page, deck = 'pointMul') {
   await page.goto(`drills.html?deck=${deck}`);
@@ -28,7 +38,7 @@ test('a drill miss is written into the book, with its own deck named', async ({ 
 test('two rights in a row take it out — one does not', async ({ page }) => {
   const prompt = await missOne(page);
   const [a, , b] = prompt.split(/\s+/);
-  const answer = String(Number(a) * Number(b));
+  const answer = exactMul(a, b);
 
   await page.goto('misses.html');
   await page.fill('#msInput', answer);

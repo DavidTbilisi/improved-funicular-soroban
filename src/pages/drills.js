@@ -11,7 +11,8 @@ import { DrillSession } from '../drill/drillSession.js';
 import { automaticityForecast } from '../drill/forecast.js';
 import { DrillView } from '../view/drillView.js';
 import {
-  figure, figDeckBests, figSessions, figFingerTrick, figNineFold, figFingerFacts, figChisanbop, figPoint,
+  figure, figDeckBests, figSessions, figFingerTrick, figNineFold, figFingerFacts, figChisanbop,
+  figFingering, figPoint,
 } from '../view/figures.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
@@ -41,9 +42,13 @@ new DrillView({
 }, session, {
   // A missed finger fact redraws its method as the actual plate — the picture
   // IS the correction. Injected here so the view stays figure-agnostic.
-  revealFigFor: item => item.fact
-    ? (item.fact.kind === 'fold' ? figNineFold(item.fact.n) : figFingerTrick(item.fact.a, item.fact.b))
-    : null,
+  revealFigFor: (item) => {
+    if (item.fingering) return figFingering(item.fingering.c, item.fingering.sign, item.fingering.d);
+    if (!item.fact) return null;
+    if (item.fact.kind === 'bead') return null;   // the rule is one line; a plate would bury it
+    return item.fact.kind === 'fold'
+      ? figNineFold(item.fact.n) : figFingerTrick(item.fact.a, item.fact.b);
+  },
 }).build();
 
 // --- Figures: the two method plates + session trend + bests + facts heatmap ---
@@ -62,9 +67,16 @@ $('figNineFold').innerHTML = figure(2,
 $('figChisanbop').innerHTML = figure(3,
   'The friend rules on the hands — chisanbop. A hand is a rod: the thumb is the 5-bead, the four fingers the earth beads, so two hands read a number 0–99 and inked beads are pressed down. The same complement moves drill on the board here as presses: blocked from adding straight, press the thumb (+5) and lift the difference (small friend), or carry a ten to the left hand (big friend) and pay it back. Worked here: 6 + 7.',
   figChisanbop(6, '+', 7));
-// The fourth plate is not a hand method — it is the thing the hands and the
+// The fourth plate is the hand ON the board rather than off it: not which
+// beads a trade moves (Fig. 3 does that on the hands, and the practice page's
+// trade chain does it on the rods) but which FINGER moves them, and how many
+// motions that costs. Worked here: 6 + 7, the trade the plate above walks.
+$('figFingering').innerHTML = figure(4,
+  'The fingering — 運指. Two rules cover the whole instrument: the thumb pushes earth beads up to the bar, and the index finger does everything else, the heaven bead in both directions. What follows from them is the motion count: two bead moves that want different fingers happen at once (a pinch), and two that want the same finger travelling the same way are one sweep — but +5 and −1 apart, one finger cannot be in two places, and the hand pays for a second motion. Here 6 + 7 carries a ten with the thumb, then trades on the ones rod with both fingers together: two motions for three bead moves.',
+  figFingering(6, '+', 7));
+// The fifth plate is not a hand method — it is the thing the hands and the
 // beads both refuse to do for you. Worked here: 12.4 × 0.35.
-$('figPoint').innerHTML = figure(4,
+$('figPoint').innerHTML = figure(5,
   'Where the point goes. A soroban holds digits and nothing else: the point is a decision you make before starting and honour at the end. Multiplying, the answer sits as many rods right of the point as the two operands do together — 1 + 2 = 3 here. Dividing, you first shift both until the divisor is whole, and the quotient carries whatever decimals the dividend has left; when that count goes negative the digits gain zeros instead (drawn in red), which is the placement most marks are lost on.',
   figPoint('4340', 3, '12.4 × 0.35'));
 
@@ -74,18 +86,18 @@ let trendDeck = deckIds.reduce((a, b) => statsService.history(b).length > statsS
 const renderTrend = () => {
   const h = statsService.history(trendDeck);
   const fc = automaticityForecast(h);
-  $('figSessions').innerHTML = figure(4,
+  $('figSessions').innerHTML = figure(6,
     `${DRILL_DECKS[trendDeck].label} — share of reps under the pass-floor across the last ${h.length || 0} saved sessions (a session is saved when you stop it). Hover a point for its date, accuracy, and mean time.`,
     figSessions(h)) +
     (fc.message ? `<p class="help drill-forecast">${fc.message}</p>` : '');
 };
 const renderBests = () => {
-  $('figBests').innerHTML = figure(5,
+  $('figBests').innerHTML = figure(7,
     'Best saved session per deck, in the tier order of the drill discipline (atomics → cells → scenes → seals, then the finger track). A red seal marks a perfect session; an em-dash a deck not yet drilled.',
     figDeckBests(deckIds.map(id => ({ label: DRILL_DECKS[id].label, best: statsService.best(id) }))));
 };
 const renderFacts = () => {
-  $('figFacts').innerHTML = figure(6,
+  $('figFacts').innerHTML = figure(8,
     'The Finger × corner by lifetime recall: each cell is the share of saved reps landed correct and under the floor. Bright cells still lean on the hands — they are dealt twice per round until they darken. Hover a cell for reps, misses, and mean time.',
     figFingerFacts(statsService.facts('fingerTimes')));
 };

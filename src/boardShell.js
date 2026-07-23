@@ -11,6 +11,7 @@ import { FRAC_COLS, INT_COLS, INT_PLACES, FRAC_PLACES } from './domain/config.js
 import { rodValue } from './domain/rod.js';
 import { earthMoveLegal, classifyAdd, classifySub } from './domain/soroban.js';
 import { planAdd, planSub, stepsText, keysText } from './domain/movePlan.js';
+import { gesturesFor, fingeringText, motionFor } from './domain/fingering.js';
 import { digitFromFaces } from './domain/faces.js';
 import { AbacusStore } from './state/abacusStore.js';
 import { CommandBus, SetValueCommand, StepIntCommand, AddAtColumnCommand, ToggleSkyCommand, ClickEarthCommand } from './state/commands.js';
@@ -171,6 +172,10 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
   const beadWord = d => d === 5 ? 'heaven bead'
     : d < 5 ? `${d} earth bead${d > 1 ? 's' : ''}` : `heaven + ${d - 5} earth`;
 
+  // 運指 — which finger, on every line the coach writes. The keyboard cannot
+  // see a hand, so the only way this gets taught is by being said each time.
+  const fingersFor = steps => `<span class="fingers">✋ ${fingeringText(gesturesFor(steps))}</span>`;
+
   // Add/subtract a whole digit d (1..9) on the focused rod — STRICT: it lands
   // only if it fits directly (classifyAdd/Sub === 'direct', which already covers
   // the compound 6-9 = rose + earth). Otherwise it is rejected with the exact
@@ -185,7 +190,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     if (cl.rule !== 'direct') {
       const plan = (sign > 0 ? planAdd : planSub)(c, d);
       const keys = keysText(plan.steps);
-      coachEl.innerHTML = `<span class="warn">⚠ ${op} on ${place} — needs a ${plan.rule === 'big' ? 'carry' : 'five'} trade</span>: use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''}`;
+      coachEl.innerHTML = `<span class="warn">⚠ ${op} on ${place} — needs a ${plan.rule === 'big' ? 'carry' : 'five'} trade</span>: use <span class="move">${stepsText(plan.steps)}</span>${keys ? ` (${keys})` : ''} ${fingersFor(plan.steps)}`;
       sound.reject();
       faultHook({ kind: 'illegal', rule: plan.rule, amount: d, sign });
       return;
@@ -193,7 +198,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     dispatch(new AddAtColumnCommand(store, focus, d, sign));
     sound.digit(d, sign);
     setFocus(focus);
-    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? 'set' : 'clear'} ${beadWord(d)} → ${place} now ${colDigit(focus)}`;
+    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? 'set' : 'clear'} ${beadWord(d)} → ${place} now ${colDigit(focus)} ${fingersFor(cl.move.split(/\s+/))}`;
   }
 
   // The ±10 carry/borrow — a bead on the NEXT rod, not a die cell of this one.
@@ -214,7 +219,7 @@ export function mountBoardShell(mountEl, { intVal = 15, fracStr = '98' } = {}) {
     dispatch(new AddAtColumnCommand(store, focus, 10, sign));
     sound.carry(sign);
     setFocus(focus);
-    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`}`;
+    coachEl.innerHTML = `<span class="rule direct">${op}</span> on ${place} — ${sign > 0 ? `carry 1 → ${nbr}` : `borrow 1 ← ${nbr}`} <span class="fingers">✋ ${motionFor(sign > 0 ? '+10' : '-10').finger}</span>`;
   }
 
   // Chord accumulator: die-cell keys pressed within CHORD_MS group into one
