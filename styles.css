@@ -1231,6 +1231,42 @@ body.ex-sitting .ex-grades { display: none; }
    the focus outline is losing the plot. */
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
 
+
+/* ── The mistake book (間違いノート) ───────────────────────────────────────
+   A to-do list, not a dashboard: the entry being worked is the loudest thing,
+   the book below it is a quiet ledger, and an entry with one right already
+   banked is marked (it is the cheapest thing in the book to finish). */
+.ms-head { display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center; padding-bottom: 13px; margin-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 0.76rem; color: var(--stone); }
+.ms-open.on { color: var(--shu); }
+.ms-near { color: var(--gold); }
+.ms-done { color: var(--green); }
+
+.ms-stage { background: var(--well); border: 1px solid var(--line-2); border-radius: 14px; padding: 16px 18px 18px; margin-bottom: 16px; }
+.ms-stage[hidden] { display: none; }
+.ms-stage-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ms-source { font-family: var(--mono); font-size: 0.7rem; color: var(--data); }
+.ms-meta { font-family: var(--mono); font-size: 0.66rem; color: var(--faint); margin-left: auto; }
+.ms-prompt { font-family: var(--mono); font-size: 1.35rem; color: var(--ink); margin: 12px 0 4px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.ms-sub { font-size: 0.78rem; color: var(--faint); margin-bottom: 12px; }
+.ms-answer { display: flex; gap: 8px; flex-wrap: wrap; }
+.ms-answer input { width: 220px; font-size: 1.05rem; text-align: center; letter-spacing: 1px; }
+.ms-verdict { min-height: 1.5em; margin-top: 10px; font-size: 0.9rem; color: var(--stone); }
+.ms-verdict.ok { color: var(--green); }
+.ms-verdict.bad { color: var(--shu); }
+.ms-verdict b { font-family: var(--mono); color: var(--ink); }
+
+.ms-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.ms-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 12px; background: var(--well); border: 1px solid var(--line); border-radius: 9px; font-size: 0.8rem; }
+.ms-row.near { border-left: 3px solid var(--gold); }
+.ms-row.empty { color: var(--faint); font-size: 0.86rem; display: block; }
+.ms-row-src { font-family: var(--mono); font-size: 0.66rem; color: var(--data); width: 16ch; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-row-q { flex: 1; min-width: 0; font-family: var(--mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-row-n { font-family: var(--mono); font-size: 0.7rem; color: var(--shu); font-variant-numeric: tabular-nums; }
+.ms-row-p { font-size: 0.7rem; color: var(--faint); white-space: nowrap; }
+.ms-row button { padding: 2px 8px; font-size: 0.7rem; min-height: 0; }
+.ms-actions { margin-top: 14px; }
+.ms-actions button { font-size: 0.74rem; }
+
 /* Narrow screens */
 @media (max-width: 720px) {
   body { padding: 14px 12px 56px; }

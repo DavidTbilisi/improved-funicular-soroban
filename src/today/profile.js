@@ -93,6 +93,7 @@ function paceRows(rungs = [], log = null, today = null) {
  * @param anzanRungs ANZAN_LEVELS, with anzanLog the AnzanLog beside it
  * @param yomiageRungs YOMIAGE_LEVELS, with yomiageLog its own AnzanLog beside it
  * @param examGrades EXAM_GRADES, with examLog the ExamLog beside it
+ * @param misses   MissQueue — the mistake book (item-level, where retention is skill-level)
  * @param progress TutorialProgress
  * @param practiceLog / trainerLog  SolveLog instances
  * @param stats    DrillStatsService
@@ -105,7 +106,7 @@ function paceRows(rungs = [], log = null, today = null) {
  */
 export function buildProfile({
   levels = [], decks = {}, modes = [], anzanRungs = [], yomiageRungs = [], examGrades = [],
-  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, yomiageLog, vault, examLog,
+  progress, practiceLog, trainerLog, stats, faults, save, achievements, dayLog, anzanLog, yomiageLog, vault, examLog, misses,
   support = 0, today = null,
 } = {}) {
   // --- Days ----------------------------------------------------------------
@@ -182,6 +183,21 @@ export function buildProfile({
     next: vaultDue.map(e => ({ id: e.id, label: e.label, daysUntil: daysUntilDue(e, today) }))
       .sort((a, b) => (a.daysUntil ?? -999) - (b.daysUntil ?? -999))[0] || null,
     digits: vaultEntries.reduce((n, e) => n + (e.length || 0), 0),
+  };
+
+  // --- The mistake book ----------------------------------------------------
+  // Item-level, where retention is skill-level: what is in here is not "a track
+  // has gone soft" but "you got THIS wrong and have not put it right yet".
+  const missStats = misses ? misses.stats() : { open: 0, retired: 0, misses: 0, bySource: {}, nearlyOut: 0, lastWorked: null };
+  const missLastDay = missStats.lastWorked ? dayKey(missStats.lastWorked) : null;
+  const missesOut = {
+    open: missStats.open,
+    retired: missStats.retired,
+    nearlyOut: missStats.nearlyOut,
+    bySource: missStats.bySource,
+    worst: misses ? (misses.next() || null) : null,
+    lastDay: missLastDay,
+    daysSince: sinceDays(missLastDay, today),
   };
 
   // --- Kyu exam ------------------------------------------------------------
@@ -305,6 +321,7 @@ export function buildProfile({
       solves: trainerModes.reduce((n, m) => n + m.solves, 0),
     },
     vault: vaultOut,
+    misses: missesOut,
     exam: examOut,
     anzan: {
       levels: anzanLevels,

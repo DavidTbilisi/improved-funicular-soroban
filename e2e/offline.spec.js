@@ -26,7 +26,7 @@ test('the shell installs, and the app opens with the network cut', async ({ page
 
   // The front door renders from cache: nav, plan, figures, all of it.
   await expect(page.locator('#todayHead')).toBeVisible();
-  await expect(page.locator('.topnav a')).toHaveCount(11);
+  await expect(page.locator('.topnav a')).toHaveCount(12);
   await expect(page.locator('#figStreak')).toContainText('practised');
   expect(errors).toEqual([]);
 

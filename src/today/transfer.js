@@ -37,6 +37,7 @@ export const SAVE_KEYS = Object.freeze([
   'npv-anzan',              // flash-anzan rounds, best streaks, fastest pace cleared
   'npv-yomiage',            // read-aloud rounds, each with the gap it was called at
   'npv-exam',               // sat kyu papers: per-section scores and what was passed
+  'npv-misses',             // the mistake book: questions missed, until worked off
   'npv-vault',              // stored numbers + their review schedule (see the note below)
   'npv-achievements',       // badges + lifetime counters
   'npv-days',               // the day axis (streak)

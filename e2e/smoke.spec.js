@@ -13,6 +13,7 @@ const PAGES = [
   ['yomiage.html', 'Read-aloud — Place-Value Peg Soroban'],
   ['exam.html', 'Kyu exam — Place-Value Peg Soroban'],
   ['vault.html', 'Vault — Place-Value Peg Soroban'],
+  ['misses.html', 'Mistake book — Place-Value Peg Soroban'],
   ['game.html', 'Soroban Village — Place-Value Peg Soroban'],
   ['reference.html', 'Reference — Place-Value Peg Soroban'],
 ];

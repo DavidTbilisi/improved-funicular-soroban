@@ -112,7 +112,25 @@ export const TASK_RULES = Object.freeze([
         Math.max(1, Math.ceil(v.due * 1.5)));
     } },
 
-  // 2. Nothing done yet — hand over the intended first hour, in order.
+  // 2. The mistake book has something in it. This sits above everything except
+  //    the vault's deadline because it is ITEM-level and cheap: these are
+  //    questions you have already met and already got wrong, and working them is
+  //    the highest-yield minute in the app. It empties itself — two rights and an
+  //    entry is gone — so it cannot become permanent furniture the way a
+  //    skill-level rung can.
+  { id: 'misses', build: p => {
+      const m = p.misses;
+      if (!m || !m.open) return null;
+      const why = m.nearlyOut
+        ? `${m.open} open, ${m.nearlyOut} one right from gone`
+        : m.worst ? `worst: ${m.worst.source || 'a question you missed'} (×${m.worst.misses})`
+        : `${m.open} to work off`;
+      return task('misses', 'misses', 'misses', null,
+        m.open === 1 ? 'Work the mistake book' : `Work the mistake book — ${m.open} open`,
+        why, Math.max(2, Math.ceil(m.open * 0.5)));
+    } },
+
+  // 3. Nothing done yet — hand over the intended first hour, in order.
   { id: 'first-level', build: p => p.fresh && p.practice.levels[0]
       ? levelTask('first-level', p.practice.levels[0], 'start here') : null },
   { id: 'first-deck', build: p => p.fresh && p.drills.decks[0]
@@ -120,7 +138,7 @@ export const TASK_RULES = Object.freeze([
   { id: 'first-contract', build: p => p.fresh
       ? task('first-contract', 'game', 'game', null, 'Soroban Village', 'earn your first sp', 4) : null },
 
-  // 3. A pattern in the fumbles beats everything else — it names the exact
+  // 4. A pattern in the fumbles beats everything else — it names the exact
   //    trade that is costing clean solves.
   { id: 'weak-pair', build: p => {
       const top = p.faults.top[0];
@@ -136,7 +154,7 @@ export const TASK_RULES = Object.freeze([
         `weakest — ${pair.replace('-', ' ↔ ')} costs you ${top.count} fumbles`) : null;
     } },
 
-  // 4. Ready to fade the beads. This sits ABOVE the plain level rung because it
+  // 5. Ready to fade the beads. This sits ABOVE the plain level rung because it
   //    targets the SAME level — it is the same visit, better framed ("drop to
   //    Percept" beats "3/8 clean" when the solves already say you can).
   { id: 'mental-step', build: p => {
@@ -148,13 +166,13 @@ export const TASK_RULES = Object.freeze([
       return lv ? levelTask('mental-step', lv, `ready to fade — drop to ${pr.nextName}`) : null;
     } },
 
-  // 5. The level the ladder is actually on.
+  // 6. The level the ladder is actually on.
   { id: 'unfinished-level', build: p => {
       const lv = p.practice.current;
       return lv && !lv.cleared ? levelTask('unfinished-level', lv, `${lv.best}/${lv.floor} clean`) : null;
     } },
 
-  // 6. A deck with facts still below the floor. MASTERY only: whether it has
+  // 7. A deck with facts still below the floor. MASTERY only: whether it has
   //    gone cold is retention's question now, and rung 7 asks it for every
   //    track at once rather than this rule guessing with a flat day count.
   { id: 'due-deck', build: p => {
@@ -162,7 +180,7 @@ export const TASK_RULES = Object.freeze([
       return d && d.dueFacts > 0 ? deckTask('due-deck', d, `${d.dueFacts} due`) : null;
     } },
 
-  // 7. The most FADED thing you have practised, if it has fallen through the
+  // 8. The most FADED thing you have practised, if it has fallen through the
   //    review mark. This replaced a flat "untouched for 3 days = cold" flag,
   //    which could not tell a skill drilled once from one drilled forty times
   //    across a fortnight and sent the learner to the wrong one. Retention is
@@ -172,7 +190,7 @@ export const TASK_RULES = Object.freeze([
   //    a smaller emergency than one you never had.
   { id: 'fading', build: p => skillsFrom(p).filter(s => s.due).map(s => skillTask('fading', s)) },
 
-  // 8. A kyu paper you have earned the right to sit. This is a CHECKPOINT, not
+  // 9. A kyu paper you have earned the right to sit. This is a CHECKPOINT, not
   //    daily work, so it sits BELOW the rung the ladder is on and the deck that
   //    is due: on a day with real practice owing, the practice wins. It is
   //    gated hard besides — the grade must be unpassed, the practice level it
@@ -201,13 +219,13 @@ export const TASK_RULES = Object.freeze([
       return task('exam', 'exam', 'exam', g.id, `${g.name} — the kyu paper`, why, Math.max(2, g.minutes));
     } },
 
-  // 9. Something new is open and untried — that pull is worth a slot.
+  // 10. Something new is open and untried — that pull is worth a slot.
   { id: 'next-unlock', build: p => p.practice.untouched
       ? levelTask('next-unlock', p.practice.untouched, 'newly unlocked') : null },
   { id: 'new-deck', build: p => p.drills.untouched
       ? deckTask('new-deck', p.drills.untouched, 'not yet drilled') : null },
 
-  // 10. Flash anzan — but only once the Mental stage is in reach. Offering it to
+  // 11. Flash anzan — but only once the Mental stage is in reach. Offering it to
   //    someone still at Beads is offering the exam before the course: the whole
   //    discipline is the mnemonic-mental track under time pressure.
   { id: 'anzan', build: p => {
@@ -230,7 +248,7 @@ export const TASK_RULES = Object.freeze([
       return pacedTask('anzan', 'anzan', lv, why, ANZAN_ROUNDS);
     } },
 
-  // 11. Read-aloud. Gated on the carry being in hand — "minus sixty-three" has
+  // 12. Read-aloud. Gated on the carry being in hand — "minus sixty-three" has
   //     to reach the beads as a borrow, and a learner who cannot yet borrow is
   //     being asked to do the exercise and learn the rule at once. Unlike anzan
   //     it needs NO mental stage: the board does the remembering here, which is
@@ -248,19 +266,19 @@ export const TASK_RULES = Object.freeze([
       return pacedTask('yomiage', 'yomiage', lv, why, YOMIAGE_ROUNDS);
     } },
 
-  // 12. The rod method.
+  // 13. The rod method.
   { id: 'trainer-mode', build: p => {
       const m = p.trainer.weakest;
       return m ? modeTask('trainer-mode', m, m.solves ? `${m.best}/${m.floor} clean` : 'rod method') : null;
     } },
 
-  // 13. The village — its own advisor already knows what it wants.
+  // 14. The village — its own advisor already knows what it wants.
   { id: 'village', build: p => p.village
       ? task('village', 'game', 'game', null, 'Soroban Village',
         (p.village.goal && p.village.goal.label) || 'endless — grow the village', 4,
         { hint: p.village.hint ? p.village.hint.msg : null }) : null },
 
-  // 14. Nothing is due and nothing is owed — keep the softest thing warm. Same
+  // 15. Nothing is due and nothing is owed — keep the softest thing warm. Same
   //     ranking as rung 7 without the due gate, so the fallback and the
   //     scheduler agree about what "softest" means.
   { id: 'keep-warm', build: p => {
@@ -327,6 +345,9 @@ function wasDoneToday(profile, t) {
   if (t.page === 'yomiage') {
     const y = (profile.yomiage ? profile.yomiage.levels : []).find(x => x.id === t.targetId);
     return !!y && y.lastDay === profile.today;
+  }
+  if (t.page === 'misses') {
+    return !!(profile.misses && profile.misses.lastDay === profile.today);
   }
   if (t.page === 'exam') {
     const g = (profile.exam ? profile.exam.grades : []).find(x => x.id === t.targetId);

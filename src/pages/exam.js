@@ -22,6 +22,7 @@ import { ExamLog } from '../exam/examLog.js';
 import { ExamView } from '../view/examView.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
+import { MissQueue } from '../review/misses.js';
 import { targetFromSearch } from '../today/deepLink.js';
 import { figure, figExam } from '../view/figures.js';
 
@@ -31,6 +32,10 @@ mountNav('exam');
 const log = new ExamLog(new LocalStorageProgressStore(window.localStorage, 'npv-exam'));
 // A sat paper is real work — it marks the day like every other practising page.
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// A wrong line used to appear once on the mark sheet and go with it. Now it
+// goes in the mistake book — the questions, not the score, are what there is to
+// work on before the retake.
+const misses = new MissQueue(new LocalStorageProgressStore(window.localStorage, 'npv-misses'));
 
 const shell = mountBoardShell($('examBoard'), { intVal: 0, fracStr: '' });
 
@@ -93,7 +98,24 @@ setInterval(() => session.tick(), 250);
 session.subscribe(e => {
   if (e.type === 'section') shell.soroban.setSupport(e.kind === 'anzan' ? 2 : 0);
   if (e.type === 'finished' || e.type === 'abandoned') shell.soroban.setSupport(0);
-  if (e.type === 'finished') { dayLog.mark(); render(); }
+  if (e.type === 'finished') {
+    dayLog.mark();
+    for (const sec of e.report.sections) {
+      for (const m of sec.marks) {
+        // Only what was actually attempted and got wrong: a question the clock
+        // took is not a mistake, it is a section you ran out of time in.
+        if (m.ok || m.given === null) continue;
+        misses.add({
+          key: `exam:${sec.kind}:${view.markQuestion(m.q)}`,
+          source: `${e.report.name} · ${sec.title.split(' · ')[0]}`,
+          page: 'exam', prompt: view.markQuestion(m.q),
+          sub: 'from the paper — work it again',
+          answers: [String(m.answer)],
+        });
+      }
+    }
+    render();
+  }
 });
 
 function rows() {

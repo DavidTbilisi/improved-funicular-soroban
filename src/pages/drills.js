@@ -15,6 +15,7 @@ import {
 } from '../view/figures.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
+import { MissQueue } from '../review/misses.js';
 import { targetFromSearch } from '../today/deepLink.js';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +24,9 @@ mountNav('drills');
 const statsService = new DrillStatsService(new LocalStorageStatsStore(window.localStorage));
 // The day axis behind the Today page's streak — marked on real work only.
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// Every graded miss goes in the mistake book — the item as it was asked, with
+// the answers this deck accepts, so the review grades it exactly as here.
+const misses = new MissQueue(new LocalStorageProgressStore(window.localStorage, 'npv-misses'));
 const session = new DrillSession({
   decks: DRILL_DECKS, modes: MODES, stats: statsService,
   rng: new MathRng(), clock: { now: () => performance.now() },
@@ -92,7 +96,17 @@ session.subscribe(evt => {
   if (evt.type === 'started') { trendDeck = evt.deckId; renderTrend(); }
   // Marked on each graded rep, NOT on 'stopped': a session the learner never
   // stops is never saved, so waiting for the stop would silently lose the day.
-  if (evt.type === 'result') dayLog.mark();
+  if (evt.type === 'result') {
+    dayLog.mark();
+    const { result, item } = evt;
+    if (result && !result.correct && item && item.answers) {
+      misses.add({
+        key: `drill:${evt.deckId || trendDeck}:${item.prompt}`,
+        source: (DRILL_DECKS[evt.deckId || trendDeck] || {}).label || 'Drills',
+        page: 'drills', prompt: item.prompt, sub: item.sub || '', answers: item.answers,
+      });
+    }
+  }
   if (evt.type === 'stopped') { renderTrend(); renderBests(); renderFacts(); }
 });
 

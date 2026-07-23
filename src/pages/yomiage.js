@@ -24,6 +24,7 @@ import { VoiceService } from '../view/voiceService.js';
 import { YomiageView } from '../view/yomiageView.js';
 import { LocalStorageProgressStore } from '../tutorial/progressStore.js';
 import { DayLog } from '../today/dayLog.js';
+import { MissQueue } from '../review/misses.js';
 import { targetFromSearch } from '../today/deepLink.js';
 import { figure, figAnzan } from '../view/figures.js';
 
@@ -36,6 +37,9 @@ mountNav('yomiage');
 // AnzanLog on its own key rather than a second class saying the same thing.
 const log = new AnzanLog(new LocalStorageProgressStore(window.localStorage, 'npv-yomiage'));
 const dayLog = new DayLog(new LocalStorageProgressStore(window.localStorage, 'npv-days'));
+// A called round that got away: the column goes in the mistake book, where it
+// can be read rather than heard.
+const misses = new MissQueue(new LocalStorageProgressStore(window.localStorage, 'npv-misses'));
 
 const savedRate = parseFloat(localStorage.getItem('npv-voice-rate'));
 const voice = new VoiceService({ rate: Number.isFinite(savedRate) ? savedRate : 1 });
@@ -115,7 +119,20 @@ session.subscribe(e => {
   // starting a round on last round's total is the one mistake this exercise
   // cannot recover from.
   if (e.type === 'call' && e.kind === 'open') clearBoard();
-  if (e.type === 'result') { dayLog.mark(); render(); }
+  if (e.type === 'result') {
+    dayLog.mark();
+    if (!e.ok) {
+      misses.add({
+        key: `yomiage:${e.terms.join('+')}`,
+        source: `Read-aloud · ${(YOMIAGE_LEVELS.find(l => l.id === activeId) || {}).title || ''}`.trim(),
+        page: 'yomiage',
+        prompt: e.terms.map((t, i) => (i === 0 ? String(t) : t < 0 ? `− ${-t}` : `+ ${t}`)).join(' '),
+        sub: 'the column that got away — add it and type the total',
+        answers: [String(e.sum)],
+      });
+    }
+    render();
+  }
 });
 
 // --- Rendering ---------------------------------------------------------------

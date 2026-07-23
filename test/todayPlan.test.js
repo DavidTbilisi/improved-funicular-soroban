@@ -13,6 +13,7 @@ import { YOMIAGE_LEVELS } from '../src/yomiage/levels.js';
 import { Vault } from '../src/vault/vaultStore.js';
 import { EXAM_GRADES } from '../src/exam/grades.js';
 import { ExamLog } from '../src/exam/examLog.js';
+import { MissQueue } from '../src/review/misses.js';
 import { MemoryProgressStore, TutorialProgress } from '../src/tutorial/progressStore.js';
 import { MemoryStatsStore, DrillStatsService } from '../src/drill/statsStore.js';
 import { SolveLog } from '../src/tutorial/solveLog.js';
@@ -24,12 +25,13 @@ const TODAY = '2026-07-22';
 
 function profileFrom({
   tutorial = {}, practice = {}, trainer = {}, drills = {}, faults = {},
-  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, support = 0, today = TODAY,
+  village = {}, days = {}, anzan = {}, yomiage = {}, vault = {}, exam = {}, misses = {}, support = 0, today = TODAY,
 } = {}) {
   return buildProfile({
     levels: TUTORIAL_LEVELS, decks: DRILL_DECKS, modes: ROD_MODES, anzanRungs: ANZAN_LEVELS,
     yomiageRungs: YOMIAGE_LEVELS, examGrades: EXAM_GRADES,
     examLog: new ExamLog(new MemoryProgressStore(exam)),
+    misses: new MissQueue(new MemoryProgressStore(misses)),
     progress: new TutorialProgress(new MemoryProgressStore(tutorial)),
     practiceLog: new SolveLog(new MemoryProgressStore(practice)),
     trainerLog: new SolveLog(new MemoryProgressStore(trainer)),
@@ -673,4 +675,48 @@ test('clearing 開平法 opens the dan ladder, and the reason names it', () => {
   assert.equal(t.targetId, 'jun-shodan');
   assert.equal(t.href, 'exam.html?grade=jun-shodan');
   assert.match(t.why, /Square root: 2-digit root is clear/);
+});
+
+// --- the mistake book -------------------------------------------------------
+const bookOf = (items, lastWorked = '') => ({
+  items: items.map((it, i) => ({
+    key: `k${i}`, source: it.source || 'Point: ×', page: 'drills', prompt: `q${i}`,
+    answers: ['1'], misses: it.misses || 1, right: it.right || 0,
+    t: `2026-07-2${1 + (i % 3)}T10:00`, last: `2026-07-2${1 + (i % 3)}T10:00`,
+  })),
+  retired: 0, lastWorked,
+});
+
+test('an empty book asks for nothing', () => {
+  assert.ok(!todaysPlan(midLadder(), { max: 9, budgetMin: 999 }).tasks.some(t => t.page === 'misses'));
+});
+
+test('anything in the book outranks every skill rung', () => {
+  const plan = todaysPlan(midLadder({ misses: bookOf([{ misses: 3 }, { misses: 1 }]) }), { max: 3, budgetMin: 10 });
+  assert.equal(plan.tasks[0].rule, 'misses');
+  assert.equal(plan.tasks[0].page, 'misses');
+  assert.equal(plan.tasks[0].href, 'misses.html');
+  assert.match(plan.tasks[0].title, /2 open/);
+  assert.match(plan.tasks[0].why, /worst: Point: × \(×3\)/);
+});
+
+test('a due vault number still outranks the book — only it has a deadline', () => {
+  const p = midLadder({
+    misses: bookOf([{ misses: 2 }]),
+    vault: { entries: [{ id: 'v1', label: 'π', code: '31415', radix: 10, mode: 'full', length: 5, seals: [5], due: TODAY, interval: 1, ease: 2.5, reviews: [] }] },
+  });
+  const rules = todaysPlan(p, { max: 3, budgetMin: 10 }).tasks.map(t => t.rule);
+  assert.equal(rules[0], 'vault-due');
+  assert.equal(rules[1], 'misses');
+});
+
+test('half-cleared entries are named, because they are the cheapest to finish', () => {
+  const t = todaysPlan(midLadder({ misses: bookOf([{ misses: 2, right: 1 }, { misses: 1 }]) }), { max: 3, budgetMin: 10 }).tasks[0];
+  assert.match(t.why, /2 open, 1 one right from gone/);
+});
+
+test('a book worked today comes back auto-ticked', () => {
+  const t = todaysPlan(midLadder({ misses: bookOf([{ misses: 1 }], `${TODAY}T09:00`) }), { max: 3, budgetMin: 10 }).tasks[0];
+  assert.equal(t.rule, 'misses');
+  assert.equal(t.autoDone, true);
 });
