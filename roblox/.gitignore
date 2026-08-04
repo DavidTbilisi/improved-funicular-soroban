@@ -1,0 +1,7 @@
+# Local build/tooling artifacts — the place file is built with `rojo build`,
+# and the rojo binary is fetched per-machine (see README).
+*.rbxlx
+*.rbxlx.lock
+*.rbxl
+rojo.exe
+rojo-*.zip
