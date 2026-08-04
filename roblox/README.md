@@ -1,10 +1,16 @@
 # Soroban Village — Roblox port
 
 A Roblox (Luau) rebuild of the **Soroban Village** game from the web soroban
-trainer in this repo. You solve bead-arithmetic contracts to mint soroban
-points (sp), build and upgrade a village on a 9×6 grid rendered as a **3D
-world**, light festivals, and climb an endless rank/achievement ladder. Your
-village is saved per player with `DataStoreService`.
+trainer in this repo — as a **walkable 3D world**. You spawn beside a giant
+ceremonial soroban, take bead-arithmetic contracts at its counting table to
+mint soroban points (sp), build and upgrade a village on a 9×6 grid, light
+festivals, and climb an endless rank/achievement ladder. Around the village
+lies open country: chop trees, pick berries and lift coin caches for
+resources — and since **one village day passes per solved contract**, every
+solve pushes the world's boundary outward and new country fills in. Gathering
+yields resources only, never sp: the soroban is deliberately the most
+beneficial thing you can do. Your village is saved per player with
+`DataStoreService`.
 
 This is a **from-scratch platform rewrite**, not a transpile: Roblox runs Luau,
 builds its world from Instances, and persists with DataStores. What carried over
@@ -24,13 +30,14 @@ roblox/
       Rng.luau
       domain/  Config Rod Soroban MovePlan Faces Pegs Number
       state/   Observable AbacusStore Commands
-      game/    Buildings Economy Challenges Goals Advisor Rank
+      game/    Buildings Economy Challenges Goals Advisor Rank World
                Achievements AchievementTracker GameSession GameSave
-    server/    → ServerScriptService   (DataStore persistence)
+    server/    → ServerScriptService   (DataStore persistence + world stage)
       VillageService.server.luau
+      WorldSetup.server.luau
     client/    → StarterPlayer.StarterPlayerScripts   (views + controller)
       GameController.client.luau
-      view/    BoardView VillageView HudView AchievementsView Effects
+      view/    BoardView VillageView HudView AchievementsView WorldView Effects
   tests/       headless specs (NOT synced into the game)
 ```
 
@@ -84,5 +91,15 @@ luau-analyze src/shared/game/GameSession.luau
 - **1-based grid.** Lua arrays can't hold nil holes, so village grid cells are
   `1..54` and an empty plot is the boolean `false` (the JS version is 0-based
   with `null`).
+- **The world is a pure function of the village day.** `shared/game/World.luau`
+  derives the boundary radius from `village.day` and lays gather nodes on a
+  deterministic golden-angle spiral — nothing about the map is stored, so a
+  healed or imported save always gets the right world, and the layout is
+  headlessly testable (`tests/world.spec.luau`). Node respawn timers are
+  client-side scenery in a client-authoritative solo game.
+- **Two modes, one controller.** Walking uses Roblox's own avatar camera; the
+  counting table's ProximityPrompt flips into board mode (the old diorama
+  camera + the contracts panel), and "Walk away" flips back. A contract begun
+  from the field (tapping a built plot to upgrade) walks you to the table.
 - **Out of scope.** The other trainer modes, the full 19-rod board, and the
   read-aloud/TTS features are not part of this port.

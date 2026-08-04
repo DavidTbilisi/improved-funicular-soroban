@@ -21,20 +21,30 @@ local AchievementTracker = require(Shared.game.AchievementTracker)
 local Goals = require(Shared.game.Goals)
 local Advisor = require(Shared.game.Advisor)
 local Buildings = require(Shared.game.Buildings)
+local World = require(Shared.game.World)
 
-local BoardView = require(script.Parent.view.BoardView)
-local VillageView = require(script.Parent.view.VillageView)
-local HudView = require(script.Parent.view.HudView)
-local AchievementsView = require(script.Parent.view.AchievementsView)
-local BoardInput = require(script.Parent.BoardInput)
+-- Wait for our sibling instances: a LocalScript in PlayerScripts can start
+-- running before the rest of StarterPlayerScripts has replicated to the client,
+-- so a raw `script.Parent.view` dot-index races the replication and errors.
+local viewFolder = script.Parent:WaitForChild("view")
+local BoardView = require(viewFolder:WaitForChild("BoardView"))
+local VillageView = require(viewFolder:WaitForChild("VillageView"))
+local HudView = require(viewFolder:WaitForChild("HudView"))
+local AchievementsView = require(viewFolder:WaitForChild("AchievementsView"))
+local WorldView = require(viewFolder:WaitForChild("WorldView"))
+local BoardInput = require(script.Parent:WaitForChild("BoardInput"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- --- fixed camera framing (tune in Studio if needed) -----------------------
+-- --- two modes: walk the world / sit at the counting table -----------------
+-- Walk mode is Roblox's own avatar camera. Board mode locks the camera to the
+-- framing the diorama build used (known-good), driven by the table's prompt.
 local camera = workspace.CurrentCamera
-camera.CameraType = Enum.CameraType.Scriptable
-camera.CFrame = CFrame.lookAt(Vector3.new(0, 34, 64), Vector3.new(0, 6, 16))
+-- Close enough that beads read at a glance, high enough that the village still
+-- peeks over the board's top rail (plot clicks for build/upgrade happen here).
+local BOARD_CAM = CFrame.lookAt(Vector3.new(0, 22, 48), Vector3.new(0, 9, 20))
+local BOARD_CFRAME = CFrame.new(0, 12, 30) * CFrame.Angles(math.rad(-18), 0, 0)
 
 -- --- persistence seam: client store backed by the server -------------------
 local remotes = Remotes.client()
@@ -71,7 +81,7 @@ local village = VillageView.new({
 
 local board = BoardView.new({
   parent = workspace,
-  cframe = CFrame.new(0, 12, 30) * CFrame.Angles(math.rad(-18), 0, 0),
+  cframe = BOARD_CFRAME,
   onToggleHeaven = function(kind, idx)
     bus:run(Commands.ToggleSky.new(store, kind, idx))
   end,
@@ -85,6 +95,73 @@ local board = BoardView.new({
 
 local hud = HudView.new({ parent = playerGui, callbacks = {} })
 local ach = AchievementsView.new({ parent = playerGui })
+
+local world = WorldView.new({
+  parent = workspace,
+  boardCFrame = BOARD_CFRAME,
+  onGather = function(nodeId, kind)
+    onGatherNode(nodeId, kind)
+  end,
+  onUseBoard = function()
+    enterBoardMode()
+  end,
+})
+
+-- --- board mode -------------------------------------------------------------
+local boardMode = false
+local lastContractEvt = nil
+local savedWalkSpeed = nil
+
+local function humanoidOf(char)
+  return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+function enterBoardMode()
+  if boardMode then
+    return
+  end
+  boardMode = true
+  camera.CameraType = Enum.CameraType.Scriptable
+  camera.CFrame = BOARD_CAM
+  local hum = humanoidOf(player.Character)
+  if hum then
+    savedWalkSpeed = hum.WalkSpeed
+    hum.WalkSpeed = 0 -- reckoning, not wandering
+  end
+  world.standPrompt.Enabled = false -- already seated
+  hud:setBoardMode(true)
+  if session:isActive() and lastContractEvt then
+    hud:showContract(lastContractEvt) -- a walked-away contract is still live
+  end
+end
+
+function leaveBoardMode()
+  if not boardMode then
+    return
+  end
+  boardMode = false
+  camera.CameraType = Enum.CameraType.Custom
+  local hum = humanoidOf(player.Character)
+  if hum then
+    hum.WalkSpeed = savedWalkSpeed or 16
+  end
+  world.standPrompt.Enabled = true
+  hud:setBoardMode(false)
+end
+
+-- A respawn mid-board-mode would revive the humanoid at default speed with a
+-- Scriptable camera pointed elsewhere — just drop back to walking.
+player.CharacterAdded:Connect(function()
+  if boardMode then
+    leaveBoardMode()
+  end
+end)
+
+-- --- gathering --------------------------------------------------------------
+function onGatherNode(nodeId, kind)
+  world:consume(nodeId, World.GATHER[kind].gains)
+  session:gather(kind)
+end
 
 -- --- focus manager (which rod the keypad drives) ---------------------------
 local focusIdx = 1 -- index into board.cols
@@ -136,6 +213,9 @@ hud.cb = {
   onAbandon = function()
     session:abandonChallenge()
   end,
+  onLeaveBoard = function()
+    leaveBoardMode()
+  end,
   onAchievements = function()
     ach:toggle(tracker:states())
   end,
@@ -179,6 +259,7 @@ session:subscribe(function(evt)
   local t = evt.type
   if t == "loaded" or t == "reset" then
     refreshVillage(evt.village)
+    world:setDay(evt.village.day)
   elseif t == "placed" then
     refreshVillage(evt.village)
     village:previewCell(evt.cellIdx)
@@ -186,17 +267,24 @@ session:subscribe(function(evt)
   elseif t == "festival" then
     refreshVillage(evt.village)
     village:festival()
+  elseif t == "gathered" then
+    hud:setVillage(evt.village)
   elseif t == "abandoned" then
+    lastContractEvt = nil
     refreshVillage(evt.village)
     hud:clearContract()
   elseif t == "challenge" then
+    lastContractEvt = evt
+    enterBoardMode() -- an upgrade tapped from the field walks you to the table
     hud:showContract(evt)
     setFocusTo("int", 1)
   elseif t == "refused" then
     hud:toast("Can't do that: " .. tostring(evt.reason))
   elseif t == "solved" then
+    lastContractEvt = nil
     hud:clearContract()
     refreshVillage(evt.village)
+    local grew = world:setDay(evt.day)
     if evt.kind == "earn" then
       village:flashPayout(nil, "+" .. evt.payout .. " 🧮")
     else
@@ -207,7 +295,11 @@ session:subscribe(function(evt)
       village:celebrate()
       hud:toast("🎌 Village founded!")
     else
-      hud:toast(evt.clean and "✨ Clean solve! +" .. evt.payout .. " sp" or "Solved — " .. evt.verdict)
+      local msg = evt.clean and "✨ Clean solve! +" .. evt.payout .. " sp" or "Solved — " .. evt.verdict
+      if grew then
+        msg ..= "  🌍 The boundary pushed outward!"
+      end
+      hud:toast(msg)
     end
   end
 end)

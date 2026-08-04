@@ -72,7 +72,9 @@ function HudView.new(opts)
   self.selectedBuilding = nil
   self.buildButtons = {}
 
-  local gui = mk("ScreenGui", { Name = "SorobanVillageHud", ResetOnSpawn = false, IgnoreGuiInset = true }, opts.parent)
+  -- Respect the GUI inset: with IgnoreGuiInset the top bar slid under Roblox's
+  -- own top-left buttons and the sp chip was unreadable.
+  local gui = mk("ScreenGui", { Name = "SorobanVillageHud", ResetOnSpawn = false, IgnoreGuiInset = false }, opts.parent)
   gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
   self.gui = gui
 
@@ -113,17 +115,28 @@ function HudView:_buildTopBar(gui)
 end
 
 function HudView:_buildSidePanel(gui)
+  -- Board-mode only: while walking the world IS the interface, so the panel
+  -- stays hidden until the player sits down at the counting table.
   local panel = mk("Frame", {
     Size = UDim2.new(0, 250, 1, -120), Position = UDim2.new(1, -262, 0, 56),
     BackgroundColor3 = DARK, BackgroundTransparency = 0.15, BorderSizePixel = 0,
+    Visible = false,
   }, gui)
   corner(panel, 10)
+  self.sidePanel = panel
   local scroll = mk("ScrollingFrame", {
     Size = UDim2.new(1, -12, 1, -12), Position = UDim2.fromOffset(6, 6),
     BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 6,
     CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y,
   }, panel)
   local list = mk("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, scroll)
+
+  local walk = button("🚶 Walk away", scroll, Color3.fromRGB(60, 90, 120), function()
+    if self.cb.onLeaveBoard then
+      self.cb.onLeaveBoard()
+    end
+  end)
+  walk.Size = UDim2.new(1, 0, 0, 32)
 
   label("📜 Contracts", scroll, { Size = UDim2.new(1, 0, 0, 24), Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left })
   for _, tier in Challenges.CHALLENGE_TIERS do
@@ -263,6 +276,15 @@ function HudView:setVillage(village)
     self.festivalBtn.Text = "🏮 Festival: " .. village.festival .. " left"
   else
     self.festivalBtn.Text = "🏮 Light Festival"
+  end
+end
+
+-- Board mode shows the contract/build panel; walking hides it (and the keypad —
+-- the controller re-shows an in-flight contract when the player sits back down).
+function HudView:setBoardMode(on)
+  self.sidePanel.Visible = on
+  if not on then
+    self.contractPanel.Visible = false
   end
 end
 

@@ -15,6 +15,7 @@ local Observable = if script
 local Buildings = if script then require(script.Parent.Buildings) else require("./Buildings")
 local Challenges = if script then require(script.Parent.Challenges) else require("./Challenges")
 local Economy = if script then require(script.Parent.Economy) else require("./Economy")
+local World = if script then require(script.Parent.World) else require("./World")
 
 local buildingById = Buildings.buildingById
 local GRID_CELLS = Buildings.GRID_CELLS
@@ -136,6 +137,22 @@ function GameSession:lightFestival()
   v.stats.festivals += 1
   self.save:save(v)
   self:notify({ type = "festival", village = v })
+end
+
+-- Harvest a world gather node (chop / pick / collect). Resources only — no sp,
+-- no day advance: gathering supplements the economy but never progresses it,
+-- which is what keeps the soroban the most beneficial thing in the world.
+function GameSession:gather(kind)
+  local def = World.GATHER[kind]
+  if not def then
+    return self:_refuse("unknown")
+  end
+  local v = self.village
+  for k, n in def.gains do
+    v.res[k] += n
+  end
+  self.save:save(v)
+  self:notify({ type = "gathered", kind = kind, gains = def.gains, village = v })
 end
 
 -- Placing costs only resources on hand and never touches the board.

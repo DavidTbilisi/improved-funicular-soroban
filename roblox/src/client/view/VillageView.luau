@@ -14,7 +14,7 @@ local RS = game:GetService("ReplicatedStorage")
 local Buildings = if script
   then require(RS.SorobanVillage.game.Buildings)
   else require("../../shared/game/Buildings")
-local Effects = if script then require(script.Parent.Effects) else require("./Effects")
+local Effects = if script then require(script.Parent:WaitForChild("Effects")) else require("./Effects")
 
 local GRID_COLS = Buildings.GRID_COLS
 local GRID_ROWS = Buildings.GRID_ROWS

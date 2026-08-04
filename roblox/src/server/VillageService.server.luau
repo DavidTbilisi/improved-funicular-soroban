@@ -24,9 +24,9 @@ local GameSave = require(Shared.game:WaitForChild("GameSave"))
 local SAVE_DEBOUNCE = 6 -- seconds between DataStore writes per player
 local net = Remotes.server()
 
--- This is a fixed-camera diorama game, not an avatar game — don't spawn a
--- character (the client sets a Scriptable camera over the board + village).
-Players.CharacterAutoLoads = false
+-- A walkable world: the avatar spawns and explores. (WorldSetup.server.luau
+-- builds the server-side ground + spawn pad the character stands on.)
+Players.CharacterAutoLoads = true
 
 -- DataStore may be unavailable in unpublished Studio without API access; degrade
 -- to per-session in-memory villages rather than erroring on every call.
