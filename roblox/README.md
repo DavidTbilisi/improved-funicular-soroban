@@ -56,6 +56,20 @@ roblox/
 > Access to API Services* ticked in Game Settings → Security). Without it the
 > server falls back to a fresh in-memory village per session.
 
+## Sound
+
+Roblox can't synthesize audio, but one uploaded note pitch-shifted through
+`Sound.PlaybackSpeed` covers the whole palette. Render the samples (zero-dep
+node, mirroring the web `soundService.js` envelopes exactly):
+
+```
+node scripts/make-sounds.mjs     # writes roblox/sounds/*.wav
+```
+
+Upload the five WAVs once in Studio (Asset Manager → Audio) and paste the
+asset ids into `src/client/SoundFx.luau` (`ASSET_IDS`). Until then every
+sound call silently no-ops — the game is fully playable in silence.
+
 ## Tests
 
 The `shared/` modules are pure and run headlessly under the

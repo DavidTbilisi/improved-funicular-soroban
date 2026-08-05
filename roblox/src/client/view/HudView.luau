@@ -112,6 +112,22 @@ function HudView:_buildTopBar(gui)
   local rankFrame = mk("Frame", { Size = UDim2.new(0, 190, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0 }, bar)
   corner(rankFrame, 8)
   self.rankLabel = label("🏙️ Camp", rankFrame, { TextXAlignment = Enum.TextXAlignment.Center })
+  order += 1
+
+  self.soundBtn = mk("TextButton", {
+    Size = UDim2.new(0, 44, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0,
+    Font = Enum.Font.Gotham, TextScaled = true, Text = "🔊", TextColor3 = TEXT,
+  }, bar)
+  corner(self.soundBtn, 8)
+  self.soundBtn.Activated:Connect(function()
+    if self.cb.onToggleSound then
+      self.cb.onToggleSound()
+    end
+  end)
+end
+
+function HudView:setSoundIcon(on)
+  self.soundBtn.Text = if on then "🔊" else "🔇"
 end
 
 function HudView:_buildSidePanel(gui)
