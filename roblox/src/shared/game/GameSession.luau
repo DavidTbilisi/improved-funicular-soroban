@@ -139,6 +139,59 @@ function GameSession:lightFestival()
   self:notify({ type = "festival", village = v })
 end
 
+-- Visit a landmark node (the every-15th finds): claim a golden tree's cache,
+-- pay to restore a ruin, or barter at a waystone. Resources only, never sp,
+-- never a day — the ruin's blessing only MULTIPLIES what solving earns.
+function GameSession:visitLandmark(id)
+  if type(id) ~= "number" or id % 1 ~= 0 or not World.isLandmark(id) then
+    return self:_refuse("unknown")
+  end
+  local node = World.nodeAt(id)
+  local v = self.village
+  if node.dist > World.radiusForDay(v.day) then
+    return self:_refuse("range") -- beyond today's boundary
+  end
+  local def = World.LANDMARKS[node.kind]
+  local key = tostring(id) -- DataStore JSON needs string keys
+  if node.kind == "goldtree" then
+    if v.landmarks.claimed[key] then
+      return self:_refuse("claimed")
+    end
+    for k, n in def.gains do
+      v.res[k] += n
+    end
+    v.landmarks.claimed[key] = true
+    self.save:save(v)
+    self:notify({ type = "landmark", kind = "goldtree", id = id, gains = def.gains, village = v })
+  elseif node.kind == "ruin" then
+    if v.landmarks.restored[key] then
+      return self:_refuse("claimed")
+    end
+    if not Economy.canAfford(v, def.cost) then
+      return self:_refuse("cost")
+    end
+    Economy.spend(v, def.cost)
+    v.landmarks.restored[key] = true
+    self.save:save(v)
+    self:notify({ type = "landmark", kind = "ruin", id = id, cost = def.cost,
+      bonus = Economy.ruinBonus(v), village = v })
+  else -- waystone: barter give -> get, repeatable (cooldown is view-side)
+    for k, n in def.give do
+      if v.res[k] < n then
+        return self:_refuse("cost")
+      end
+    end
+    for k, n in def.give do
+      v.res[k] -= n
+    end
+    for k, n in def.get do
+      v.res[k] += n
+    end
+    self.save:save(v)
+    self:notify({ type = "landmark", kind = "waystone", id = id, give = def.give, get = def.get, village = v })
+  end
+end
+
 -- Harvest a world gather node (chop / pick / collect). Resources only — no sp,
 -- no day advance: gathering supplements the economy but never progresses it,
 -- which is what keeps the soroban the most beneficial thing in the world.
@@ -200,7 +253,8 @@ function GameSession:_solve()
   if ch.kind == "earn" then
     local judge = { faults = ch.faults, elapsedMs = elapsedMs }
     parts = Challenges.payoutParts(ch.tier, judge, v.stats.streak)
-    pay = Challenges.payout(ch.tier, judge, Economy.shrineBonus(v) + Economy.festivalBonus(v), v.stats.streak)
+    pay = Challenges.payout(ch.tier, judge,
+      Economy.shrineBonus(v) + Economy.festivalBonus(v) + Economy.ruinBonus(v), v.stats.streak)
     v.sp += pay
     v.stats.spEarned += pay
     if pay > v.stats.bestPayout then

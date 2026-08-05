@@ -7,9 +7,12 @@ mint soroban points (sp), build and upgrade a village on a 9×6 grid, light
 festivals, and climb an endless rank/achievement ladder. Around the village
 lies open country: chop trees, pick berries and lift coin caches for
 resources — and since **one village day passes per solved contract**, every
-solve pushes the world's boundary outward and new country fills in. Gathering
-yields resources only, never sp: the soroban is deliberately the most
-beneficial thing you can do. Your village is saved per player with
+solve pushes the world's boundary outward and new country fills in. Every
+15th node the boundary reaches is a **landmark find**: a golden tree (one-time
+cache), an ancient ruin (pay to restore it for a permanent contract-payout
+blessing, +2% each, capped +10%), or a waystone (barter wood for coin).
+Gathering and landmarks yield resources only, never sp: the soroban is
+deliberately the most beneficial thing you can do. Your village is saved per player with
 `DataStoreService`.
 
 This is a **from-scratch platform rewrite**, not a transpile: Roblox runs Luau,

@@ -17,10 +17,14 @@ local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BadgeService = game:GetService("BadgeService")
+
 local Shared = ReplicatedStorage:WaitForChild("SorobanVillage")
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local GameSave = require(Shared.game:WaitForChild("GameSave"))
 local Rank = require(Shared.game:WaitForChild("Rank"))
+local Achievements = require(Shared.game:WaitForChild("Achievements"))
+local BadgeIds = require(Shared.game:WaitForChild("BadgeIds"))
 
 local SAVE_DEBOUNCE = 6 -- seconds between DataStore writes per player
 local net = Remotes.server()
@@ -138,6 +142,47 @@ net.SaveVillage.OnServerEvent:Connect(function(player: Player, blob)
   if os.clock() - entry.lastSave >= SAVE_DEBOUNCE then
     writeVillage(player.UserId)
   end
+end)
+
+-- Badge awards: the client reports an unlock, the server trusts nothing —
+-- the achievement must exist, be mapped to a badge, and actually hold
+-- against the HEALED cached village (its persisted unlock or live progress).
+net.AwardBadge.OnServerEvent:Connect(function(player: Player, achId)
+  if type(achId) ~= "string" then
+    return
+  end
+  local badgeId = BadgeIds[achId]
+  if not badgeId or badgeId == 0 then
+    return
+  end
+  local entry = cache[player.UserId]
+  if not entry then
+    return
+  end
+  local village = entry.village
+  local persisted = type(village.ach) == "table"
+    and type(village.ach.unlocked) == "table"
+    and village.ach.unlocked[achId] ~= nil
+  if not persisted then
+    local counters = if type(village.ach) == "table" then village.ach.counters else nil
+    local ok, states = pcall(Achievements.achievementStates, { village = village, counters = counters or {} })
+    if not ok then
+      return
+    end
+    local live = false
+    for _, s in states do
+      if s.id == achId and s.done then
+        live = true
+        break
+      end
+    end
+    if not live then
+      return
+    end
+  end
+  pcall(function()
+    BadgeService:AwardBadgeAsync(player.UserId, badgeId)
+  end)
 end)
 
 Players.PlayerAdded:Connect(loadVillage)

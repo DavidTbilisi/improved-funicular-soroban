@@ -8,6 +8,9 @@
 --                                  healed village blob for that player.
 --   SaveVillage (RemoteEvent)    — client fires with its current village blob;
 --                                  server caches + debounces a DataStore write.
+--   AwardBadge  (RemoteEvent)    — client reports an achievement unlock; the
+--                                  server RE-VALIDATES against its healed
+--                                  village before touching BadgeService.
 -- ============================================================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -32,6 +35,7 @@ function Remotes.server()
     folder = folder,
     GetVillage = ensure(folder, "RemoteFunction", "GetVillage"),
     SaveVillage = ensure(folder, "RemoteEvent", "SaveVillage"),
+    AwardBadge = ensure(folder, "RemoteEvent", "AwardBadge"),
   }
 end
 
@@ -42,6 +46,7 @@ function Remotes.client()
     folder = folder,
     GetVillage = folder:WaitForChild("GetVillage"),
     SaveVillage = folder:WaitForChild("SaveVillage"),
+    AwardBadge = folder:WaitForChild("AwardBadge"),
   }
 end
 
