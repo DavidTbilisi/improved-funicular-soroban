@@ -14,9 +14,12 @@
 -- ============================================================================
 local Levels = {}
 
--- Flash interval, slowest → fastest, ms per number. The bottom is roughly
--- competition pace: 10 three-digit numbers at 200 ms is two seconds total.
-Levels.SPEEDS = table.freeze({ 2000, 1600, 1300, 1000, 800, 650, 500, 400, 300, 250, 200 })
+-- Flash interval, slowest → fastest, ms per number. The top of the ladder is
+-- roughly competition pace: 10 three-digit numbers at 200 ms is two seconds
+-- total. PORT ADDITION: three learner paces above the web's 2000 ms ceiling —
+-- a first 3-digit round deserves four seconds a number. Slower than a rung's
+-- baseMs never pays a pace bonus, so patience costs nothing and farms nothing.
+Levels.SPEEDS = table.freeze({ 4000, 3200, 2600, 2000, 1600, 1300, 1000, 800, 650, 500, 400, 300, 250, 200 })
 
 -- Share of each interval the number is actually lit; the rest is blank. The
 -- gap is load-bearing: without it two equal consecutive numbers read as one.
