@@ -16,8 +16,11 @@ local Buildings = if script then require(script.Parent.Buildings) else require("
 local Challenges = if script then require(script.Parent.Challenges) else require("./Challenges")
 local Economy = if script then require(script.Parent.Economy) else require("./Economy")
 local World = if script then require(script.Parent.World) else require("./World")
+-- WaitForChild: the anzan folder is newer than its siblings, and a client
+-- require racing its replication would kill the whole boot (the empty-sky
+-- failure class). Instant when already present; unchanged under the CLI.
 local AnzanLevels = if script
-  then require(script.Parent.Parent.anzan.Levels)
+  then require(script.Parent.Parent:WaitForChild("anzan"):WaitForChild("Levels"))
   else require("../anzan/Levels")
 
 local buildingById = Buildings.buildingById

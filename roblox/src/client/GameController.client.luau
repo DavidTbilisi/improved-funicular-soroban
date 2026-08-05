@@ -8,6 +8,7 @@
 -- ============================================================================
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = RS:WaitForChild("SorobanVillage")
 local Remotes = require(Shared:WaitForChild("Remotes"))
@@ -24,8 +25,9 @@ local Buildings = require(Shared.game.Buildings)
 local World = require(Shared.game.World)
 local MovePlan = require(Shared.domain.MovePlan)
 local Rod = require(Shared.domain.Rod)
-local AnzanLevels = require(Shared.anzan.Levels)
-local AnzanSession = require(Shared.anzan.AnzanSession)
+local anzanFolder = Shared:WaitForChild("anzan")
+local AnzanLevels = require(anzanFolder:WaitForChild("Levels"))
+local AnzanSession = require(anzanFolder:WaitForChild("AnzanSession"))
 
 -- Wait for our sibling instances: a LocalScript in PlayerScripts can start
 -- running before the rest of StarterPlayerScripts has replicated to the client,
@@ -198,8 +200,14 @@ local anzanView = AnzanView.new({
 local boardMode = false
 local anzanMode = false
 local lastContractEvt = nil
-local savedWalkSpeed = nil
 local hotkeys -- BoardHotkeys, assigned below (forward-declared for the closures)
+
+-- Sprint: hold Shift to hurry (the world is a couple hundred studs across).
+local WALK_SPEED, SPRINT_SPEED = 16, 26
+local sprinting = false
+local function currentWalkSpeed()
+  return if sprinting then SPRINT_SPEED else WALK_SPEED
+end
 
 local function humanoidOf(char)
   return char and char:FindFirstChildOfClass("Humanoid")
@@ -218,7 +226,6 @@ function enterBoardMode()
   camera.CFrame = BOARD_CAM
   local hum = humanoidOf(player.Character)
   if hum then
-    savedWalkSpeed = hum.WalkSpeed
     hum.WalkSpeed = 0 -- reckoning, not wandering
   end
   world.standPrompt.Enabled = false -- already seated
@@ -239,7 +246,7 @@ function leaveBoardMode()
   camera.CameraType = Enum.CameraType.Custom
   local hum = humanoidOf(player.Character)
   if hum then
-    hum.WalkSpeed = savedWalkSpeed or 16
+    hum.WalkSpeed = currentWalkSpeed()
   end
   world.standPrompt.Enabled = true
   if hotkeys then
@@ -258,7 +265,6 @@ function enterAnzanMode()
   camera.CFrame = ANZAN_CAM
   local hum = humanoidOf(player.Character)
   if hum then
-    savedWalkSpeed = hum.WalkSpeed
     hum.WalkSpeed = 0
   end
   anzanView.stallPrompt.Enabled = false
@@ -274,7 +280,7 @@ function leaveAnzanMode()
   camera.CameraType = Enum.CameraType.Custom
   local hum = humanoidOf(player.Character)
   if hum then
-    hum.WalkSpeed = savedWalkSpeed or 16
+    hum.WalkSpeed = currentWalkSpeed()
   end
   anzanView.stallPrompt.Enabled = true
   anzanView:setPanelVisible(false)
@@ -282,6 +288,27 @@ end
 
 anzanView.stallPrompt.Triggered:Connect(function()
   enterAnzanMode()
+end)
+
+-- Hold Shift to sprint (never while seated — the modes own the walk speed).
+local function setSprint(on)
+  sprinting = on
+  if not (boardMode or anzanMode) then
+    local hum = humanoidOf(player.Character)
+    if hum then
+      hum.WalkSpeed = currentWalkSpeed()
+    end
+  end
+end
+UserInputService.InputBegan:Connect(function(input)
+  if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+    setSprint(true)
+  end
+end)
+UserInputService.InputEnded:Connect(function(input)
+  if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+    setSprint(false)
+  end
 end)
 
 -- A respawn mid-mode would revive the humanoid at default speed with a

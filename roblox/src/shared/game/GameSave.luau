@@ -11,7 +11,7 @@ local Buildings = if script then require(script.Parent.Buildings) else require("
 local World = if script then require(script.Parent.World) else require("./World")
 local Achievements = if script then require(script.Parent.Achievements) else require("./Achievements")
 local AnzanLevels = if script
-  then require(script.Parent.Parent.anzan.Levels)
+  then require(script.Parent.Parent:WaitForChild("anzan"):WaitForChild("Levels"))
   else require("../anzan/Levels")
 local buildingById = Buildings.buildingById
 local GRID_CELLS = Buildings.GRID_CELLS
