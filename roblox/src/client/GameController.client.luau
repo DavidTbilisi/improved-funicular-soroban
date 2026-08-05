@@ -35,8 +35,10 @@ local HudView = require(viewFolder:WaitForChild("HudView"))
 local AchievementsView = require(viewFolder:WaitForChild("AchievementsView"))
 local WorldView = require(viewFolder:WaitForChild("WorldView"))
 local LightingMood = require(viewFolder:WaitForChild("LightingMood"))
+local VillagerView = require(viewFolder:WaitForChild("VillagerView"))
 local BoardInput = require(script.Parent:WaitForChild("BoardInput"))
 local BoardHotkeys = require(script.Parent:WaitForChild("BoardHotkeys"))
+local SoundFx = require(script.Parent:WaitForChild("SoundFx"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -88,9 +90,11 @@ local board = BoardView.new({
   cframe = BOARD_CFRAME,
   onToggleHeaven = function(kind, idx)
     bus:run(Commands.ToggleSky.new(store, kind, idx))
+    sfx:bead(1)
   end,
   onClickEarth = function(kind, idx, bead)
     bus:run(Commands.ClickEarth.new(store, kind, idx, bead))
+    sfx:bead(1)
   end,
   onFocusRod = function(kind, idx)
     setFocusTo(kind, idx)
@@ -100,6 +104,29 @@ local board = BoardView.new({
 local hud = HudView.new({ parent = playerGui, callbacks = {} })
 local ach = AchievementsView.new({ parent = playerGui })
 local mood = LightingMood.new({ parent = workspace, origin = CFrame.new(0, 0, 0) })
+local sfx = SoundFx.new()
+local soundOn = true
+local villagers = VillagerView.new({
+  parent = workspace,
+  spotFor = function()
+    return village:randomSpot()
+  end,
+})
+
+-- Hut levels house villagers; a shrine brings the elder out.
+local function populationOf(v)
+  local pop, hasShrine = 0, false
+  for _, cell in v.grid do
+    if cell then
+      if cell.id == "hut" then
+        pop += cell.level
+      elseif cell.id == "shrine" then
+        hasShrine = true
+      end
+    end
+  end
+  return math.min(12, pop), hasShrine
+end
 
 local world = WorldView.new({
   parent = workspace,
@@ -268,6 +295,11 @@ hud.cb = {
   onLeaveBoard = function()
     leaveBoardMode()
   end,
+  onToggleSound = function()
+    soundOn = not soundOn
+    sfx:setEnabled(soundOn)
+    hud:setSoundIcon(soundOn)
+  end,
   onAchievements = function()
     ach:toggle(tracker:states())
   end,
@@ -277,16 +309,22 @@ hud.cb = {
   onKeypad = function(value, sign)
     local c = currentFocus()
     local ok = BoardInput.pressDigit(store, c.kind, c.idx, value, sign)
-    if not ok then
+    if ok then
+      sfx:digit(value, sign)
+    else
       session:fault()
+      sfx:reject()
       tradeToast(sign, value)
     end
   end,
   onCarry = function(sign)
     local c = currentFocus()
     local ok = BoardInput.carry(store, c.kind, c.idx, sign)
-    if not ok then
+    if ok then
+      sfx:carry(sign)
+    else
       session:fault()
+      sfx:reject()
       carryToast(sign)
     end
   end,
@@ -300,8 +338,11 @@ hotkeys = BoardHotkeys.new({
   onDigit = function(sign, d)
     local c = currentFocus()
     local ok = BoardInput.pressWhole(store, c.kind, c.idx, d, sign)
-    if not ok then
+    if ok then
+      sfx:digit(d, sign)
+    else
       session:fault()
+      sfx:reject()
       tradeToast(sign, d)
     end
   end,
@@ -314,6 +355,7 @@ hotkeys = BoardHotkeys.new({
   onReset = function()
     session:fault() -- clearing mid-contract spoils a clean solve, as on the web
     bus:run(Commands.SetValue.new(store, "0"))
+    sfx:reset()
     hud:toast("♻ Board cleared to 0.")
   end,
 })
@@ -328,6 +370,7 @@ board:update(store)
 local function refreshVillage(v)
   hud:setVillage(v)
   village:renderVillage(v)
+  villagers:setPopulation(populationOf(v))
   hud:setGoal(Goals.nextGoal(v))
   hud:setHint(Advisor.nextHint(v).msg)
 end
@@ -348,6 +391,7 @@ session:subscribe(function(evt)
     refreshVillage(evt.village)
     village:festival()
     mood:setFestival(true)
+    sfx:levelUp()
   elseif t == "gathered" then
     hud:setVillage(evt.village)
   elseif t == "abandoned" then
@@ -360,6 +404,7 @@ session:subscribe(function(evt)
     hud:showContract(evt)
     setFocusTo("int", 1)
   elseif t == "refused" then
+    sfx:reject()
     hud:toast("Can't do that: " .. tostring(evt.reason))
   elseif t == "solved" then
     lastContractEvt = nil
@@ -376,8 +421,10 @@ session:subscribe(function(evt)
     village:pulseDay(evt.day)
     if evt.milestone == "founded" then
       village:celebrate()
+      sfx:levelUp()
       hud:toast("🎌 Village founded!")
     else
+      sfx:solve()
       local msg = evt.clean and "✨ Clean solve! +" .. evt.payout .. " sp" or "Solved — " .. evt.verdict
       if grew then
         msg ..= "  🌍 The boundary pushed outward!"
@@ -392,6 +439,7 @@ tracker:observe(session)
 tracker:subscribe(function(evt)
   if evt.type == "unlocked" then
     ach:toast(evt.achievement)
+    sfx:levelUp()
   end
 end)
 

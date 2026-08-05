@@ -7,3 +7,5 @@ rojo.exe
 rojo-*.zip
 luau*.exe
 luau-*.zip
+# rendered by scripts/make-sounds.mjs; uploaded to Roblox once, not versioned
+sounds/
