@@ -15,7 +15,7 @@
 -- ============================================================================
 local RS = game:GetService("ReplicatedStorage")
 local Levels = if script
-  then require(RS.SorobanVillage.anzan.Levels)
+  then require(RS:WaitForChild("SorobanVillage"):WaitForChild("anzan"):WaitForChild("Levels"))
   else require("../../shared/anzan/Levels")
 local Effects = if script then require(script.Parent:WaitForChild("Effects")) else require("./Effects")
 
