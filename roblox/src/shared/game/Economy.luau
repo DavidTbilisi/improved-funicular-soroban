@@ -31,6 +31,11 @@ function Economy.newVillage()
       solves = 0, clean = 0, spEarned = 0, bestPayout = 0,
       streak = 0, bestStreak = 0, festivals = 0, founded = false,
     },
+    -- AchievementTracker's blob rides the village save (it heals its own
+    -- shape on load; {} means "fresh"). Landmark claims persist by node id
+    -- (string keys — DataStore JSON needs them).
+    ach = {},
+    landmarks = { claimed = {}, restored = {} },
   }
 end
 
@@ -173,6 +178,16 @@ function Economy.advanceDay(village)
     village.festival -= 1
   end
   return y
+end
+
+-- Restored ruins bless contract payouts: +2% each, capped at +10%. The ruin
+-- only MULTIPLIES what solving earns — sp still mints nowhere but the soroban.
+function Economy.ruinBonus(village): number
+  local n = 0
+  for _ in (village.landmarks and village.landmarks.restored) or {} do
+    n += 1
+  end
+  return math.min(0.1, n * 0.02)
 end
 
 -- Shrine blessing on contract payouts: +10% per shrine level, capped at +30%.

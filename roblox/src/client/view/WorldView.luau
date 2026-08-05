@@ -130,15 +130,51 @@ function WorldView:_setFence(radius)
   end
 end
 
--- --- gather nodes ------------------------------------------------------------
+-- --- gather + landmark nodes -------------------------------------------------
+local COLOR_SLATE = Color3.fromRGB(122, 126, 134)
+local COLOR_RUNE = Color3.fromRGB(120, 200, 255)
+
 function WorldView:_makeNode(n)
-  local def = World.GATHER[n.kind]
+  local def = World.GATHER[n.kind] or World.LANDMARKS[n.kind]
   local m = Instance.new("Model")
   m.Name = n.kind .. n.id
   m.Parent = self.nodeFolder
 
   local promptHost
-  if n.kind == "tree" then
+  if n.kind == "goldtree" then
+    local trunk = newPart("Trunk", Vector3.new(1.6, 7, 1.6), Color3.fromRGB(150, 116, 52), m, Enum.Material.Wood)
+    trunk.CFrame = CFrame.new(n.x, 3.5, n.z)
+    local leaves = newPart("Leaves", Vector3.new(6, 6, 6), COLOR_COIN, m, Enum.Material.Neon)
+    leaves.Shape = Enum.PartType.Ball
+    leaves.CanCollide = false
+    leaves.CFrame = CFrame.new(n.x, 8.5, n.z)
+    local light = Instance.new("PointLight")
+    light.Color = COLOR_COIN
+    light.Range = 12
+    light.Brightness = 1.2
+    light.Parent = leaves
+    promptHost = trunk
+  elseif n.kind == "ruin" then
+    local p1 = newPart("Pillar1", Vector3.new(1.1, 5.5, 1.1), COLOR_SLATE, m, Enum.Material.Slate)
+    p1.CFrame = CFrame.new(n.x - 1.6, 2.75, n.z)
+    local p2 = newPart("Pillar2", Vector3.new(1.1, 4.4, 1.1), COLOR_SLATE, m, Enum.Material.Slate)
+    p2.CFrame = CFrame.new(n.x + 1.6, 2.2, n.z) * CFrame.Angles(0, 0, math.rad(9))
+    -- the lintel exists in both states; restoration swaps which one shows
+    local fallen = newPart("LintelFallen", Vector3.new(4.4, 0.9, 1.1), COLOR_SLATE, m, Enum.Material.Slate)
+    fallen.CFrame = CFrame.new(n.x + 0.6, 0.45, n.z + 1.9) * CFrame.Angles(0, math.rad(24), 0)
+    local seated = newPart("LintelSeated", Vector3.new(4.6, 0.9, 1.1), COLOR_SLATE, m, Enum.Material.Slate)
+    seated.CanCollide = false
+    seated.Transparency = 1
+    seated.CFrame = CFrame.new(n.x, 5.4, n.z)
+    promptHost = p1
+  elseif n.kind == "waystone" then
+    local stone = newPart("Obelisk", Vector3.new(1.6, 6, 1.6), COLOR_SLATE, m, Enum.Material.Slate)
+    stone.CFrame = CFrame.new(n.x, 3, n.z) * CFrame.Angles(0, math.rad(30), 0)
+    local rune = newPart("Rune", Vector3.new(1.7, 0.5, 1.7), COLOR_RUNE, m, Enum.Material.Neon)
+    rune.CanCollide = false
+    rune.CFrame = CFrame.new(n.x, 4.2, n.z) * CFrame.Angles(0, math.rad(30), 0)
+    promptHost = stone
+  elseif n.kind == "tree" then
     local trunk = newPart("Trunk", Vector3.new(1.4, 6, 1.4), COLOR_TRUNK, m, Enum.Material.Wood)
     trunk.CFrame = CFrame.new(n.x, 3, n.z)
     local leaves = newPart("Leaves", Vector3.new(5.5, 5.5, 5.5), COLOR_LEAVES, m, Enum.Material.Grass)
@@ -184,7 +220,58 @@ function WorldView:_makeNode(n)
     end
   end
   self.nodes[n.id] = { model = m, prompt = prompt, parts = parts, kind = n.kind }
+  self:_applyLandmarkState(n.id, self.nodes[n.id]) -- late spawns come up claimed
   return self.nodes[n.id]
+end
+
+-- --- landmark claim state ----------------------------------------------------
+-- Claims live in the village blob; the view only re-skins. Called on load,
+-- after every landmark event, and for nodes the growing map spawns later.
+function WorldView:setLandmarks(landmarks)
+  self.landmarks = landmarks
+  for id, node in self.nodes do
+    self:_applyLandmarkState(id, node)
+  end
+end
+
+function WorldView:_applyLandmarkState(id, node)
+  local lm = self.landmarks
+  if not lm then
+    return
+  end
+  local key = tostring(id)
+  if node.kind == "goldtree" and lm.claimed and lm.claimed[key] then
+    -- harvested: bare trunk, no glow, no prompt — permanently claimed
+    node.prompt.Enabled = false
+    for _, d in node.model:GetDescendants() do
+      if d.Name == "Leaves" then
+        d.Transparency = 1
+        d.CanQuery = false
+      elseif d:IsA("PointLight") then
+        d.Enabled = false
+      end
+    end
+  elseif node.kind == "ruin" and lm.restored and lm.restored[key] then
+    -- restored: the lintel sits seated, the site glows softly, prompt off
+    node.prompt.Enabled = false
+    local fallen = node.model:FindFirstChild("LintelFallen")
+    local seated = node.model:FindFirstChild("LintelSeated")
+    if fallen then
+      fallen.Transparency = 1
+      fallen.CanCollide = false
+      fallen.CanQuery = false
+    end
+    if seated then
+      seated.Transparency = 0
+      if not seated:FindFirstChildOfClass("PointLight") then
+        local light = Instance.new("PointLight")
+        light.Color = COLOR_RUNE
+        light.Range = 10
+        light.Brightness = 0.8
+        light.Parent = seated
+      end
+    end
+  end
 end
 
 -- (Re)fit the world to a village day. Idempotent; spawns only what is newly in
@@ -211,26 +298,37 @@ function WorldView:setDay(day)
   return grew
 end
 
+-- Float a gains readout over a node without touching its state (the landmark
+-- events use this — their visuals come from setLandmarks, not from hiding).
+function WorldView:flashGains(id, gains)
+  local node = self.nodes[id]
+  if not node or node.model.Parent == nil then
+    return
+  end
+  local bits = {}
+  for k, n in gains do
+    table.insert(bits, "+" .. n .. " " .. (RES_EMOJI[k] or k))
+  end
+  Effects.floatLabel(table.concat(bits, "  "), node.model:GetPivot().Position + Vector3.new(0, 3, 0), COLOR_COIN)
+end
+
 -- A harvest: hide the node, float what it gave, bring it back after its rest.
 function WorldView:consume(id, gains)
   local node = self.nodes[id]
   if not node or node.model.Parent == nil then
     return
   end
-  local def = World.GATHER[node.kind]
-  local pivot = node.model:GetPivot().Position
-
-  local bits = {}
-  for k, n in gains do
-    table.insert(bits, "+" .. n .. " " .. (RES_EMOJI[k] or k))
-  end
-  Effects.floatLabel(table.concat(bits, "  "), pivot + Vector3.new(0, 3, 0), COLOR_COIN)
+  local def = World.GATHER[node.kind] or World.LANDMARKS[node.kind]
+  self:flashGains(id, gains)
 
   node.prompt.Enabled = false
   for p in node.parts do
     p.Transparency = 1
     p.CanCollide = false
     p.CanQuery = false
+  end
+  if not def.respawnS then
+    return -- no respawn: a one-time find stays consumed (setLandmarks skins it)
   end
   task.delay(def.respawnS, function()
     if node.model.Parent == nil then
@@ -239,7 +337,7 @@ function WorldView:consume(id, gains)
     for p, t in node.parts do
       p.Transparency = t
       p.CanQuery = true
-      p.CanCollide = p.Name ~= "Leaves" and p.Name ~= "Berry"
+      p.CanCollide = p.Name ~= "Leaves" and p.Name ~= "Berry" and p.Name ~= "Rune"
       Effects.pop(p, 1.2, 0.25)
     end
     node.prompt.Enabled = true

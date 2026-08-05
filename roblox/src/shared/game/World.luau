@@ -51,6 +51,35 @@ World.GATHER = table.freeze({
   }),
 })
 
+-- --- landmarks ---------------------------------------------------------------
+-- Every 15th node is promoted to a LANDMARK — a find, not another tree. The
+-- promotion is a pure predicate on the id, so every existing id keeps its
+-- kind (15 % 5 == 0 lands on what was a tree; berry/coin density untouched)
+-- and persisted claims keyed by id can never dangle. ~24 by max radius, the
+-- first (~81 studs) reachable on day 4.
+World.LANDMARK_EVERY = 15
+local LANDMARK_CYCLE = table.freeze({ "goldtree", "ruin", "waystone" })
+
+World.LANDMARKS = table.freeze({
+  goldtree = table.freeze({ -- one-time cache; persisted claim, never respawns
+    name = "Golden tree", action = "Harvest", emoji = "🌟",
+    gains = table.freeze({ wood = 12, food = 6, coin = 6 }),
+  }),
+  ruin = table.freeze({ -- restoration project: a resource sink, paid once
+    name = "Ancient ruin", action = "Restore", emoji = "🏛️",
+    cost = table.freeze({ wood = 20, food = 20, coin = 10 }),
+  }),
+  waystone = table.freeze({ -- repeatable barter, mild-loss rate on purpose
+    name = "Waystone", action = "Trade", emoji = "🗿",
+    give = table.freeze({ wood = 5 }), get = table.freeze({ coin = 4 }),
+    respawnS = 120,
+  }),
+})
+
+function World.isLandmark(i: number): boolean
+  return i % World.LANDMARK_EVERY == 0
+end
+
 -- Node i's distance from the origin grows with sqrt(i) (even density) and its
 -- angle steps by the golden angle (no spokes). MIN_NODE_R keeps every node
 -- clear of the village grid, the counting table and the spawn pad.
@@ -63,9 +92,17 @@ local KIND_CYCLE = table.freeze({ "tree", "berry", "tree", "berry", "coin" })
 function World.nodeAt(i: number)
   local dist = World.MIN_NODE_R + World.NODE_SPACING * math.sqrt(i)
   local angle = i * GOLDEN
+  local kind, landmark
+  if World.isLandmark(i) then
+    kind = LANDMARK_CYCLE[(i / World.LANDMARK_EVERY - 1) % #LANDMARK_CYCLE + 1]
+    landmark = true
+  else
+    kind = KIND_CYCLE[(i % #KIND_CYCLE) + 1]
+  end
   return {
     id = i,
-    kind = KIND_CYCLE[(i % #KIND_CYCLE) + 1],
+    kind = kind,
+    landmark = landmark,
     x = math.cos(angle) * dist,
     z = math.sin(angle) * dist,
     dist = dist,

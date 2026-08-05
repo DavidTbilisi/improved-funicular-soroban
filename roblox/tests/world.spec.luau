@@ -31,7 +31,7 @@ for _, n in a do
   if n.dist > r3 then
     allIn = false
   end
-  if not World.GATHER[n.kind] then
+  if not (World.GATHER[n.kind] or World.LANDMARKS[n.kind]) then
     allKinds = false
   end
 end

@@ -8,6 +8,8 @@
 -- ============================================================================
 local Economy = if script then require(script.Parent.Economy) else require("./Economy")
 local Buildings = if script then require(script.Parent.Buildings) else require("./Buildings")
+local World = if script then require(script.Parent.World) else require("./World")
+local Achievements = if script then require(script.Parent.Achievements) else require("./Achievements")
 local buildingById = Buildings.buildingById
 local GRID_CELLS = Buildings.GRID_CELLS
 
@@ -73,6 +75,56 @@ function GameSave.fix(raw)
     if raw.stats.founded == true then
       v.stats.founded = true
     end
+  end
+  -- Landmark claims: numeric-string keys that must name real landmark ids —
+  -- anything else (junk keys, non-landmark ids, values that aren't `true`)
+  -- silently drops, so a hostile blob can't grow the save unboundedly.
+  if type(raw.landmarks) == "table" then
+    for _, field in { "claimed", "restored" } do
+      local src = raw.landmarks[field]
+      if type(src) == "table" then
+        for k, val in src do
+          local id = tonumber(k)
+          if val == true and id and id % 1 == 0 and id > 0 and World.isLandmark(id)
+            and World.nodeAt(id).dist <= World.MAX_RADIUS then
+            v.landmarks[field][tostring(id)] = true
+          end
+        end
+      end
+    end
+  end
+  -- The achievement tracker's blob: shape-whitelist here (known achievement
+  -- ids, numeric counters, known-shape sets); the tracker heals the rest of
+  -- its own structure on load.
+  if type(raw.ach) == "table" and raw.ach.v == 1 then
+    local a = { v = 1, seeded = raw.ach.seeded == true, unlocked = {}, counters = {} }
+    if type(raw.ach.unlocked) == "table" then
+      for _, def in Achievements.ACHIEVEMENTS do
+        if type(raw.ach.unlocked[def.id]) == "string" then
+          a.unlocked[def.id] = raw.ach.unlocked[def.id]
+        end
+      end
+    end
+    if type(raw.ach.counters) == "table" then
+      for _, k in { "solves", "clean", "fast", "upgrades", "placed", "festivals", "earnSp", "bestStreak", "maxLevel" } do
+        local m = num(raw.ach.counters[k], 0)
+        if m ~= nil then
+          a.counters[k] = m
+        end
+      end
+      for _, setKey in { "tiersSolved", "placedTypes" } do
+        local src = raw.ach.counters[setKey]
+        if type(src) == "table" then
+          a.counters[setKey] = {}
+          for k, val in src do
+            if val == true and type(k) == "string" then
+              a.counters[setKey][k] = true
+            end
+          end
+        end
+      end
+    end
+    v.ach = a
   end
   v.v = 1
   return v

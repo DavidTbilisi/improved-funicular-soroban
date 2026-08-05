@@ -72,7 +72,19 @@ local save = GameSave.new(clientStore)
 local clock = { now = function() return os.clock() * 1000 end }
 local session = GameSession.new({ save = save, rng = Rng.math(), store = store, clock = clock })
 
-local achStore = { _v = nil, load = function(self) return self._v end, save = function(self, v) self._v = v end }
+-- Achievements ride the village blob (village.ach): unlocks survive a rejoin
+-- and travel through the same server heal as everything else. The tracker
+-- heals its own shape, so a fresh {} loads as "no progress yet".
+local achStore = {
+  load = function()
+    local a = session.village.ach
+    return if type(a) == "table" and a.v == 1 then a else nil
+  end,
+  save = function(_, data)
+    session.village.ach = data
+    session.save:save(session.village)
+  end,
+}
 local tracker = AchievementTracker.new(achStore)
 tracker:seed(session.village)
 
@@ -196,10 +208,15 @@ player.CharacterAdded:Connect(function()
   end
 end)
 
--- --- gathering --------------------------------------------------------------
+-- --- gathering + landmarks --------------------------------------------------
 function onGatherNode(nodeId, kind)
-  world:consume(nodeId, World.GATHER[kind].gains)
-  session:gather(kind)
+  if World.isLandmark(nodeId) then
+    -- visuals react to the session event, since a claim can be refused
+    session:visitLandmark(nodeId)
+  else
+    world:consume(nodeId, World.GATHER[kind].gains)
+    session:gather(kind)
+  end
 end
 
 -- --- focus manager (which rod the keypad drives) ---------------------------
@@ -381,6 +398,7 @@ session:subscribe(function(evt)
   if t == "loaded" or t == "reset" then
     refreshVillage(evt.village)
     world:setDay(evt.village.day)
+    world:setLandmarks(evt.village.landmarks)
     mood:setDay(evt.village.day)
     mood:setFestival(evt.village.festival > 0)
   elseif t == "placed" then
@@ -394,6 +412,22 @@ session:subscribe(function(evt)
     sfx:levelUp()
   elseif t == "gathered" then
     hud:setVillage(evt.village)
+  elseif t == "landmark" then
+    hud:setVillage(evt.village)
+    if evt.kind == "goldtree" then
+      world:flashGains(evt.id, evt.gains)
+      world:setLandmarks(evt.village.landmarks)
+      sfx:levelUp()
+      hud:toast("🌟 Golden harvest!")
+    elseif evt.kind == "ruin" then
+      world:setLandmarks(evt.village.landmarks)
+      sfx:levelUp()
+      hud:toast(("🏛️ Ruin restored — contracts now pay +%d%%."):format(evt.bonus * 100 + 0.5))
+    else
+      world:consume(evt.id, evt.get)
+      sfx:carry(1)
+      hud:toast("🗿 Traded 5 🪵 → 4 🪙.")
+    end
   elseif t == "abandoned" then
     lastContractEvt = nil
     refreshVillage(evt.village)
@@ -440,6 +474,7 @@ tracker:subscribe(function(evt)
   if evt.type == "unlocked" then
     ach:toast(evt.achievement)
     sfx:levelUp()
+    remotes.AwardBadge:FireServer(evt.achievement.id) -- server re-validates
   end
 end)
 
