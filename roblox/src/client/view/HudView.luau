@@ -236,6 +236,13 @@ function HudView:_buildContractPanel(gui)
   end
   keyCell("▶", PANEL, function() if self.cb.onFocusStep then self.cb.onFocusStep(1) end end)
 
+  -- The die-cross key legend (the web board-shell's home-row scheme).
+  label("⌨  add: K¹ J² I³ ,⁴ L⁵ · sub: D¹ S² E³ C⁴ F⁵ · hold two = 6–9 · U/R = ±10 · ◀ G  H ▶ = rod · Q = clear", panel, {
+    Size = UDim2.new(1, -140, 0, 18), Position = UDim2.fromOffset(8, 144),
+    TextColor3 = Color3.fromRGB(148, 154, 168), TextXAlignment = Enum.TextXAlignment.Left,
+    TextScaled = false, TextSize = 12,
+  })
+
   self.abandonBtn = button("✖ Abandon", panel, Color3.fromRGB(80, 54, 54), function()
     if self.cb.onAbandon then
       self.cb.onAbandon()

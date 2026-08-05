@@ -101,5 +101,13 @@ luau-analyze src/shared/game/GameSession.luau
   counting table's ProximityPrompt flips into board mode (the old diorama
   camera + the contracts panel), and "Walk away" flips back. A contract begun
   from the field (tapping a built plot to upgrade) walks you to the table.
+- **The die-cross keyboard works at the table.** Board mode enables the web
+  board-shell's home-row scheme (`BoardHotkeys.luau`): the right hand adds
+  (`K`¹ `J`² `I`³ `,`⁴ `L`⁵), the left subtracts (`D` `S` `E` `C` `F`), keys
+  held together chord the compound 6–9 through `Faces.digitFromFaces` (the
+  same inverse the web keyboard uses, so a key can never mean a different
+  digit here), `U`/`R` carry ±10, `←`/`G` `→`/`H` step the focused rod and
+  `Q` clears. Whole digits land through `BoardInput.pressWhole` — strict
+  direct-only, so a keyed move and a clicked move grade identically.
 - **Out of scope.** The other trainer modes, the full 19-rod board, and the
   read-aloud/TTS features are not part of this port.
