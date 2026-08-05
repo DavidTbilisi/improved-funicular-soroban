@@ -36,6 +36,7 @@ function Economy.newVillage()
     -- (string keys — DataStore JSON needs them).
     ach = {},
     landmarks = { claimed = {}, restored = {} },
+    anzan = { best = {}, fastest = {} }, -- flash-anzan records by level id
   }
 end
 
