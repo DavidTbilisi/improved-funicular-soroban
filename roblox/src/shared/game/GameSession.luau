@@ -16,6 +16,9 @@ local Buildings = if script then require(script.Parent.Buildings) else require("
 local Challenges = if script then require(script.Parent.Challenges) else require("./Challenges")
 local Economy = if script then require(script.Parent.Economy) else require("./Economy")
 local World = if script then require(script.Parent.World) else require("./World")
+local AnzanLevels = if script
+  then require(script.Parent.Parent.anzan.Levels)
+  else require("../anzan/Levels")
 
 local buildingById = Buildings.buildingById
 local GRID_CELLS = Buildings.GRID_CELLS
@@ -137,6 +140,47 @@ function GameSession:lightFestival()
   v.stats.festivals += 1
   self.save:save(v)
   self:notify({ type = "festival", village = v })
+end
+
+-- Bank a flash-anzan round. Anzan IS soroban work, so a correct round pays sp
+-- (through the same shrine/festival/ruin blessings as contracts) and feeds
+-- Rank via spEarned — but it never advances the day (world growth stays tied
+-- to solved contracts) and never touches the contract stats, so contract
+-- achievements and goals stay truthful.
+-- result: { levelId, ok, intervalMs, streak, justPassed } — streak AFTER the
+-- round, as AnzanSession's result event reports it.
+function GameSession:anzanResult(result)
+  local level = AnzanLevels.levelById(result and result.levelId)
+  if not level then
+    return self:_refuse("unknown")
+  end
+  local v = self.village
+  local pay, parts = 0, nil
+  if result.ok then
+    local before = math.max(0, (result.streak or 1) - 1)
+    parts = AnzanLevels.payoutParts(level, result.intervalMs, before)
+    pay = AnzanLevels.payout(level, result.intervalMs,
+      Economy.shrineBonus(v) + Economy.festivalBonus(v) + Economy.ruinBonus(v), before)
+    v.sp += pay
+    v.stats.spEarned += pay
+  end
+  local a = v.anzan
+  if (result.streak or 0) > (a.best[level.id] or 0) then
+    a.best[level.id] = result.streak
+  end
+  -- "Cleared at this pace" means carrying the whole floor without a miss —
+  -- one lucky round at 200 ms is not a personal best (the web log's rule).
+  if result.justPassed then
+    local f = a.fastest[level.id]
+    if not f or result.intervalMs < f then
+      a.fastest[level.id] = result.intervalMs
+    end
+  end
+  self.save:save(v)
+  self:notify({
+    type = "anzan", ok = result.ok, levelId = level.id, payout = pay, parts = parts,
+    streak = result.streak, justPassed = result.justPassed, village = v,
+  })
 end
 
 -- Visit a landmark node (the every-15th finds): claim a golden tree's cache,

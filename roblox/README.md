@@ -126,5 +126,15 @@ luau-analyze src/shared/game/GameSession.luau
   digit here), `U`/`R` carry ±10, `←`/`G` `→`/`H` step the focused rod and
   `Q` clears. Whole digits land through `BoardInput.pressWhole` — strict
   direct-only, so a keyed move and a clicked move grade identically.
+- **Flash anzan at the lantern stall.** `shared/anzan/` is a faithful port of
+  the web's `levels.js`/`anzanSession.js` — the self-chaining single-timer
+  schedule, the load-bearing blank between flashes, the pace pinned per round —
+  driven by injected `task` timers on the client and a fake single-slot timer
+  in `tests/anzan.spec.luau`. Numbers flash on the stall's sign; the answer is
+  typed (mental soroban, not board re-entry). A correct round pays sp through
+  `GameSession:anzanResult` with the same blessings as contracts, but never
+  advances the day and never touches contract stats; per-rung best/fastest
+  live in `village.anzan` (fastest only on carrying a full floor — one lucky
+  round at 200 ms is not a personal best).
 - **Out of scope.** The other trainer modes, the full 19-rod board, and the
   read-aloud/TTS features are not part of this port.

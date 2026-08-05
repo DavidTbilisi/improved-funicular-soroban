@@ -10,6 +10,9 @@ local Economy = if script then require(script.Parent.Economy) else require("./Ec
 local Buildings = if script then require(script.Parent.Buildings) else require("./Buildings")
 local World = if script then require(script.Parent.World) else require("./World")
 local Achievements = if script then require(script.Parent.Achievements) else require("./Achievements")
+local AnzanLevels = if script
+  then require(script.Parent.Parent.anzan.Levels)
+  else require("../anzan/Levels")
 local buildingById = Buildings.buildingById
 local GRID_CELLS = Buildings.GRID_CELLS
 
@@ -90,6 +93,20 @@ function GameSave.fix(raw)
             v.landmarks[field][tostring(id)] = true
           end
         end
+      end
+    end
+  end
+  -- Flash-anzan records: whitelisted by known level id; best is a streak
+  -- count, fastest an interval that must be a plausible pace.
+  if type(raw.anzan) == "table" then
+    for _, lvl in AnzanLevels.ANZAN_LEVELS do
+      local b = if type(raw.anzan.best) == "table" then num(raw.anzan.best[lvl.id], 0) else nil
+      if b ~= nil then
+        v.anzan.best[lvl.id] = b
+      end
+      local f = if type(raw.anzan.fastest) == "table" then num(raw.anzan.fastest[lvl.id], 100) else nil
+      if f ~= nil and f <= 5000 then
+        v.anzan.fastest[lvl.id] = f
       end
     end
   end

@@ -24,6 +24,8 @@ local Buildings = require(Shared.game.Buildings)
 local World = require(Shared.game.World)
 local MovePlan = require(Shared.domain.MovePlan)
 local Rod = require(Shared.domain.Rod)
+local AnzanLevels = require(Shared.anzan.Levels)
+local AnzanSession = require(Shared.anzan.AnzanSession)
 
 -- Wait for our sibling instances: a LocalScript in PlayerScripts can start
 -- running before the rest of StarterPlayerScripts has replicated to the client,
@@ -36,6 +38,7 @@ local AchievementsView = require(viewFolder:WaitForChild("AchievementsView"))
 local WorldView = require(viewFolder:WaitForChild("WorldView"))
 local LightingMood = require(viewFolder:WaitForChild("LightingMood"))
 local VillagerView = require(viewFolder:WaitForChild("VillagerView"))
+local AnzanView = require(viewFolder:WaitForChild("AnzanView"))
 local BoardInput = require(script.Parent:WaitForChild("BoardInput"))
 local BoardHotkeys = require(script.Parent:WaitForChild("BoardHotkeys"))
 local SoundFx = require(script.Parent:WaitForChild("SoundFx"))
@@ -51,6 +54,10 @@ local camera = workspace.CurrentCamera
 -- peeks over the board's top rail (plot clicks for build/upgrade happen here).
 local BOARD_CAM = CFrame.lookAt(Vector3.new(0, 22, 48), Vector3.new(0, 9, 20))
 local BOARD_CFRAME = CFrame.new(0, 12, 30) * CFrame.Angles(math.rad(-18), 0, 0)
+-- The flash-anzan lantern stall: in the node-free zone, across the spawn path
+-- from the counting table, its sign facing the south approach.
+local ANZAN_CFRAME = CFrame.new(-26, 0, 34)
+local ANZAN_CAM = CFrame.lookAt(Vector3.new(-26, 6, 50), Vector3.new(-26, 4.2, 34))
 
 -- --- persistence seam: client store backed by the server -------------------
 local remotes = Remotes.client()
@@ -71,6 +78,19 @@ local bus = Commands.CommandBus.new()
 local save = GameSave.new(clientStore)
 local clock = { now = function() return os.clock() * 1000 end }
 local session = GameSession.new({ save = save, rng = Rng.math(), store = store, clock = clock })
+
+-- Flash anzan: the same DOM-free state machine as the web, driven by task
+-- timers. clear() may fire on an already-run thread — _after nulls the handle
+-- first, and pcall makes a stale cancel harmless besides.
+local anzanTimer = {
+  set = function(fn, ms)
+    return task.delay(ms / 1000, fn)
+  end,
+  clear = function(h)
+    pcall(task.cancel, h)
+  end,
+}
+local anzan = AnzanSession.new({ rng = Rng.math(), clock = clock, timer = anzanTimer })
 
 -- Achievements ride the village blob (village.ach): unlocks survive a rejoin
 -- and travel through the same server heal as everything else. The tracker
@@ -151,8 +171,32 @@ local world = WorldView.new({
   end,
 })
 
+local anzanView = AnzanView.new({
+  parent = workspace,
+  playerGui = playerGui,
+  cframe = ANZAN_CFRAME,
+  cb = {
+    onStart = function(levelId)
+      anzan:start(levelId)
+    end,
+    onSpeed = function(dir)
+      if anzan.level then
+        anzan:setSpeed(AnzanLevels.speedStep(anzan.intervalMs, dir))
+      end
+    end,
+    onSubmit = function(text)
+      anzan:submit(text)
+    end,
+    onStop = function()
+      anzan:stop()
+      leaveAnzanMode()
+    end,
+  },
+})
+
 -- --- board mode -------------------------------------------------------------
 local boardMode = false
+local anzanMode = false
 local lastContractEvt = nil
 local savedWalkSpeed = nil
 local hotkeys -- BoardHotkeys, assigned below (forward-declared for the closures)
@@ -164,6 +208,10 @@ end
 function enterBoardMode()
   if boardMode then
     return
+  end
+  if anzanMode then
+    anzan:stop() -- a contract outranks practice; the stall yields cleanly
+    leaveAnzanMode()
   end
   boardMode = true
   camera.CameraType = Enum.CameraType.Scriptable
@@ -200,11 +248,51 @@ function leaveBoardMode()
   hud:setBoardMode(false)
 end
 
--- A respawn mid-board-mode would revive the humanoid at default speed with a
+-- --- anzan mode -------------------------------------------------------------
+function enterAnzanMode()
+  if anzanMode or boardMode then
+    return
+  end
+  anzanMode = true
+  camera.CameraType = Enum.CameraType.Scriptable
+  camera.CFrame = ANZAN_CAM
+  local hum = humanoidOf(player.Character)
+  if hum then
+    savedWalkSpeed = hum.WalkSpeed
+    hum.WalkSpeed = 0
+  end
+  anzanView.stallPrompt.Enabled = false
+  anzanView:setRecords(session.village.anzan)
+  anzanView:setPanelVisible(true)
+end
+
+function leaveAnzanMode()
+  if not anzanMode then
+    return
+  end
+  anzanMode = false
+  camera.CameraType = Enum.CameraType.Custom
+  local hum = humanoidOf(player.Character)
+  if hum then
+    hum.WalkSpeed = savedWalkSpeed or 16
+  end
+  anzanView.stallPrompt.Enabled = true
+  anzanView:setPanelVisible(false)
+end
+
+anzanView.stallPrompt.Triggered:Connect(function()
+  enterAnzanMode()
+end)
+
+-- A respawn mid-mode would revive the humanoid at default speed with a
 -- Scriptable camera pointed elsewhere — just drop back to walking.
 player.CharacterAdded:Connect(function()
   if boardMode then
     leaveBoardMode()
+  end
+  if anzanMode then
+    anzan:stop()
+    leaveAnzanMode()
   end
 end)
 
@@ -412,6 +500,16 @@ session:subscribe(function(evt)
     sfx:levelUp()
   elseif t == "gathered" then
     hud:setVillage(evt.village)
+  elseif t == "anzan" then
+    hud:setVillage(evt.village)
+    anzanView:setRecords(evt.village.anzan)
+    if evt.ok then
+      sfx:solve()
+      hud:toast(("🏮 +%d sp — flash anzan%s"):format(evt.payout,
+        if evt.justPassed then " · rung cleared!" else ""))
+    else
+      sfx:reject()
+    end
   elseif t == "landmark" then
     hud:setVillage(evt.village)
     if evt.kind == "goldtree" then
@@ -465,6 +563,33 @@ session:subscribe(function(evt)
       end
       hud:toast(msg)
     end
+  end
+end)
+
+-- --- anzan event router ------------------------------------------------------
+anzan:subscribe(function(evt)
+  local t = evt.type
+  if t == "started" then
+    anzanView:onStarted(evt)
+  elseif t == "flash" then
+    anzanView:onFlash(evt)
+  elseif t == "blank" then
+    anzanView:onBlank()
+  elseif t == "answer" then
+    anzanView:onAnswer()
+  elseif t == "speed" then
+    anzanView:onSpeed(evt)
+  elseif t == "result" then
+    anzanView:onResult(evt)
+    session:anzanResult({
+      levelId = evt.levelId, ok = evt.ok, intervalMs = evt.intervalMs,
+      streak = evt.streak, justPassed = evt.justPassed,
+    })
+    task.delay(1.4, function()
+      if anzanMode and anzan.level and not anzan:isActive() then
+        anzan:newRound() -- chain rounds while seated at the lantern
+      end
+    end)
   end
 end)
 
