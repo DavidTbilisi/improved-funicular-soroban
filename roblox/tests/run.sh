@@ -5,9 +5,16 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Prefer the CLI on PATH; fall back to a binary dropped beside the project
+# (roblox/luau.exe on Windows — gitignored, fetched once from the releases).
+LUAU="${LUAU:-luau}"
+if ! command -v "$LUAU" >/dev/null 2>&1 && [ -x "../luau.exe" ]; then
+  LUAU="../luau.exe"
+fi
+
 fail=0
 for spec in *.spec.luau; do
-  if ! luau "$spec"; then
+  if ! "$LUAU" "$spec"; then
     fail=1
   fi
 done

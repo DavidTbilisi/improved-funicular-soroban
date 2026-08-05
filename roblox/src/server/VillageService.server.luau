@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("SorobanVillage")
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local GameSave = require(Shared.game:WaitForChild("GameSave"))
+local Rank = require(Shared.game:WaitForChild("Rank"))
 
 local SAVE_DEBOUNCE = 6 -- seconds between DataStore writes per player
 local net = Remotes.server()
@@ -47,6 +48,33 @@ local function keyFor(userId: number): string
   return "village:" .. userId
 end
 
+-- The player-list stats. Server-owned so the Roblox player list renders them;
+-- always fed the HEALED blob, and Rank comes from the same shared Rank.luau
+-- the HUD uses, so the two can never disagree on the formula.
+local function applyLeaderstats(player: Player, village)
+  if not player.Parent then
+    return -- player left mid-event
+  end
+  local ls = player:FindFirstChild("leaderstats")
+  if not ls then
+    ls = Instance.new("Folder")
+    ls.Name = "leaderstats"
+    local sp = Instance.new("IntValue")
+    sp.Name = "sp"
+    sp.Parent = ls
+    local day = Instance.new("IntValue")
+    day.Name = "Day"
+    day.Parent = ls
+    local rank = Instance.new("StringValue")
+    rank.Name = "Rank"
+    rank.Parent = ls
+    ls.Parent = player
+  end
+  ls.sp.Value = village.sp
+  ls.Day.Value = village.day
+  ls.Rank.Value = Rank.villageRank(village).title
+end
+
 local function loadVillage(player: Player)
   local raw = nil
   if store then
@@ -62,6 +90,7 @@ local function loadVillage(player: Player)
   -- GameSave.fix turns nil / legacy / corrupt into a safe, playable village.
   local village = GameSave.fix(raw)
   cache[player.UserId] = { village = village, dirty = false, lastSave = 0 }
+  applyLeaderstats(player, village)
   return village
 end
 
@@ -105,6 +134,7 @@ net.SaveVillage.OnServerEvent:Connect(function(player: Player, blob)
   entry.village = village
   entry.dirty = true
   cache[player.UserId] = entry
+  applyLeaderstats(player, village)
   if os.clock() - entry.lastSave >= SAVE_DEBOUNCE then
     writeVillage(player.UserId)
   end

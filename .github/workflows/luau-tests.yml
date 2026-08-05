@@ -1,0 +1,24 @@
+# Headless Luau spec suite for the Roblox port. The shared modules are pure
+# (dual-mode requires), so the whole game core runs under the luau CLI with no
+# Roblox in sight — see roblox/tests/run.sh.
+name: luau-tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install luau CLI (pinned)
+        run: |
+          curl -fsSL -o luau.zip \
+            https://github.com/luau-lang/luau/releases/download/0.732/luau-ubuntu.zip
+          mkdir -p "$HOME/.local/bin"
+          unzip -o luau.zip -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/luau"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run specs
+        run: ./roblox/tests/run.sh

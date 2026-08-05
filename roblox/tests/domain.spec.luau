@@ -62,5 +62,6 @@ H.eq(#p.story, 2, "planAdd(6,7) is a compound trade (story length 2)")
 local p2 = MovePlan.planAdd(3, 1)
 H.same(p2.steps, { "+1" }, "planAdd(3,1) direct steps")
 H.eq(MovePlan.keysText({ "+10", "-5", "+2" }), "U then F then J", "keysText")
+H.eq(MovePlan.stepsText({ "+10", "-5", "+2" }), "+10 −5 +2", "stepsText uses typographic minus")
 
 H.report("domain.spec")

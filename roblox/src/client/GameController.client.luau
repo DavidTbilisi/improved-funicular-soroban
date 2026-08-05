@@ -22,6 +22,8 @@ local Goals = require(Shared.game.Goals)
 local Advisor = require(Shared.game.Advisor)
 local Buildings = require(Shared.game.Buildings)
 local World = require(Shared.game.World)
+local MovePlan = require(Shared.domain.MovePlan)
+local Rod = require(Shared.domain.Rod)
 
 -- Wait for our sibling instances: a LocalScript in PlayerScripts can start
 -- running before the rest of StarterPlayerScripts has replicated to the client,
@@ -32,6 +34,7 @@ local VillageView = require(viewFolder:WaitForChild("VillageView"))
 local HudView = require(viewFolder:WaitForChild("HudView"))
 local AchievementsView = require(viewFolder:WaitForChild("AchievementsView"))
 local WorldView = require(viewFolder:WaitForChild("WorldView"))
+local LightingMood = require(viewFolder:WaitForChild("LightingMood"))
 local BoardInput = require(script.Parent:WaitForChild("BoardInput"))
 local BoardHotkeys = require(script.Parent:WaitForChild("BoardHotkeys"))
 
@@ -96,6 +99,7 @@ local board = BoardView.new({
 
 local hud = HudView.new({ parent = playerGui, callbacks = {} })
 local ach = AchievementsView.new({ parent = playerGui })
+local mood = LightingMood.new({ parent = workspace, origin = CFrame.new(0, 0, 0) })
 
 local world = WorldView.new({
   parent = workspace,
@@ -193,6 +197,46 @@ end
 -- default focus: the ones rod (int idx 1)
 setFocusTo("int", 1)
 
+-- --- the coach: a refused move becomes the lesson ---------------------------
+-- The web board-shell's rule: an illegal primitive is refused WITH the exact
+-- complement chain to key by hand. MovePlan flattens any ±digit into single
+-- keyable steps, and MOVE_KEYS names the home-row keys that play them.
+local PLACE_NAMES = {
+  int = { "ones", "tens", "hundreds", "thousands", "10-thousands", "100-thousands",
+    "millions", "10-millions", "100-millions", "billions", "10-billions" },
+  frac = { "tenths", "hundredths", "thousandths", "ten-thousandths" },
+}
+local function placeName(kind, idx)
+  return PLACE_NAMES[kind][idx] or (kind .. " " .. idx)
+end
+
+local function tradeToast(sign, d)
+  local c = currentFocus()
+  local cur = Rod.rodValue(store:rodsOf(c.kind)[c.idx])
+  local plan = if sign > 0 then MovePlan.planAdd(cur, d) else MovePlan.planSub(cur, d)
+  local keys = MovePlan.keysText(plan.steps)
+  local trade = if plan.rule == "big" then "carry" else "five"
+  hud:toast(("⚠ %s%d on %s needs a %s trade: %s%s"):format(
+    if sign > 0 then "+" else "−", d, placeName(c.kind, c.idx), trade,
+    MovePlan.stepsText(plan.steps),
+    if keys then "  (" .. keys .. ")" else ""))
+end
+
+local function carryToast(sign)
+  local c = currentFocus()
+  local op = if sign > 0 then "+10" else "−10"
+  local tkind, tidx = BoardInput.carryTarget(c.kind, c.idx)
+  if not tkind then
+    hud:toast("⚠ " .. op .. " on " .. placeName(c.kind, c.idx) .. " — there is no rod beyond the top.")
+    return
+  end
+  local nextDigit = Rod.rodValue(store:rodsOf(tkind)[tidx])
+  local nbr = placeName(tkind, tidx)
+  hud:toast(if sign > 0
+    then ("⚠ %s — %s can't take a carry bead (it's at %d)."):format(op, nbr, nextDigit)
+    else ("⚠ %s — %s has no earth bead to borrow (it's at %d)."):format(op, nbr, nextDigit))
+end
+
 -- --- placement mode --------------------------------------------------------
 local selectedBuilding = nil
 function onCellTap(idx)
@@ -235,7 +279,7 @@ hud.cb = {
     local ok = BoardInput.pressDigit(store, c.kind, c.idx, value, sign)
     if not ok then
       session:fault()
-      hud:toast("✋ That bead move isn't legal here — a trade is needed first.")
+      tradeToast(sign, value)
     end
   end,
   onCarry = function(sign)
@@ -243,7 +287,7 @@ hud.cb = {
     local ok = BoardInput.carry(store, c.kind, c.idx, sign)
     if not ok then
       session:fault()
-      hud:toast("✋ No room to carry there — trade on the next rod first.")
+      carryToast(sign)
     end
   end,
 }
@@ -258,7 +302,7 @@ hotkeys = BoardHotkeys.new({
     local ok = BoardInput.pressWhole(store, c.kind, c.idx, d, sign)
     if not ok then
       session:fault()
-      hud:toast("✋ " .. (if sign > 0 then "+" else "−") .. d .. " doesn't fit directly here — a trade is needed first.")
+      tradeToast(sign, d)
     end
   end,
   onCarry = function(sign)
@@ -294,6 +338,8 @@ session:subscribe(function(evt)
   if t == "loaded" or t == "reset" then
     refreshVillage(evt.village)
     world:setDay(evt.village.day)
+    mood:setDay(evt.village.day)
+    mood:setFestival(evt.village.festival > 0)
   elseif t == "placed" then
     refreshVillage(evt.village)
     village:previewCell(evt.cellIdx)
@@ -301,6 +347,7 @@ session:subscribe(function(evt)
   elseif t == "festival" then
     refreshVillage(evt.village)
     village:festival()
+    mood:setFestival(true)
   elseif t == "gathered" then
     hud:setVillage(evt.village)
   elseif t == "abandoned" then
@@ -319,6 +366,8 @@ session:subscribe(function(evt)
     hud:clearContract()
     refreshVillage(evt.village)
     local grew = world:setDay(evt.day)
+    mood:setDay(evt.day)
+    mood:setFestival(evt.village.festival > 0) -- festival days burn down per solve
     if evt.kind == "earn" then
       village:flashPayout(nil, "+" .. evt.payout .. " 🧮")
     else
