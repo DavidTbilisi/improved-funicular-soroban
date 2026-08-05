@@ -63,6 +63,32 @@ function BoardInput.pressDigit(store, kind, idx, value, sign)
   return false
 end
 
+-- A whole ±digit d (1..9) on rod (kind, idx) — the chord keyboard's move,
+-- STRICT like the web board-shell's applyDigit: it lands only when the move is
+-- 'direct' (which already covers the compound 6-9 = rose + earth); anything
+-- needing a five or carry trade is refused and the caller counts a fault.
+function BoardInput.pressWhole(store, kind, idx, d, sign)
+  if d >= 1 and d <= 5 then
+    return BoardInput.pressDigit(store, kind, idx, d, sign)
+  end
+  if d < 6 or d > 9 then
+    return false
+  end
+  local rod = store:rodsOf(kind)[idx]
+  if not rod then
+    return false
+  end
+  local c = Rod.rodValue(rod)
+  local cl = if sign > 0 then Soroban.classifyAdd(c, d) else Soroban.classifySub(c, d)
+  if cl.rule ~= "direct" then
+    return false
+  end
+  rod.sky = sign > 0
+  rod.earth += sign * (d - 5)
+  store:notify(store)
+  return true
+end
+
 -- The rod one place higher than (kind, idx): the carry target. Returns
 -- (kind, idx) or nil at the top of the board.
 function BoardInput.carryTarget(kind, idx)

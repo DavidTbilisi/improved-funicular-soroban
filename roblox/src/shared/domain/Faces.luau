@@ -61,4 +61,37 @@ function Faces.cubeFaceValues(d: number)
   return { 5, d - 5 }
 end
 
+-- Position -> value, inverted from CUBE_LAYOUT (the single source for the grid).
+local FACE_VALUE = {}
+for _, f in Faces.CUBE_LAYOUT do
+  FACE_VALUE[f.pos] = f.value
+end
+
+-- The inverse of cubeFaceValues: which digit a set of lit die cells spells.
+-- A digit is at most one earth cell (center 1 / left 2 / top 3 / bottom 4) plus
+-- the rose (right 5), so 6-9 = right + earth. The center has no arrow of its
+-- own, so top+bottom together stands in for it (the chord keyboard's way to
+-- reach the middle cell). Returns 0 for the empty set and nil for anything that
+-- isn't a real die face (e.g. two earth cells at once). Port of digitFromFaces.
+function Faces.digitFromFaces(positions)
+  local set = {}
+  for _, p in positions do
+    set[p] = true
+  end
+  if set.top and set.bottom then
+    set.top, set.bottom = nil, nil
+    set.center = true
+  end
+  local earth = nil
+  for p in set do
+    if p ~= "right" then
+      if earth ~= nil or FACE_VALUE[p] == nil then
+        return nil
+      end
+      earth = FACE_VALUE[p]
+    end
+  end
+  return (if set.right then 5 else 0) + (earth or 0)
+end
+
 return Faces

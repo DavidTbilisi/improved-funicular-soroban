@@ -33,6 +33,7 @@ local HudView = require(viewFolder:WaitForChild("HudView"))
 local AchievementsView = require(viewFolder:WaitForChild("AchievementsView"))
 local WorldView = require(viewFolder:WaitForChild("WorldView"))
 local BoardInput = require(script.Parent:WaitForChild("BoardInput"))
+local BoardHotkeys = require(script.Parent:WaitForChild("BoardHotkeys"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -111,6 +112,7 @@ local world = WorldView.new({
 local boardMode = false
 local lastContractEvt = nil
 local savedWalkSpeed = nil
+local hotkeys -- BoardHotkeys, assigned below (forward-declared for the closures)
 
 local function humanoidOf(char)
   return char and char:FindFirstChildOfClass("Humanoid")
@@ -129,6 +131,9 @@ function enterBoardMode()
     hum.WalkSpeed = 0 -- reckoning, not wandering
   end
   world.standPrompt.Enabled = false -- already seated
+  if hotkeys then
+    hotkeys:setEnabled(true) -- the die-cross home row only works at the table
+  end
   hud:setBoardMode(true)
   if session:isActive() and lastContractEvt then
     hud:showContract(lastContractEvt) -- a walked-away contract is still live
@@ -146,6 +151,9 @@ function leaveBoardMode()
     hum.WalkSpeed = savedWalkSpeed or 16
   end
   world.standPrompt.Enabled = true
+  if hotkeys then
+    hotkeys:setEnabled(false)
+  end
   hud:setBoardMode(false)
 end
 
@@ -239,6 +247,32 @@ hud.cb = {
     end
   end,
 }
+
+-- --- the die-cross home-row keyboard (board mode only) ----------------------
+-- Whole digits (chords make 6-9) go through pressWhole — STRICT direct-only,
+-- same contract as the clickable keypad, so a key and a click can never grade
+-- a move differently.
+hotkeys = BoardHotkeys.new({
+  onDigit = function(sign, d)
+    local c = currentFocus()
+    local ok = BoardInput.pressWhole(store, c.kind, c.idx, d, sign)
+    if not ok then
+      session:fault()
+      hud:toast("✋ " .. (if sign > 0 then "+" else "−") .. d .. " doesn't fit directly here — a trade is needed first.")
+    end
+  end,
+  onCarry = function(sign)
+    hud.cb.onCarry(sign)
+  end,
+  onFocusStep = function(dir)
+    stepFocus(dir)
+  end,
+  onReset = function()
+    session:fault() -- clearing mid-contract spoils a clean solve, as on the web
+    bus:run(Commands.SetValue.new(store, "0"))
+    hud:toast("♻ Board cleared to 0.")
+  end,
+})
 
 -- --- reflect the store onto the board --------------------------------------
 store:subscribe(function()
