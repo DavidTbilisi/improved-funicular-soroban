@@ -85,40 +85,76 @@ function HudView.new(opts)
   return self
 end
 
+-- The status line is a row of FLOATING PILLS, not a full-width band. A band
+-- spanning the screen ran straight under Roblox's own player list (which shows
+-- the same sp/Day/Rank leaderstats), so the right-hand chips were half-covered;
+-- and 120px fixed chips holding "20" left the bar mostly empty dark. Each pill
+-- now sizes to its own text (AutomaticSize.X over a min width, so the row does
+-- not jitter as a value gains a digit) and the group hugs the top-left corner.
+local CHIP_H = 30
+local CHIP_MIN = Vector2.new(58, 0)
+
 function HudView:_buildTopBar(gui)
+  -- Width is bounded rather than automatic, and the row wraps: while WALKING the
+  -- player list is back in the top-right, and on a phone-width screen a single
+  -- row of pills would slide straight under it. Two thirds leaves the pills one
+  -- row on anything desktop-sized and folds them onto a second row when it can't.
   local bar = mk("Frame", {
-    Size = UDim2.new(1, 0, 0, 44), Position = UDim2.new(0, 0, 0, 0),
-    BackgroundColor3 = DARK, BackgroundTransparency = 0.1, BorderSizePixel = 0,
+    Size = UDim2.new(0.66, -20, 0, CHIP_H), Position = UDim2.new(0, 10, 0, 8),
+    AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, BorderSizePixel = 0,
   }, gui)
-  mk("UIListLayout", {
-    FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8),
+  local rows = mk("UIListLayout", {
+    FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6),
     VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Left,
     SortOrder = Enum.SortOrder.LayoutOrder,
   }, bar)
-  mk("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4) }, bar)
+  -- Wraps is newer than some Studio builds; without it the row simply clips as
+  -- it did before, which must not take the whole HUD down with it.
+  pcall(function()
+    rows.Wraps = true
+  end)
+
+  local order = 0
+  -- One pill: a rounded frame that shrink-wraps its label.
+  local function pill(text, width)
+    order += 1
+    -- Height in pixels, not scale: the bar auto-sizes vertically to fit however
+    -- many rows the pills wrap onto, and a scale-height child of an auto-height
+    -- parent is circular — Roblox resolves it to nothing.
+    local frame = mk("Frame", {
+      Size = UDim2.new(0, 0, 0, CHIP_H), AutomaticSize = Enum.AutomaticSize.X,
+      BackgroundColor3 = PANEL, BackgroundTransparency = 0.12,
+      LayoutOrder = order, BorderSizePixel = 0,
+    }, bar)
+    corner(frame, 15)
+    mk("UIStroke", { Color = Color3.fromRGB(0, 0, 0), Transparency = 0.75, Thickness = 1 }, frame)
+    mk("UIPadding", { PaddingLeft = UDim.new(0, 11), PaddingRight = UDim.new(0, 11) }, frame)
+    mk("UISizeConstraint", { MinSize = width or CHIP_MIN }, frame)
+    -- Built directly rather than through label(), whose TextScaled default
+    -- fights AutomaticSize — a scaled label has no intrinsic width to wrap to.
+    return mk("TextLabel", {
+      BackgroundTransparency = 1, Text = text, TextColor3 = TEXT,
+      Font = Enum.Font.GothamMedium, TextSize = 15, TextScaled = false,
+      Size = UDim2.new(0, 0, 0, CHIP_H), AutomaticSize = Enum.AutomaticSize.X,
+      TextXAlignment = Enum.TextXAlignment.Center,
+    }, frame)
+  end
 
   self.chips = {}
-  local order = 1
   for _, k in { "sp", "food", "wood", "coin" } do
-    local chip = mk("Frame", {
-      Size = UDim2.new(0, 120, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0,
-    }, bar)
-    corner(chip, 8)
-    self.chips[k] = label(RES_EMOJI[k] .. " 0", chip, { TextXAlignment = Enum.TextXAlignment.Center })
-    order += 1
+    self.chips[k] = pill(RES_EMOJI[k] .. " 0")
   end
-  self.dayLabel = label("Day 1", mk("Frame", { Size = UDim2.new(0, 90, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0 }, bar))
-  order += 1
-  local rankFrame = mk("Frame", { Size = UDim2.new(0, 190, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0 }, bar)
-  corner(rankFrame, 8)
-  self.rankLabel = label("🏙️ Camp", rankFrame, { TextXAlignment = Enum.TextXAlignment.Center })
-  order += 1
+  self.dayLabel = pill("Day 1")
+  self.rankLabel = pill("🏙️ Camp", Vector2.new(92, 0))
 
+  order += 1
   self.soundBtn = mk("TextButton", {
-    Size = UDim2.new(0, 44, 1, -8), BackgroundColor3 = PANEL, LayoutOrder = order, BorderSizePixel = 0,
-    Font = Enum.Font.Gotham, TextScaled = true, Text = "🔊", TextColor3 = TEXT,
+    Size = UDim2.new(0, CHIP_H, 0, CHIP_H), BackgroundColor3 = PANEL, BackgroundTransparency = 0.12,
+    LayoutOrder = order, BorderSizePixel = 0,
+    Font = Enum.Font.Gotham, TextScaled = false, TextSize = 15, Text = "🔊", TextColor3 = TEXT,
   }, bar)
-  corner(self.soundBtn, 8)
+  corner(self.soundBtn, 15)
+  mk("UIStroke", { Color = Color3.fromRGB(0, 0, 0), Transparency = 0.75, Thickness = 1 }, self.soundBtn)
   self.soundBtn.Activated:Connect(function()
     if self.cb.onToggleSound then
       self.cb.onToggleSound()
@@ -253,7 +289,8 @@ function HudView:_buildContractPanel(gui)
   keyCell("▶", PANEL, function() if self.cb.onFocusStep then self.cb.onFocusStep(1) end end)
 
   -- The die-cross key legend (the web board-shell's home-row scheme).
-  label("⌨  add: K¹ J² I³ ,⁴ L⁵ · sub: D¹ S² E³ C⁴ F⁵ · hold two = 6–9 · U/R = ±10 · ◀ G  H ▶ = rod · Q = clear", panel, {
+  -- I³ is listed as I/P: Roblox owns bare I (camera zoom), so P is the alias.
+  label("⌨  add: K¹ J² I·P³ ,⁴ L⁵ · sub: D¹ S² E³ C⁴ F⁵ · hold two = 6–9 · U/R = ±10 · ◀ G  H ▶ = rod · Q = clear", panel, {
     Size = UDim2.new(1, -140, 0, 18), Position = UDim2.fromOffset(8, 144),
     TextColor3 = Color3.fromRGB(148, 154, 168), TextXAlignment = Enum.TextXAlignment.Left,
     TextScaled = false, TextSize = 12,
@@ -304,8 +341,17 @@ end
 
 -- Board mode shows the contract/build panel; walking hides it (and the keypad —
 -- the controller re-shows an in-flight contract when the player sits back down).
+--
+-- It also takes the top-right corner back from Roblox's player list, which sits
+-- exactly where the panel does and was burying "Walk away" behind the leaderstat
+-- columns. Hiding it costs nothing here: the list's three columns are sp, Day
+-- and Rank, which are the HUD's own first three pills. Walking gives it back —
+-- that is when comparing yourself to the server is worth a corner.
 function HudView:setBoardMode(on)
   self.sidePanel.Visible = on
+  pcall(function()
+    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, not on)
+  end)
   if not on then
     self.contractPanel.Visible = false
   end

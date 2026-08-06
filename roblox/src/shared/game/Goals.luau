@@ -23,11 +23,11 @@ local function anyLevel2(v)
 end
 
 Goals.GOALS = {
-  { id = "hut", emoji = "🛖", label = "Build a hut", done = has("hut") },
+  { id = "hut", emoji = "🏠", label = "Build a hut", done = has("hut") },
   { id = "farm", emoji = "🌾", label = "Plant a farm", done = has("farm") },
   { id = "clean3", emoji = "✨", label = "Make 3 clean solves", done = function(v) return v.stats.clean >= 3 end },
   { id = "well", emoji = "💧", label = "Dig a well", done = has("well") },
-  { id = "woodcutter", emoji = "🪓", label = "Hire a woodcutter", done = has("woodcutter") },
+  { id = "woodcutter", emoji = "🌲", label = "Hire a woodcutter", done = has("woodcutter") },
   { id = "level2", emoji = "⬆️", label = "Raise any building to level 2", done = anyLevel2 },
   { id = "workshop", emoji = "🏭", label = "Open a workshop", done = has("workshop") },
   { id = "streak5", emoji = "🔥", label = "Hold a 5-clean streak", done = function(v) return v.stats.bestStreak >= 5 end },

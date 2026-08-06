@@ -19,6 +19,17 @@ for spec in *.spec.luau; do
   fi
 done
 
+# Luau's standard library has no `io`, so a spec cannot read a source file —
+# the "will Roblox actually draw this glyph?" check has to be a node script.
+echo
+if command -v node >/dev/null 2>&1; then
+  if ! node ../scripts/check-glyphs.mjs; then
+    fail=1
+  fi
+else
+  echo "glyphs: SKIPPED (node not on PATH)"
+fi
+
 echo
 if [ "$fail" -eq 0 ]; then
   echo "ALL SPECS PASSED"
