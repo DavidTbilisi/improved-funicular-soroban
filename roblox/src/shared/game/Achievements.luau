@@ -35,7 +35,7 @@ Achievements.ACHIEVEMENTS = {
   -- First steps
   { id = "first-solve", emoji = "🧮", title = "First contract", tier = "bronze",
     desc = "Solve your first contract on the beads.", progress = count("solves", 1) },
-  { id = "first-build", emoji = "🛖", title = "Break ground", tier = "bronze",
+  { id = "first-build", emoji = "🏠", title = "Break ground", tier = "bronze",
     desc = "Place your first building.", progress = count("placed", 1) },
   { id = "first-upgrade", emoji = "⬆️", title = "Level up", tier = "bronze",
     desc = "Raise a building a level.", progress = count("upgrades", 1) },
@@ -76,9 +76,9 @@ Achievements.ACHIEVEMENTS = {
     end },
 
   -- Village & the endless climb
-  { id = "sp-500", emoji = "🪙", title = "Full coffers", tier = "bronze",
+  { id = "sp-500", emoji = "💰", title = "Full coffers", tier = "bronze",
     desc = "Mint 500 sp all-time.", progress = count("earnSp", 500) },
-  { id = "sp-5000", emoji = "🪙", title = "Rich village", tier = "gold",
+  { id = "sp-5000", emoji = "💰", title = "Rich village", tier = "gold",
     desc = "Mint 5,000 sp all-time.", progress = count("earnSp", 5000) },
   { id = "level-10", emoji = "🏗️", title = "Tall order", tier = "silver",
     desc = "Raise any building to level 10.", progress = count("maxLevel", 10) },

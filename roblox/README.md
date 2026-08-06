@@ -87,6 +87,13 @@ The specs prove parity with the web app's Node test suite for the numeric core,
 the complement engine, the economy, the payout formula, and the session's
 solve/earn/upgrade flow. The 3D/GUI views are verified by playing in Studio.
 
+`run.sh` finishes with one check the specs can't do themselves — Luau's standard
+library has no `io`, so a `*.spec.luau` cannot read a source file:
+
+```
+node scripts/check-glyphs.mjs   # no emoji Roblox would draw as an empty box
+```
+
 Type-check a module (the `script` / `Random` "unknown global" notes are the
 expected false-positives for Roblox code analyzed outside Studio):
 
@@ -126,6 +133,16 @@ luau-analyze src/shared/game/GameSession.luau
   digit here), `U`/`R` carry ±10, `←`/`G` `→`/`H` step the focused rod and
   `Q` clears. Whole digits land through `BoardInput.pressWhole` — strict
   direct-only, so a keyed move and a clicked move grade identically.
+- **Roblox owns `I`, so the +3 cell has an alias.** The keys are claimed through
+  `ContextActionService` while seated and sunk, rather than read off
+  `UserInputService` — but that is not what fixes `I`, and nothing can. Measured:
+  bare `I` never reaches `InputBegan`, nor a CAS binding at priority 100000;
+  only `Shift+I` arrives, because the binding that owns it (the camera's
+  zoom-in) is a **CoreScript** one, matching the unmodified key and dispatched
+  in a queue no LocalScript outranks. `I` therefore keeps its place in the die
+  cross — it is what the web keyboard and the touch pad use — and **`P`** is
+  added beside it as the reachable key, the free one on the right hand's own top
+  row. The left hand needs no alias; its top cell is `E`.
 - **Flash anzan at the lantern stall.** `shared/anzan/` is a faithful port of
   the web's `levels.js`/`anzanSession.js` — the self-chaining single-timer
   schedule, the load-bearing blank between flashes, the pace pinned per round —
@@ -136,5 +153,30 @@ luau-analyze src/shared/game/GameSession.luau
   advances the day and never touches contract stats; per-rung best/fastest
   live in `village.anzan` (fastest only on carrying a full floor — one lucky
   round at 200 ms is not a personal best).
+- **Contracts chain.** Solving an earn contract deals the next of the same tier
+  after 1.4s, so a run of problems needs no clicking — the web game's rule
+  (`src/pages/game.js`), which is the drill page's auto-advance transplanted.
+  **Abandon is the off switch.** Upgrade contracts never chain (one pays its
+  cost up front and names a plot, so re-dealing would spend resources on a level
+  nobody asked for), and walking away cancels a pending deal rather than
+  starting a contract's clock while you are out picking berries.
+- **The emoji diverge, and must.** Roblox bundles its own emoji font and it
+  stops at **Emoji 11.0** — anything newer draws as a literal empty box. Five
+  glyphs copied straight from the web app were doing exactly that (🪵 wood,
+  🪙 coin, 🛖 hut, 🪓 woodcutter, 🫐 berries), two of them in the top-bar
+  resource chips. The port substitutes pre-11 glyphs (🌲 💰 🏠 🌲 🍓 — the
+  woodcutter takes the wood glyph, following the farm, which already carries
+  food's), and `scripts/check-glyphs.mjs` fails the build if a post-11
+  character reaches a *string* in `src/`. The one exemption is the **frozen
+  food-peg table**, which must match `src/domain/pegs.js` character for
+  character or it breaks numbers a learner has memorised: its two post-11 pegs
+  are O 🧅 and W 🧇, past the letters an 11-rod board can ask for. The checker
+  verifies that rather than trusting it — it reads `Config.INT_COLS` and fails
+  if a growing board brings an undrawable peg into reach.
+- **The status line is pills, not a band.** A full-width bar ran under Roblox's
+  own player list, which shows the same sp/Day/Rank leaderstats; the chips on
+  the right were half-covered. The HUD's top row is now shrink-wrapped pills
+  hugging the top-left corner (`AutomaticSize.X` over a min width, so the row
+  doesn't jitter when a value gains a digit).
 - **Out of scope.** The other trainer modes, the full 19-rod board, and the
   read-aloud/TTS features are not part of this port.

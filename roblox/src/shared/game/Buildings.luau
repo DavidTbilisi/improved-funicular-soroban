@@ -13,11 +13,18 @@ Buildings.GRID_CELLS = Buildings.GRID_COLS * Buildings.GRID_ROWS -- cellIdx = ro
 Buildings.FOUNDING_LEVEL = 3
 
 -- Resource glyphs — shared frozen data.
-Buildings.RES_EMOJI = table.freeze({ sp = "🧮", food = "🌾", wood = "🪵", coin = "🪙" })
+--
+-- PORT NOTE: these DIVERGE from the web's `RES_EMOJI` (🪵 wood, 🪙 coin), and
+-- must. Roblox's bundled emoji font stops at Emoji 11.0, so anything newer
+-- draws as an empty box — 🪵 (13.0) and 🪙 (12.0) shipped as two tofu chips in
+-- the top bar. Same reason for the hut (🛖 → 🏠) and the woodcutter (🪓 → 🌲,
+-- which also follows the farm: a producer carries its resource's glyph).
+-- `scripts/check-glyphs.mjs` fails the build if a post-11 glyph creeps back in.
+Buildings.RES_EMOJI = table.freeze({ sp = "🧮", food = "🌾", wood = "🌲", coin = "💰" })
 
 Buildings.BUILDINGS = table.freeze({
   table.freeze({
-    id = "hut", emoji = "🛖", name = "Hut", tier = 1,
+    id = "hut", emoji = "🏠", name = "Hut", tier = 1,
     cost = table.freeze({ sp = 10 }), yield = table.freeze({ coin = 1 }),
     unlock = table.freeze({}), desc = "Villagers pay a coin of rent each day.",
   }),
@@ -33,7 +40,7 @@ Buildings.BUILDINGS = table.freeze({
     desc = "A little food itself — and while a well stands, every farm grows +1 food a day.",
   }),
   table.freeze({
-    id = "woodcutter", emoji = "🪓", name = "Woodcutter", tier = 2,
+    id = "woodcutter", emoji = "🌲", name = "Woodcutter", tier = 2,
     cost = table.freeze({ sp = 25, food = 5 }), yield = table.freeze({ wood = 2 }),
     unlock = table.freeze({ building = "farm" }), desc = "Fells timber for bigger works.",
   }),

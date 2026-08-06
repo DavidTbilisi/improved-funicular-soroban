@@ -42,11 +42,11 @@ World.GATHER = table.freeze({
     gains = table.freeze({ wood = 2 }), respawnS = 45,
   }),
   berry = table.freeze({
-    name = "Berry bush", action = "Pick", emoji = "🫐",
+    name = "Berry bush", action = "Pick", emoji = "🍓",
     gains = table.freeze({ food = 2 }), respawnS = 40,
   }),
   coin = table.freeze({
-    name = "Coin cache", action = "Collect", emoji = "🪙",
+    name = "Coin cache", action = "Collect", emoji = "💰",
     gains = table.freeze({ coin = 2 }), respawnS = 90,
   }),
 })

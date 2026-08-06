@@ -22,3 +22,6 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Run specs
         run: ./roblox/tests/run.sh
+      # Belt and braces: run.sh skips this when node is absent, and CI must not.
+      - name: Check glyphs
+        run: node roblox/scripts/check-glyphs.mjs

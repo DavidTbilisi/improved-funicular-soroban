@@ -202,6 +202,26 @@ local anzanMode = false
 local lastContractEvt = nil
 local hotkeys -- BoardHotkeys, assigned below (forward-declared for the closures)
 
+-- Chained contracts: solving one deals the next of the same tier, so a run of
+-- problems needs no clicking — the web game's rule (src/pages/game.js), which is
+-- the drill page's auto-advance transplanted. **Abandon is the off switch**; the
+-- chain otherwise runs forever.
+--
+-- Only EARN contracts chain. An upgrade contract pays its cost up front and
+-- names a plot, so re-dealing it would spend resources on a level the player
+-- never asked for.
+--
+-- The delay is what makes the payout readable — without it the board resets out
+-- from under the solve. Cancellation is a generation counter rather than
+-- `task.cancel`, matching AnzanSession: the pending call still fires, and
+-- checks whether it is still the one that was booked.
+local CHAIN_DELAY_S = 1.4
+local chainGen = 0
+
+local function cancelChain()
+  chainGen += 1
+end
+
 -- Sprint: hold Shift to hurry (the world is a couple hundred studs across).
 local WALK_SPEED, SPRINT_SPEED = 16, 26
 local sprinting = false
@@ -242,6 +262,11 @@ function leaveBoardMode()
   if not boardMode then
     return
   end
+  -- Walking away stops the chain. A live contract survives the walk (it is
+  -- re-shown when you sit back down), but DEALING one to someone out in the
+  -- field would start its clock while they pick berries and quietly spend the
+  -- speed bonus they were chaining for.
+  cancelChain()
   boardMode = false
   camera.CameraType = Enum.CameraType.Custom
   local hum = humanoidOf(player.Character)
@@ -511,6 +536,11 @@ end
 session:subscribe(function(evt)
   local t = evt.type
   if t == "loaded" or t == "reset" then
+    if t == "reset" then
+      cancelChain() -- a reset wipes the village the chain was paying into
+      lastContractEvt = nil
+      hud:clearContract()
+    end
     refreshVillage(evt.village)
     world:setDay(evt.village.day)
     world:setLandmarks(evt.village.landmarks)
@@ -551,14 +581,16 @@ session:subscribe(function(evt)
     else
       world:consume(evt.id, evt.get)
       sfx:carry(1)
-      hud:toast("🗿 Traded 5 🪵 → 4 🪙.")
+      hud:toast("🗿 Traded 5 🌲 → 4 💰.")
     end
   elseif t == "abandoned" then
     lastContractEvt = nil
+    cancelChain() -- the off switch
     refreshVillage(evt.village)
     hud:clearContract()
   elseif t == "challenge" then
     lastContractEvt = evt
+    cancelChain() -- a fresh deal supersedes anything still pending
     enterBoardMode() -- an upgrade tapped from the field walks you to the table
     hud:showContract(evt)
     setFocusTo("int", 1)
@@ -567,7 +599,13 @@ session:subscribe(function(evt)
     hud:toast("Can't do that: " .. tostring(evt.reason))
   elseif t == "solved" then
     lastContractEvt = nil
-    hud:clearContract()
+    -- An earn solve leaves the panel up: the chain replaces its text in 1.4s,
+    -- and hiding it in between is a flicker. Nothing else can strand it —
+    -- walking away hides the whole panel, and the only other thing that cancels
+    -- a pending chain is a new contract, which fills it.
+    if evt.kind ~= "earn" then
+      hud:clearContract()
+    end
     refreshVillage(evt.village)
     local grew = world:setDay(evt.day)
     mood:setDay(evt.day)
@@ -588,7 +626,22 @@ session:subscribe(function(evt)
       if grew then
         msg ..= "  🌍 The boundary pushed outward!"
       end
+      if evt.kind == "earn" then
+        msg ..= "  ▶ next one coming — ✖ Abandon to stop."
+      end
       hud:toast(msg)
+    end
+    -- Deal the next of the same tier. Re-checked at fire time: the player may
+    -- have abandoned, walked off, or taken a different contract in the meantime.
+    if evt.kind == "earn" then
+      chainGen += 1
+      local gen = chainGen
+      task.delay(CHAIN_DELAY_S, function()
+        if gen ~= chainGen or not boardMode or session:isActive() then
+          return
+        end
+        session:startChallenge(evt.tierId)
+      end)
     end
   end
 end)

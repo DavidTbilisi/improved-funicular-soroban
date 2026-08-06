@@ -32,13 +32,13 @@ local fmt = Number.groupThousands
 
 -- Cosmetic scene prefixes per tier — the arithmetic itself stays canonical.
 local FLAVORS = {
-  errand = { "🛖 Hut errand", "🧺 Basket count", "🐓 Hen count" },
+  errand = { "🏠 Hut errand", "🧺 Basket count", "🐓 Hen count" },
   delivery = { "🌾 Grain delivery", "💧 Water rounds", "🍞 Bread run" },
-  ledger = { "📜 Ledger entry", "🪙 Till count", "⚖️ Weigh-in" },
+  ledger = { "📜 Ledger entry", "💰 Till count", "⚖️ Weigh-in" },
   caravan = { "🐫 Caravan load", "🛶 River freight", "📦 Crate tally" },
   magnate = { "🏯 Castle levy", "🚢 Harbor manifest", "🌾 Granary census" },
-  guild = { "🏭 Guild order", "🪓 Timber order", "🧵 Cloth order" },
-  tax = { "⛩️ Tax season", "🏪 Market share-out", "🪙 Split the purse" },
+  guild = { "🏭 Guild order", "🌲 Timber order", "🧵 Cloth order" },
+  tax = { "⛩️ Tax season", "🏪 Market share-out", "💰 Split the purse" },
 }
 
 local function mk(rng, tierId, a, b, op)

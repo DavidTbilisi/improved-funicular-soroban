@@ -5,7 +5,7 @@
 -- left 2, top 3, bottom 4, right 5 = rose); the right hand adds and the left
 -- mirrors it for subtraction — the hand is the sign:
 --
---   add:      K = 1   J = 2   I = 3   , = 4   L = 5
+--   add:      K = 1   J = 2   I = 3 (or P)   , = 4   L = 5
 --   subtract: D = 1   S = 2   E = 3   C = 4   F = 5
 --
 -- Cells pressed within CHORD_S spell the compound 6-9 as a CHORD (left+right
@@ -16,22 +16,51 @@
 -- cell, so it keeps its own keys (U / R); ←/G →/H step the focused rod; Q
 -- clears the board. Enabled only while seated at the counting table.
 -- ============================================================================
--- Input comes off UserInputService.InputBegan, and DELIBERATELY ignores
--- gameProcessedEvent: Roblox's core camera claims bare I as its zoom-in hotkey
--- and marks it processed, which silently ate the +3 cell (a core binding also
--- outranks any developer ContextActionService priority, so binding above it is
--- not an option). The guard that actually matters is typing: nothing fires
--- while a TextBox (chat) has focus. Stolen-key side effects don't apply while
--- seated — the camera is Scriptable (zoom/arrows do nothing) and the walk
--- speed is zero (S/D don't move you).
+-- While seated, these keys BELONG TO THE BOARD, and that is claimed rather than
+-- hoped for: the whole set is bound through ContextActionService and sunk.
+--
+-- This replaced a UserInputService.InputBegan listener that ignored
+-- gameProcessedEvent on the theory that a stolen key still arrives, merely
+-- flagged. It does not, and `I` proved it — measured, not guessed:
+--
+--   * bare I never reaches InputBegan (every other board key does);
+--   * nor a ContextActionService binding, even at priority 100000;
+--   * only Shift+I gets through, because the binding that owns I matches the
+--     UNMODIFIED key.
+--
+-- So the owner is a CoreScript binding (Roblox's camera zoom-in), dispatched in
+-- a queue no LocalScript can outrank. **Bare I cannot be reclaimed**, which is
+-- why the top cell of the right hand carries an alias — see TOP_ALIAS below.
+--
+-- Claiming the rest through CAS is still the right mechanism: it is what stops
+-- the next Roblox binding from quietly eating another cell, and sinking is safe
+-- precisely because we are seated — the camera is Scriptable (zoom and arrows
+-- do nothing), the walk speed is zero (S/D don't move you), and the counting
+-- table's prompt is disabled (E is ours). Nothing is bound while walking.
+local ContextActionService = game:GetService("ContextActionService")
 local UserInputService = game:GetService("UserInputService")
 local RS = game:GetService("ReplicatedStorage")
 local Faces = require(RS.SorobanVillage.domain.Faces)
+
+local ACTION = "sorobanBoardKeys"
+-- Above every developer-context binding. It does NOT outrank a CoreScript's —
+-- raising this further was measured and changes nothing (see the note above).
+local PRIORITY = Enum.ContextActionPriority.High.Value + 1
+
+-- The right hand's TOP cell has two keys. `I` is the one the die cross wants
+-- (it sits above K, and it is what the web keyboard and the touch pad use), and
+-- it still works held with Shift — but bare I belongs to Roblox and cannot be
+-- taken back, so the cell would otherwise be unreachable with one finger.
+-- `P` is the alias: the free key on the right hand's own top row. It is a
+-- consolation, not the grammar — hence one line, easy to move if a better key
+-- turns up. The left hand needs none; its top cell is E and nothing claims it.
+local TOP_ALIAS = Enum.KeyCode.P
 
 local ADD_CELLS = {
   [Enum.KeyCode.K] = "center",
   [Enum.KeyCode.J] = "left",
   [Enum.KeyCode.I] = "top",
+  [TOP_ALIAS] = "top",
   [Enum.KeyCode.Comma] = "bottom",
   [Enum.KeyCode.L] = "right",
 }
@@ -44,6 +73,16 @@ local SUB_CELLS = {
 }
 local CHORD_S = 0.045 -- cells pressed within this window group into one digit
 
+-- Every key the board answers to, in one list — this is what gets bound, so a
+-- key that is handled below but missing here would simply never arrive.
+local BOARD_KEYS = {
+  Enum.KeyCode.K, Enum.KeyCode.J, Enum.KeyCode.I, TOP_ALIAS, Enum.KeyCode.Comma, Enum.KeyCode.L,
+  Enum.KeyCode.D, Enum.KeyCode.S, Enum.KeyCode.E, Enum.KeyCode.C, Enum.KeyCode.F,
+  Enum.KeyCode.U, Enum.KeyCode.R,
+  Enum.KeyCode.G, Enum.KeyCode.H, Enum.KeyCode.Left, Enum.KeyCode.Right,
+  Enum.KeyCode.Q,
+}
+
 local BoardHotkeys = {}
 BoardHotkeys.__index = BoardHotkeys
 
@@ -54,17 +93,27 @@ function BoardHotkeys.new(cb)
   self.enabled = false
   self.chord = nil -- { sign, cells = { [pos] = true } }
   self.gen = 0 -- bumping this cancels any pending chord timer
-  self.conn = UserInputService.InputBegan:Connect(function(input)
-    self:_onInput(input)
-  end)
   return self
 end
 
 function BoardHotkeys:setEnabled(on)
-  if not on then
-    self:_flush()
+  on = not not on
+  if on == self.enabled then
+    return
   end
   self.enabled = on
+  if not on then
+    self:_flush()
+    ContextActionService:UnbindAction(ACTION)
+    return
+  end
+  ContextActionService:BindActionAtPriority(ACTION, function(_, state, input)
+    if state ~= Enum.UserInputState.Begin then
+      return Enum.ContextActionResult.Sink
+    end
+    self:_onKey(input.KeyCode)
+    return Enum.ContextActionResult.Sink
+  end, false, PRIORITY, table.unpack(BOARD_KEYS))
 end
 
 -- Commit the pending chord: resolve the lit cells into a digit and fire it.
@@ -102,17 +151,10 @@ function BoardHotkeys:_push(sign, cell)
   end)
 end
 
-function BoardHotkeys:_onInput(input)
-  if not self.enabled then
-    return
-  end
-  if input.UserInputType ~= Enum.UserInputType.Keyboard then
-    return
-  end
+function BoardHotkeys:_onKey(k)
   if UserInputService:GetFocusedTextBox() then
     return -- typing (chat) — every key belongs to the text box
   end
-  local k = input.KeyCode
   local cell = ADD_CELLS[k] or SUB_CELLS[k]
   if cell then
     self:_push(if ADD_CELLS[k] then 1 else -1, cell)
@@ -134,10 +176,7 @@ function BoardHotkeys:_onInput(input)
 end
 
 function BoardHotkeys:destroy()
-  if self.conn then
-    self.conn:Disconnect()
-    self.conn = nil
-  end
+  self:setEnabled(false)
 end
 
 return BoardHotkeys
